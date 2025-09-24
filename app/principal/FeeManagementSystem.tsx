@@ -1,30 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
+import * as FileSystem from 'expo-file-system';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Linking,
+  Modal,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  Modal,
-  StyleSheet,
-  Button,
-  Image,
-  Linking,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-  Platform,
-  ScrollView,
+  View
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
+import Icon from 'react-native-vector-icons/Feather';
 import * as XLSX from 'xlsx'; // <-- FIXED
-import * as FileSystem from 'expo-file-system';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 
 type FeeManagementSystemProps = {};
@@ -566,7 +565,7 @@ export default function FeeManagementSystem({ }: FeeManagementSystemProps) {
         html,
         base64: false
       });
-      
+
       // Share the PDF
       await Sharing.shareAsync(uri, {
         UTI: '.pdf',

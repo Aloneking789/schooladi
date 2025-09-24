@@ -18,7 +18,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
-import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import * as XLSX from 'xlsx'; // <-- FIXED
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -560,25 +561,17 @@ export default function FeeManagementSystem({ }: FeeManagementSystemProps) {
       </html>
     `;
 
-    const options = {
-      html,
-      fileName: `receipt_${printData.receiptNumber}`,
-      directory: 'Documents',
-    };
-
     try {
-      const file = await RNHTMLtoPDF.convert(options);
-      Alert.alert(
-        'Success',
-        `Receipt saved to ${file.filePath}`,
-        [
-          {
-            text: 'Open',
-            onPress: () => Linking.openURL(`file://${file.filePath}`),
-          },
-          { text: 'OK', onPress: () => { } },
-        ]
-      );
+      const { uri } = await Print.printToFileAsync({
+        html,
+        base64: false
+      });
+      
+      // Share the PDF
+      await Sharing.shareAsync(uri, {
+        UTI: '.pdf',
+        mimeType: 'application/pdf'
+      });
     } catch (error) {
       Alert.alert('Error', 'Failed to generate PDF');
       console.error(error);

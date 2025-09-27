@@ -1,18 +1,18 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  ScrollView,
   TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  StyleSheet,
-  SafeAreaView,
+  View,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 
 // Define AttendanceRecord type
 type AttendanceRecord = {
@@ -24,9 +24,14 @@ type AttendanceRecord = {
     studentName: string;
     idcardNumber: string;
     classId: string;
+    fatherName?: string;
+    rollNumber?: string;
   };
   markedBy?: {
     fullName: string;
+    id: string;
+    rollNumber: string;
+    
   };
 };
 
@@ -36,6 +41,9 @@ type Student = {
   studentName: string;
   idcardNumber: string;
   classId: string;
+  fatherName?: string;
+  rollNumber: string;
+  class_: string; // 'class' is a reserved keyword in JS/TS
 };
 
 const Attendance = () => {
@@ -134,12 +142,11 @@ const Attendance = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+        let attendanceMap: { [studentId: string]: string } = {};
         if (attendanceData.success) {
-          const attendanceMap: { [studentId: string]: string } = {};
           (attendanceData.data as AttendanceRecord[]).forEach((record: AttendanceRecord) => {
             attendanceMap[record.studentId] = record.status;
           });
-          setAttendance(attendanceMap);
         }
         const { data: studentsData } = await axios.get(
           `${API_BASE_URL}/admission/students/by-school/${schoolId}`,
@@ -153,14 +160,19 @@ const Attendance = () => {
           if (!selectedClass && studentsData.students.length > 0) {
             setSelectedClass(studentsData.students[0].classId);
             setStudents(studentsData.students.filter((student: Student) => student.classId === studentsData.students[0].classId));
+            // Reset attendance for new class
+            attendanceMap = {};
           } else {
             // Filter students by selected classId
             const filtered: Student[] = studentsData.students.filter(
               (student: Student) => student.classId === (selectedClass || classToUse)
             );
             setStudents(filtered);
+            // Reset attendance for new class
+            attendanceMap = {};
           }
         }
+        setAttendance(attendanceMap);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching attendance data:', error);
@@ -173,14 +185,15 @@ const Attendance = () => {
 
   // Fetch attendance history
   const fetchAttendanceHistory = async () => {
-    if (!classId || !schoolId || !token) {
+    const classToUse = selectedClass || classId;
+    if (!classToUse || !schoolId || !token) {
       Alert.alert("Error", "Missing required parameters");
       return;
     }
     try {
       const { data } = await axios.get(`${API_BASE_URL}/attendance/by-class`, {
         params: {
-          classId,
+          classId: classToUse,
           startDate: new Date(startDate).toISOString(),
           endDate: new Date(endDate).toISOString(),
           schoolId,
@@ -217,11 +230,17 @@ const Attendance = () => {
 
   const handleSubmit = async () => {
     try {
+      const classToUse = selectedClass || classId;
+      // Only submit attendance for students in the selected class
+      const classStudentIds = students.map((s) => s.id);
+      const filteredAttendance = Object.entries(attendance)
+        .filter(([studentId]) => classStudentIds.includes(studentId))
+        .map(([studentId, status]) => ({ studentId, status }));
       const payload = {
         date: new Date(date).toISOString(),
-        classId,
+        classId: classToUse,
         teacherId,
-        attendance: Object.entries(attendance).map(([studentId, status]) => ({ studentId, status })),
+        attendance: filteredAttendance,
       };
       const { data } = await axios.post(`${API_BASE_URL}/attendance/mark`, payload, {
         headers: { Authorization: `Bearer ${token}` },
@@ -272,7 +291,14 @@ const Attendance = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Attendance Management</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Emoji icon for attendance */}
+          <Text style={{ fontSize: 28, marginRight: 8 }}>📝</Text>
+          <Text style={styles.headerTitle}>Attendance Management</Text>
+        </View>
+        <Text style={{ textAlign: 'center', color: '#6b7280', fontSize: 14, marginTop: 2 }}>
+          Mark and review student attendance by class
+        </Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -336,6 +362,23 @@ const Attendance = () => {
               />
             </View>
 
+            {/* Attendance Summary */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+              {(() => {
+                let present = 0, absent = 0;
+                filteredStudents.forEach(student => {
+                  const status = attendance[student.id] || 'present';
+                  if (status === 'present') present++;
+                  else absent++;
+                });
+                return (
+                  <>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>Present: {present}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#dc2626' }}>Absent: {absent}</Text>
+                  </>
+                );
+              })()}
+            </View>
             <View style={styles.studentsContainer}>
               {filteredStudents.length === 0 ? (
                 <View style={styles.emptyContainer}>
@@ -343,12 +386,15 @@ const Attendance = () => {
                 </View>
               ) : (
                 filteredStudents.map((student) => {
-                  const status = attendance[student.id] || 'absent';
+                  const status = attendance[student.id] || 'present';
                   return (
                     <View key={student.id} style={styles.studentCard}>
                       <View style={styles.studentInfo}>
                         <Text style={styles.studentName}>{student.studentName}</Text>
                         <Text style={styles.studentId}>ID: {student.idcardNumber}</Text>
+                        <Text style={styles.studentId}>Father: {student.fatherName || 'N/A'}</Text>
+                        <Text style={styles.studentId}>Roll Number: {student.rollNumber}</Text>
+                        <Text style={styles.studentId}>Class: {student.class_}</Text>
                       </View>
                       <View style={styles.attendanceButtons}>
                         <TouchableOpacity
@@ -396,6 +442,22 @@ const Attendance = () => {
         {/* History View */}
         {viewMode === 'history' && (
           <View style={styles.section}>
+            {/* Class Dropdown for History */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '500', marginBottom: 6 }}>Select Class:</Text>
+              <View style={{ backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db' }}>
+                <Picker
+                  selectedValue={selectedClass}
+                  onValueChange={(itemValue) => setSelectedClass(itemValue)}
+                  style={{ height: 44, color: '#000' }}
+                >
+                  <Picker.Item label="Select Class" value="" />
+                  {classOptions.map((option) => (
+                    <Picker.Item key={option.value} label={option.label} value={option.value} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
             <View style={styles.historyControls}>
               <View style={styles.dateInputContainer}>
                 <Text style={styles.inputLabel}>Start Date:</Text>
@@ -435,6 +497,7 @@ const Attendance = () => {
                   <View key={record.id} style={styles.historyCard}>
                     <View style={styles.historyHeader}>
                       <Text style={styles.historyStudentName}>{record.student?.studentName || 'Unknown Student'}</Text>
+                      <Text style={styles.historyStudentId}>Roll Number: {record.student?.rollNumber || 'N/A'}</Text>
                       <Text style={[
                         styles.historyStatus,
                         record.status === 'present' ? styles.historyStatusPresent : styles.historyStatusAbsent
@@ -737,6 +800,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
     flex: 1,
+  },
+  historyStudentId: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 8,
   },
   historyStatus: {
     fontSize: 12,

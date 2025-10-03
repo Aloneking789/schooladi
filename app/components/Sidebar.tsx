@@ -1,394 +1,132 @@
-import React, { JSX, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from "@react-navigation/native";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useUser } from '../UserContext';
 
 interface MenuItem {
   name: string;
   path?: string;
-  icon: JSX.Element;
-  subItems?: MenuItem[];
+  iconName: string;
 }
 
-interface SidebarProps {
-  isExpanded: boolean;
-  toggleSidebar: () => void;
+interface BottomBarProps {
   userType: "principal" | "teacher" | "student" | "parents";
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isExpanded, toggleSidebar, userType }) => {
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { logout } = useUser();
 
-  const toggleDropdown = (menu: string) => {
-    setOpenDropdown(openDropdown === menu ? null : menu);
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigation.navigate('Login' as never);
-  };
-
+  // Only top-level menu items for bottom bar
   const menuItems = (): MenuItem[] => {
     switch (userType) {
       case "principal":
         return [
-          { name: "Dashboard", path: "PrincipalDashboard", icon: <Ionicons name="home" size={24} /> },
-          { name: "Promote", path: "promotion", icon: <Ionicons name="school" size={24} /> },
-          { name: "DropBox", path: "dropbox", icon: <Ionicons name="trash" size={24} /> },
-          { name: "Gallery", path: "SchoolGallary", icon: <Ionicons name="images" size={24} /> },
-          {
-            name: "Teachers", icon: <Ionicons name="people" size={24} />, subItems: [
-              { name: "All Teachers", path: "ShowTeacher", icon: <Ionicons name="people" size={20} /> },
-              { name: "Register Teacher", path: "TeacherOnboard", icon: <Ionicons name="person-add" size={20} /> },
-              { name: "Teacher ID Card", path: "teacherIDcard", icon: <Ionicons name="document-text" size={20} /> },
-            ]
-          },
-          {
-            name: "Admissions", icon: <Ionicons name="school" size={24} />, subItems: [
-              { name: "All Admissions", path: "Admissions", icon: <Ionicons name="people" size={20} /> },
-              { name: "Register Student", path: "StudentOnboarding", icon: <Ionicons name="person-add" size={20} /> },
-            ]
-          },
-          { name: "Fees Management", path: "FeeManagementSystem", icon: <Ionicons name="document-text" size={24} /> },
-          { name: "Salary Management", path: "TeacherSalaryManagement", icon: <Ionicons name="card" size={24} /> },
-          { name: "Enquiries", path: "EnquiryManagement", icon: <Ionicons name="notifications" size={24} /> },
-          { name: "Notice Board", path: "AddNotice", icon: <Ionicons name="notifications" size={24} /> },
-          {
-            name: "Certificates", icon: <Ionicons name="document-text" size={24} />, subItems: [
-
-
-              { name: "Transfer Certificate", path: "transferCertificate", icon: <Ionicons name="document" size={20} /> },
-              { name: "Generate Id Card", path: "IDcard", icon: <Ionicons name="card" size={20} /> },
-            ]
-          },
+          { name: "Dashboard", path: "PrincipalDashboard", iconName: "home" },
+          { name: "Promote", path: "promotion", iconName: "school" },
+          { name: "DropBox", path: "dropbox", iconName: "trash" },
+          { name: "Gallery", path: "SchoolGallary", iconName: "images" },
         ];
       case "teacher":
         return [
-          { name: "Dashboard", path: "TeacherDashboard", icon: <Ionicons name="home" size={24} /> },
-          { name: "StudentAttendance", path: "Attendance", icon: <Ionicons name="list" size={24} /> },
-          { name: "Teacher-Attendance", path: "TeacherAttendance", icon: <Ionicons name="person" size={24} /> },
-          { name: "My Students", path: "MyStudents", icon: <Ionicons name="people" size={24} /> },
-          { name: "My ID Card", path: "MyTeacherIDCard", icon: <Ionicons name="card" size={24} /> },
-          { name: "Upload Marks", path: "TeacherUploadResults'", icon: <Ionicons name="cloud-upload" size={24} /> },
-          { name: "Homework", path: "TeacherHomework", icon: <Ionicons name="book" size={24} /> },
+          { name: "Dashboard", path: "TeacherDashboard", iconName: "home" },
+          { name: "Attendance", path: "Attendance", iconName: "list" },
+          { name: "My Students", path: "MyStudents", iconName: "people" },
+          { name: "OnlineTest", path: "OnlineTestCreate", iconName: "laptop" },
+          { name: "TeacherAttendance", path: "TeacherAttendance", iconName: "checkmark-done" },
         ];
       case "student":
         return [
-          { name: "Dashboard", path: "StudentDashboard", icon: <Ionicons name="home" size={24} /> },
-          { name: "Notices", path: "StudentNotices", icon: <Ionicons name="notifications" size={24} /> },
-          { name: "Results", path: "StudentResults", icon: <Ionicons name="document-text" size={24} /> },
+          { name: "Dashboard", path: "StudentDashboard", iconName: "home" },
+          { name: "Notices", path: "StudentNotices", iconName: "notifications" },
+          { name: "Results", path: "StudentResults", iconName: "document-text" },
+          { name: "OnlineTest", path: "OnlineTest", iconName: "laptop" },
         ];
       default:
         return [
-          { name: "No menu for userType: " + String(userType), icon: <Ionicons name="home" size={24} /> }
+          { name: "Home", path: "Home", iconName: "home" }
         ];
     }
   };
 
   const items = menuItems();
 
+  const handleTabPress = async (item: MenuItem) => {
+    if (item.name === 'Logout') {
+      await logout();
+      navigation.navigate('Login' as never);
+    } else if (item.path) {
+      navigation.navigate(item.path as never);
+    }
+  };
+
+  // Get current route name for highlighting
+  const currentRoute = (route as any)?.name;
+
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerIcon}>
-          <Ionicons name="apps" size={28} color="#000" />
-        </View>
-        {isExpanded && (
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>EduManage</Text>
-            <Text style={styles.headerSubtitle}>School Panel</Text>
-          </View>
-        )}
-      </View>
-
-      {/* User Info */}
-      {isExpanded && (
-        <View style={styles.userInfo}>
-          <View style={styles.userAvatar}>
-            <Text style={styles.userAvatarText}>
-              {userType.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.userDetails}>
-            <Text style={styles.userName}>{userType.charAt(0).toUpperCase() + userType.slice(1)}</Text>
-            <Text style={styles.userRole}>Administrator</Text>
-          </View>
-        </View>
-      )}
-
-      {/* Menu Items */}
-      <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>
-        {items.map((item) => (
-          <View key={item.name}>
-            {item.subItems ? (
-              <>
-                <TouchableOpacity
-                  onPress={() => toggleDropdown(item.name)}
-                  style={[
-                    styles.menuItem,
-                    openDropdown === item.name && styles.menuItemActive
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.menuIcon}>
-                    {React.cloneElement(item.icon, {
-                      size: 20,
-                      color: openDropdown === item.name ? '#000' : '#666'
-                    })}
-                  </View>
-                  {isExpanded && (
-                    <>
-                      <Text style={[
-                        styles.menuText,
-                        openDropdown === item.name && styles.menuTextActive
-                      ]}>
-                        {item.name}
-                      </Text>
-                      <View style={styles.chevron}>
-                        <Ionicons
-                          name="chevron-down"
-                          size={16}
-                          color={openDropdown === item.name ? '#000' : '#999'}
-                          style={{
-                            transform: [{
-                              rotate: openDropdown === item.name ? '180deg' : '0deg'
-                            }]
-                          }}
-                        />
-                      </View>
-                    </>
-                  )}
-                </TouchableOpacity>
-                {openDropdown === item.name && isExpanded && (
-                  <View style={styles.subMenuContainer}>
-                    {item.subItems.map((subItem) => (
-                      <TouchableOpacity
-                        key={subItem.name}
-                        onPress={() => {
-                          if (subItem.path) navigation.navigate(subItem.path as never);
-                          toggleSidebar();
-                        }}
-                        style={styles.subMenuItem}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.subMenuIcon}>
-                          {React.cloneElement(subItem.icon, {
-                            size: 16,
-                            color: '#666'
-                          })}
-                        </View>
-                        <Text style={styles.subMenuText}>{subItem.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </>
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  if (item.path) navigation.navigate(item.path as never);
-                  toggleSidebar();
-                }}
-                style={styles.menuItem}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuIcon}>
-                  {React.cloneElement(item.icon, {
-                    size: 20,
-                    color: '#666'
-                  })}
-                </View>
-                {isExpanded && (
-                  <Text style={styles.menuText}>{item.name}</Text>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Logout Button */}
-      <TouchableOpacity
-        onPress={handleLogout}
-        style={styles.logoutButton}
-        activeOpacity={0.7}
-      >
-        <View style={styles.menuIcon}>
-          <Ionicons name="log-out" size={20} color="#ef4444" />
-        </View>
-        {isExpanded && (
-          <Text style={styles.logoutText}>Logout</Text>
-        )}
-      </TouchableOpacity>
+    <View style={styles.bottomBarContainer}>
+      {items.map((item) => {
+        const isActive = currentRoute === item.path;
+        return (
+          <TouchableOpacity
+            key={item.name}
+            style={[styles.tabItem, isActive && styles.tabItemActive]}
+            onPress={() => handleTabPress(item)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={item.iconName as any} size={26} color={isActive ? '#403ae2ff' : '#64748b'} />
+            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{item.name.replace('OnlineTest', 'Test')}</Text>
+          </TouchableOpacity>
+        );
+      })}
+      {/* Logout removed as requested */}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#fff",
-    height: "100%",
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-
-  // Header Styles
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
-  },
-  headerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  headerText: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-
-  // User Info
-  userInfo: {
+  bottomBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
-  },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  userAvatarText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  userDetails: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
-  },
-  userRole: {
-    fontSize: 12,
-    color: '#666',
-  },
-
-  // Menu Styles
-  menuContainer: {
-    flex: 1,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  menuItemActive: {
-    backgroundColor: '#f5f5f5',
-  },
-  menuIcon: {
-    width: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#333',
-    marginLeft: 8,
-  },
-  menuTextActive: {
-    color: '#000',
-    fontWeight: '600',
-  },
-  chevron: {
-    marginLeft: 'auto',
-  },
-
-  // Sub Menu Styles
-  subMenuContainer: {
-    marginLeft: 48,
-    marginBottom: 8,
-  },
-  subMenuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginBottom: 2,
-    backgroundColor: '#f9f9f9',
-  },
-  subMenuIcon: {
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  subMenuText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-    fontWeight: '500',
-  },
-
-  // Logout Button
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginTop: 20,
+    justifyContent: 'space-around',
+    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
-    paddingTop: 20,
+    borderTopColor: '#e5e7eb',
+    paddingVertical: 8,
+    paddingBottom: 10,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
   },
-  logoutText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#ef4444',
-    marginLeft: 8,
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  tabItemActive: {
+    backgroundColor: '#f1f5f9',
+  },
+  tabLabel: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  tabLabelActive: {
+    color: '#02050cff',
+    fontWeight: '800',
   },
 });
 
-export default Sidebar;
+export default BottomBar;

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Modal, TouchableWithoutFeedback, StatusBar } from "react-native";
-import Sidebar from "./Sidebar";
-import Navbar from "./Navbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { StatusBar, StyleSheet, View } from "react-native";
+import Navbar from "./Navbar";
+import BottomBar from "./Sidebar";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -27,6 +27,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const userType: UserRole = user;
 
+  // ensure Navbar is treated as a component that accepts the toggleSidebar prop
+  const NavbarTyped = Navbar as React.ComponentType<{ toggleSidebar: () => void }>;
+
   return (
     <View style={styles.container}>
       <StatusBar 
@@ -34,25 +37,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         translucent={false}
         showHideTransition="fade"
       />
-      <Navbar toggleSidebar={toggleSidebar} />
+      <NavbarTyped toggleSidebar={toggleSidebar} />
       <View style={styles.content}>{children}</View>
-      <Modal
-        visible={isSidebarVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeSidebar}
-      >
-        <TouchableWithoutFeedback onPress={closeSidebar}>
-          <View style={styles.overlay} />
-        </TouchableWithoutFeedback>
-        <View style={styles.fullSidebar}>
-          <Sidebar
-            isExpanded={true}
-            toggleSidebar={closeSidebar}
-            userType={userType}
-          />
-        </View>
-      </Modal>
+      {/* Always show bottom bar at the bottom */}
+      {userType && <BottomBar userType={userType} />}
     </View>
   );
 };
@@ -80,7 +68,7 @@ const styles = StyleSheet.create({
   fullSidebar: {
     position: "absolute",
     top: 0, left: 0, bottom: 0, right: 0,
-    backgroundColor: "#fff",
+    backgroundColor: "#c84141ff",
     zIndex: 2,
     width: "100%",
     height: "100%",

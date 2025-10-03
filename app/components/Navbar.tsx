@@ -1,64 +1,50 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
   Alert,
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { Ionicons } from '@expo/vector-icons';
-import { getImageUrl } from "../utils/getImageUrl";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+// @ts-ignore: If type is missing, ignore for now
 import { useUser } from "../UserContext";
+import { getImageUrl } from "../utils/getImageUrl";
 
 const { width } = Dimensions.get("window");
 const isSmallScreen = width < 400;
 const isVerySmallScreen = width < 350;
 
-const Navbar: React.FC<{ toggleSidebar: () => void }> = ({ toggleSidebar }) => {
+const Navbar: React.FC = () => {
   const navigation = useNavigation<any>();
   const { logout } = useUser();
   const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string>("");
 
   useEffect(() => {
-    const getSchoolInfo = async () => {
-      try {
-        const userRaw = await AsyncStorage.getItem("principal_user");
-        const user = userRaw ? JSON.parse(userRaw) : null;
-        const schoolId = user?.principal_user?.schools?.[0]?.id || user?.schools?.[0]?.id;
-        const schoolNameFromUser =
-          user?.principal_user?.schools?.[0]?.Schoolname ||
-          user?.principal_user?.schools?.[0]?.schoolName ||
-          user?.schools?.[0]?.Schoolname ||
-          user?.schools?.[0]?.schoolName ||
-          "";
-
-        if (schoolId) {
-          fetch(`https://api.pbmpublicschool.in/api/newSchool/school-assets/by-school/${schoolId}`)
-            .then((res) => res.json())
-            .then((data) => setSchoolLogo(data.schoolLogo || null))
-            .catch(() => setSchoolLogo(null));
-
-          fetch(`https://api.pbmpublicschool.in/api/newSchool/schools/${schoolId}`)
-            .then((res) => res.json())
-            .then((data) => setSchoolName(data.name || schoolNameFromUser))
-            .catch(() => setSchoolName(schoolNameFromUser));
-        }
-      } catch {
-        setSchoolLogo(null);
-        setSchoolName("");
-      }
+    // Example: fetch school info from AsyncStorage or API
+    const fetchSchool = async () => {
+      const userRaw = await AsyncStorage.getItem("principal_user");
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      const schoolNameFromUser =
+        user?.principal_user?.schools?.[0]?.Schoolname ||
+        user?.principal_user?.schools?.[0]?.schoolName ||
+        user?.schools?.[0]?.Schoolname ||
+        user?.schools?.[0]?.schoolName ||
+        "";
+      setSchoolName(schoolNameFromUser);
+      // Optionally set logo
+      // setSchoolLogo(...)
     };
-    getSchoolInfo();
+    fetchSchool();
   }, []);
 
-  const toggleFullScreen = () => { };
-
+  // Handle logout with confirmation
   const handleLogout = () => {
     Alert.alert(
       "Logout",
@@ -84,13 +70,13 @@ const Navbar: React.FC<{ toggleSidebar: () => void }> = ({ toggleSidebar }) => {
   };
 
   return (
-    <View style={[styles.navbar, isSmallScreen && styles.navbarMobile]}>
+    <LinearGradient
+      colors={['#f8fafc', '#f1f5f9']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={[styles.navbar, isSmallScreen && styles.navbarMobile]}
+    >
       <View style={[styles.left, isSmallScreen && styles.leftMobile]}>
-        <TouchableOpacity onPress={() => {
-          toggleSidebar();
-        }} style={styles.menuBtn}>
-          <Ionicons name="menu" color="#000" size={isSmallScreen ? 20 : 24} />
-        </TouchableOpacity>
         {schoolLogo && (
           <Image
             source={{ uri: getImageUrl(schoolLogo) }}
@@ -103,20 +89,20 @@ const Navbar: React.FC<{ toggleSidebar: () => void }> = ({ toggleSidebar }) => {
             styles.title,
             isSmallScreen && styles.titleMobile,
           ]}
-          numberOfLines={1}
+          numberOfLines={2}
           ellipsizeMode="tail"
         >
-          {schoolName || "School Management"}
+          {schoolName || "P B M Public School"}
         </Text>
       </View>
       <View style={[styles.right, isSmallScreen && styles.rightMobile]}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="notifications" color="#000" size={isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24} />
+        <TouchableOpacity style={[styles.iconButton, isSmallScreen && styles.iconButtonMobile]}>
+          <Ionicons name="notifications" color="#000" size={isVerySmallScreen ? 20 : isSmallScreen ? 22 : 26} />
           <View style={styles.badgeContainer}>
             <Text style={styles.badge}>3</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate("MyProfile")}>
+        <TouchableOpacity style={[styles.iconButton, isSmallScreen && styles.iconButtonMobile]} onPress={() => navigation.navigate("MyProfile")}> 
           <Image
             source={{
               uri: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
@@ -124,11 +110,11 @@ const Navbar: React.FC<{ toggleSidebar: () => void }> = ({ toggleSidebar }) => {
             style={[styles.avatar, isSmallScreen && styles.avatarMobile]}
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleLogout} style={[styles.iconButton, styles.logoutBtn]}>
-          <Ionicons name="log-out" color="#000" size={isVerySmallScreen ? 16 : isSmallScreen ? 18 : 22} />
+        <TouchableOpacity onPress={handleLogout} style={[styles.iconButton, styles.logoutBtn, isSmallScreen && styles.iconButtonMobile]}>
+          <Ionicons name="log-out" color="#000" size={isVerySmallScreen ? 18 : isSmallScreen ? 20 : 24} />
         </TouchableOpacity>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -136,18 +122,40 @@ const styles = StyleSheet.create({
   navbar: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 6,
-    backgroundColor: "#fff",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    backgroundColor: "#868c93ff",
+    borderBottomWidth: 0,
+    borderColor: "#d6dadfff",
+    minHeight: 50,
+    display: 'flex',
+    flexWrap: 'nowrap',
+    height: 80,
+    width: '100%',
+    alignSelf: 'center',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    margin: 8,
+    marginBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 8,
   },
   navbarMobile: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     gap: 4,
+    borderRadius: 14,
+    margin: 4,
+    marginBottom: 0,
   },
   left: {
     flexDirection: "row",
@@ -160,77 +168,113 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logo: {
-    width: 32,
-    height: 32,
-    marginLeft: 8,
-    borderRadius: 4,
+    width: 40,
+    height: 40,
+    marginLeft: 12,
+    borderRadius: 8,
     backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
   },
   logoMobile: {
-    width: 24,
-    height: 24,
-    marginLeft: 6,
+    width: 28,
+    height: 28,
+    marginLeft: 8,
+    borderRadius: 6,
   },
   title: {
-    color: "#000",
-    marginLeft: 12,
+    color: "#0f172a",
+    marginLeft: 16,
     fontWeight: "bold",
-    fontSize: 13,
+    fontSize: 16,
     flex: 1,
     maxWidth: '60%',
+    letterSpacing: 0.2,
   },
   titleMobile: {
-    color: "#000",
+    color: "#0f172a",
     fontWeight: "bold",
-    fontSize: 11,
-    marginLeft: 6,
+    fontSize: 13,
+    marginLeft: 8,
     flex: 1,
     maxWidth: '50%',
+    letterSpacing: 0.1,
   },
   right: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 16,
     minWidth: 120,
   },
   rightMobile: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 10,
     minWidth: 100,
   },
   iconButton: {
-    padding: 6,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    marginHorizontal: 2,
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+  },
+  iconButtonMobile: {
+    padding: 6,
+    minWidth: 36,
+    minHeight: 36,
   },
   badgeContainer: {
     position: "absolute",
-    top: -2,
-    right: -2,
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 18,
+    minHeight: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    zIndex: 2,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   badge: {
-    backgroundColor: "#000",
     color: "#fff",
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
+    textAlign: 'center',
+    paddingHorizontal: 1,
   },
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginHorizontal: 2,
   },
   avatarMobile: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  menuBtn: {
-    padding: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginHorizontal: 1,
   },
   logoutBtn: {
     marginLeft: 4,
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    padding: 8,
   },
 });
 

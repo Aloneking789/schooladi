@@ -47,6 +47,7 @@ import Attendance from './app/teacher/Attendance';
 import MyTeacherIDCard from './app/teacher/MyTeacherIDCard';
 import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 import TeacherHomework from './app/teacher/teacherHomework';
+import OnlineTestCreate from './app/teacher/OnlineTestexam';
 // import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 // import TeacherSelfAttendance from './app/teacher/TeacherAttendance';
 
@@ -162,6 +163,14 @@ export default function App() {
           children={props => (
             <Layout>
               <TeacherDashboard {...props} />
+            </Layout>
+          )}
+        />
+        <Stack.Screen
+          name="OnlineTestCreate"
+          children={props => (
+            <Layout>
+              <OnlineTestCreate {...props} />
             </Layout>
           )}
         />

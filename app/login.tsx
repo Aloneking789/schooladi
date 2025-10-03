@@ -1,23 +1,22 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-  Platform,
-  Dimensions,
-  KeyboardAvoidingView,
-  ScrollView,
+  View,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { Ionicons } from '@expo/vector-icons';
 import { useUser } from "./UserContext";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { LinearGradient } from 'expo-linear-gradient';
 
 interface LoginProps {
   setUser: (user: any) => void;
@@ -26,18 +25,17 @@ interface LoginProps {
 const Login = () => {
   const { setUser } = useUser();
   const navigation = useNavigation<any>();
-  const [role, setUserType] = useState<"student" | "teacher" | "principal" | "parents">();
+  const [role, setUserType] = useState<"student" | "teacher" | "principal">();
   const [formData, setFormData] = useState({
     LoguserID: "",
     password: "",
-    date_of_birth: "",
   });
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Only allow valid role values
   const handleUserTypeChange = (text: string) => {
-    const allowed = ["student", "teacher", "principal", "parents"];
+    const allowed = ["student", "teacher", "principal"];
     if (allowed.includes(text)) {
       setUserType(text as typeof role);
     }
@@ -52,15 +50,13 @@ const Login = () => {
 
     const requestBody = {
       LoguserID: formData.LoguserID,
-      password: formData.password, // Always use password field
-      ...(role === "student" && { date_of_birth: formData.date_of_birth }), // Optionally send DOB if needed
+      password: formData.password,
     };
 
     const apiEndpoints = {
-      student: "https://api.pbmpublicschool.in/api/auth/student/login",
+      student: "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/auth/student/login",
       teacher: "https://api.pbmpublicschool.in/api/auth/teacher/login",
       principal: "https://api.pbmpublicschool.in/api/auth/principal/login",
-      parents: "https://api.pbmpublicschool.in/api/auth/parents/login",
     };
 
     try {
@@ -82,13 +78,13 @@ const Login = () => {
       if (response.ok) {
         setUser(data.user);
         // Store token and user in AsyncStorage for all user types
-        await AsyncStorage.setItem(`${role}_token`, data.token || "");
-        await AsyncStorage.setItem(`${role}_user`, JSON.stringify(data.user));
-        await AsyncStorage.setItem("user", JSON.stringify(data.user)); // Ensure context can reload user
-        await AsyncStorage.setItem("role", JSON.stringify(role));
-        await AsyncStorage.setItem("LoguserID", formData.LoguserID);
+  await AsyncStorage.setItem(`${role}_token`, data.token || "");
+  await AsyncStorage.setItem(`${role}_user`, JSON.stringify(data.user));
+  await AsyncStorage.setItem("user", JSON.stringify(data.user)); // Ensure context can reload user
+  await AsyncStorage.setItem("role", JSON.stringify(role));
+  await AsyncStorage.setItem("LoguserID", formData.LoguserID);
 
-        if (role === "student" || role === "parents") {
+        if (role === "student") {
           navigation.reset({
             index: 0,
             routes: [{ name: 'StudentDashboard' }],
@@ -151,7 +147,7 @@ const Login = () => {
               <View style={styles.sectionContainer}>
                 <Text style={styles.sectionLabel}>Select User Type</Text>
                 <View style={styles.userTypeContainer}>
-                  {['student', 'parents', 'teacher', 'principal'].map((type) => (
+                  {['student', 'teacher', 'principal'].map((type) => (
                     <TouchableOpacity
                       key={type}
                       style={[
@@ -165,9 +161,8 @@ const Login = () => {
                         <Ionicons
                           name={
                             type === 'student' ? 'person' :
-                              type === 'parents' ? 'people' :
-                                type === 'teacher' ? 'school' :
-                                  'business'
+                              type === 'teacher' ? 'school' :
+                                'business'
                           }
                           size={16}
                           color={role === type ? "#ecceceff" : "#666"}
@@ -200,72 +195,21 @@ const Login = () => {
                 </View>
               </View>
 
-              {/* Password/DOB Input */}
-              {role === "student" ? (
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Date of Birth</Text>
-                  <TouchableOpacity
-                    onPress={() => setShowDatePicker(true)}
-                    style={styles.inputWrapper}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
-                    <Text style={[
-                      styles.textInput,
-                      { color: formData.date_of_birth ? "#000" : "#999" }
-                    ]}>
-                      {formData.date_of_birth ? formData.date_of_birth : "Select Date of Birth"}
-                    </Text>
-                    <Ionicons name="chevron-down" size={16} color="#666" />
-                  </TouchableOpacity>
-                  {(showDatePicker || Platform.OS === "web") && (
-                    <DateTimePicker
-                      value={
-                        formData.date_of_birth
-                          ? (() => {
-                            const [dd, mm, yyyy] = formData.date_of_birth.split("-");
-                            return new Date(`${yyyy}-${mm}-${dd}`);
-                          })()
-                          : new Date()
-                      }
-                      mode="date"
-                      display="default"
-                      maximumDate={new Date()}
-                      onChange={(_, selectedDate) => {
-                        if (Platform.OS !== "web") setShowDatePicker(false);
-                        let dateObj = selectedDate;
-                        if (Platform.OS === "web" && _) {
-                          // @ts-ignore
-                          dateObj = new Date(_.target.value);
-                        }
-                        if (dateObj) {
-                          const yyyy = dateObj.getFullYear();
-                          const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-                          const dd = String(dateObj.getDate()).padStart(2, "0");
-                          const dobDDMMYYYY = `${dd}-${mm}-${yyyy}`;
-                          setFormData({ ...formData, date_of_birth: dobDDMMYYYY, password: dobDDMMYYYY });
-                        }
-                      }}
-                      style={Platform.OS === "web" ? { marginTop: 10 } : undefined}
-                    />
-                  )}
+              {/* Password Input (all roles) */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    placeholder="Enter your password"
+                    placeholderTextColor="#999"
+                    value={formData.password}
+                    secureTextEntry
+                    onChangeText={(text) => setFormData({ ...formData, password: text })}
+                    style={styles.textInput}
+                  />
                 </View>
-              ) : (
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Password</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-                    <TextInput
-                      placeholder="Enter your password"
-                      placeholderTextColor="#999"
-                      value={formData.password}
-                      secureTextEntry
-                      onChangeText={(text) => setFormData({ ...formData, password: text })}
-                      style={styles.textInput}
-                    />
-                  </View>
-                </View>
-              )}
+              </View>
 
               {/* Login Button */}
               <TouchableOpacity

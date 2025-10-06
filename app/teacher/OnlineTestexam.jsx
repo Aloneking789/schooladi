@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/create';
+const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/create';
 
 const questionTypeOptions = [
 	{ label: 'Objective', value: 'objective' },
@@ -23,6 +23,9 @@ const OnlineTestexam = () => {
 	const [success, setSuccess] = useState(false);
 	const [myTests, setMyTests] = useState([]);
 	const [loadingTests, setLoadingTests] = useState(false);
+	const [resultsModalVisible, setResultsModalVisible] = useState(false);
+	const [submissions, setSubmissions] = useState([]);
+	const [loadingResults, setLoadingResults] = useState(false);
 	const [token, setToken] = useState('');
 
 	useEffect(() => {
@@ -44,13 +47,15 @@ const OnlineTestexam = () => {
 		getClassIdAndToken();
 	}, []);
 
-	// Fetch my tests
+	// Fetch my tests (use teacher's assigned classId when available)
 	useEffect(() => {
 		const fetchMyTests = async () => {
 			if (!token) return;
 			setLoadingTests(true);
 			try {
-				const res = await fetch('https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests', {
+				const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests';
+				const url = classId ? `${base}?=${encodeURIComponent(classId)}` : base;
+				const res = await fetch(url, {
 					headers: { 'Authorization': `Bearer ${token}` },
 				});
 				const data = await res.json();
@@ -59,14 +64,15 @@ const OnlineTestexam = () => {
 				} else {
 					setMyTests([]);
 				}
-			} catch {
+			} catch (err) {
+				console.warn('fetchMyTests error', err);
 				setMyTests([]);
 			} finally {
 				setLoadingTests(false);
 			}
 		};
 		fetchMyTests();
-	}, [token, success]);
+	}, [token, success, classId]);
 
 	const handleCreateTest = async () => {
 		setApiError('');
@@ -112,6 +118,56 @@ const OnlineTestexam = () => {
 		}
 	};
 
+	// Fetch results for a specific test and open modal
+	const fetchTestResults = async (testId) => {
+		if (!testId) return;
+		setLoadingResults(true);
+		try {
+			const tkn = await AsyncStorage.getItem('teacher_token') || await AsyncStorage.getItem('principal_token');
+			if (!tkn) {
+				Alert.alert('Missing token', 'No authorization token found.');
+				setLoadingResults(false);
+				return;
+			}
+			const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
+			const res = await fetch(url, { headers: { Authorization: `Bearer ${tkn}` } });
+			if (!res.ok) {
+				const txt = await res.text();
+				throw new Error(`Request failed ${res.status}: ${txt}`);
+			}
+			const body = await res.json();
+			if (!body.success) throw new Error(body.message || 'API returned success:false');
+			const subs = (body.submissions || []).map((s) => {
+				let answers = {};
+				let times = [];
+				try { answers = JSON.parse(s.answers || '{}'); } catch (e) { answers = {}; }
+				try { times = JSON.parse(s.perQuestionTimes || '[]'); } catch (e) { times = []; }
+				return {
+					id: s.id,
+					testId: s.testId,
+					studentId: s.studentId,
+					studentName: s.student?.studentName || s.studentName || 'Unknown',
+					class: s.student?.class_ || 'N/A',
+					section: s.student?.sectionclass || 'N/A',
+					answers,
+					score: s.score,
+					startedAt: s.startedAt,
+					endedAt: s.endedAt,
+					perQuestionTimes: times,
+					submittedAt: s.submittedAt,
+				};
+			});
+			setSubmissions(subs);
+			setResultsModalVisible(true);
+		} catch (err) {
+			console.warn('fetchTestResults error', err);
+			Alert.alert('Error', err.message || 'Failed to fetch results');
+			setSubmissions([]);
+		} finally {
+			setLoadingResults(false);
+		}
+	};
+
 	return (
 		<SafeAreaView style={styles.container}>
 			<ScrollView contentContainerStyle={styles.scrollContent}>
@@ -148,6 +204,33 @@ const OnlineTestexam = () => {
 							</TouchableOpacity>
 						))}
 					</View>
+					{/* Results Modal */}
+					<Modal visible={resultsModalVisible} animationType="slide" onRequestClose={() => setResultsModalVisible(false)}>
+						<SafeAreaView style={{ flex: 1 }}>
+							<View style={{ flex: 1, padding: 16 }}>
+								<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+									<Text style={{ fontSize: 18, fontWeight: '800' }}>Test Results</Text>
+									<TouchableOpacity onPress={() => setResultsModalVisible(false)}><Text style={{ color: '#2563eb' }}>Close</Text></TouchableOpacity>
+								</View>
+								{loadingResults ? <ActivityIndicator /> : submissions.length === 0 ? <Text>No submissions found.</Text> : (
+									<ScrollView>
+										{submissions.map((s) => (
+											<View key={s.id} style={{ backgroundColor: '#fff', padding: 12, borderRadius: 8, marginBottom: 12 }}>
+												<Text style={{ fontWeight: '700' }}>{s.studentName} ({s.class}-{s.section})</Text>
+												<Text>Score: {s.score}</Text>
+												<Text style={{ marginTop: 8, fontWeight: '700' }}>Answers</Text>
+												{Object.keys(s.answers || {}).map((qIndex) => (
+													<View key={qIndex} style={{ marginTop: 6 }}>
+														<Text style={{ fontWeight: '600' }}>Q{Number(qIndex) + 1}: {s.answers[qIndex]}</Text>
+													</View>
+												))}
+											</View>
+										))}
+									</ScrollView>
+								)}
+							</View>
+						</SafeAreaView>
+					</Modal>
 
 					<Text style={styles.label}>Number of Questions</Text>
 					<TextInput
@@ -215,12 +298,18 @@ const OnlineTestexam = () => {
 										<Text style={styles.showQuestionsBtnText}>Show Questions</Text>
 									</TouchableOpacity>
 									<TouchableOpacity
+										style={[styles.showQuestionsBtn, { backgroundColor: '#111827' }]}
+										onPress={() => fetchTestResults(test.id)}
+									>
+										<Text style={styles.showQuestionsBtnText}>View Results</Text>
+									</TouchableOpacity>
+									<TouchableOpacity
 										style={[styles.startStopBtn, { backgroundColor: '#059669', opacity: test.isStartest ? 0.5 : 1 }]}
 										disabled={test.isStartest}
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/start`, {
+												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/start`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
@@ -239,7 +328,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/stop`, {
+												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/stop`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
@@ -264,7 +353,7 @@ const OnlineTestexam = () => {
 													{
 														text: 'Delete', style: 'destructive', onPress: async () => {
 															try {
-																const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}`, {
+																const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}`, {
 																	method: 'DELETE',
 																	headers: { 'Authorization': `Bearer ${token}` },
 																});

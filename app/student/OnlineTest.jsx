@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/class-tests';
+const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/class-tests';
 
 const OnlineTest = () => {
   const [classId, setClassId] = useState('');
@@ -34,7 +34,7 @@ const OnlineTest = () => {
         if (userDataRaw) {
           const userData = JSON.parse(userDataRaw);
           cid = userData.classId || userData.user?.classId || '';
-          console.log('Fetched classId from AsyncStorage:', cid);
+          const studentId = userData.id || userData.user?.StudentId || '';
         }
         // fallback: use hardcoded classId if not found
         if (!cid) cid = '';
@@ -154,15 +154,26 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
     if (!selectedTest) return;
     try {
       const token = await AsyncStorage.getItem('student_token');
+      const UserRaw = await AsyncStorage.getItem('user');
+      const User = JSON.parse(UserRaw);
+       console.log('Fetched StudentId from AsyncStorage:', User.StudentId);
+      if (!User || !User.StudentId) {
+        Alert.alert('Submission Failed', 'Student ID not found.');
+        return;
+       
+      }
       setLoading(true);
-      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${selectedTest.id}/submit`, {
+      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${selectedTest.id}/submit`, {
+        
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+           
         },
         body: JSON.stringify({
           answers,
+          StudentId: User.StudentId,
           perQuestionTimes,
           startedAt,
           endedAt: endedAt || new Date().toISOString(),
@@ -186,10 +197,15 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
   };
 
   // Fetch test result by testId
+  
   const fetchTestResult = async (testId, token) => {
+    const UserRaw = await AsyncStorage.getItem('user');
+    const User = JSON.parse(UserRaw);
+    const StudentId = User.StudentId;
+    console.log('Fetching result for StudentId:', StudentId);
     try {
       setLoading(true);
-      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${testId}/my-result`, {
+      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const data = await res.json();

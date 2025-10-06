@@ -1,7 +1,7 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View, Text } from 'react-native';
-import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 // Screens
 import Login from './app/login';
@@ -11,11 +11,11 @@ import ShowNotice from './app/student/ShowNotice';
 
 import TeacherDashboard from './app/teacher/dashboard';
 // import TeacherAttendance from './app/teacher/TeacherAttendance';
-import TeacherSelfAttendance from './app/teacher/TeacherAttendance'; // <-- Add this import
 import MyStudents from './app/teacher/MyStudents';
+import TeacherSelfAttendance from './app/teacher/TeacherAttendance'; // <-- Add this import
 
-import MyProfile from './app/components/MyProfile';
 import LandingPage from './app/components/LandingPage';
+import MyProfile from './app/components/MyProfile';
 import SplashScreen from './app/components/SplashScreen'; // <-- Add this import
 // import TextEditor from './components/NotificationListing';
 import PrincipalDashboard from './app/principal/Dashboard'; // <-- Add this import
@@ -26,29 +26,34 @@ const Stack = createNativeStackNavigator();
 
 // Placeholder components for missing screens
 // import type { RouteProp } from '@react-navigation/native';
-import Promotion from './app/principal/promotion';
+import Layout from './app/components/Layout';
+import AddNotice from './app/principal/AddNotice';
+import Admissions from './app/principal/Admissions';
+import ComplaintsDispossle from './app/principal/ComplaintsDispossle';
 import DropBox from './app/principal/dropbox';
+import EnquiryManagement from './app/principal/EnquiryManagement';
+import FeeManagementSystem from './app/principal/FeeManagementSystem';
+import IDCardBuilder from './app/principal/IDcard';
+import Promotion from './app/principal/promotion';
 import SchoolGallery from './app/principal/SchoolGallary';
 import Teachers from './app/principal/ShowTeacher';
-import TeacherOnboard from './app/principal/TeacherOnboard';
-import TeacherIDCard from './app/principal/teacherIDcard';
 import StudentOnboarding from './app/principal/StudentOnboarding';
-import Admissions from './app/principal/Admissions';
-import FeeManagementSystem from './app/principal/FeeManagementSystem';
+import TeacherDiaryPrincipal from './app/principal/TeacherDiary';
+import TeacherIDCard from './app/principal/teacherIDcard';
+import TeacherOnboard from './app/principal/TeacherOnboard';
 import TeacherSalaryManagement from './app/principal/TeacherSalaryManagement';
-import EnquiryManagement from './app/principal/EnquiryManagement';
-import AddNotice from './app/principal/AddNotice';
-import Results from './app/student/Results';
 import TransferCertificate from './app/principal/transferCertificate';
-import IDCardBuilder from './app/principal/IDcard';
-import Layout from './app/components/Layout';
-import { configureStatusBar } from './app/utils/statusBarConfig';
+import Complaints from './app/student/Complaints';
+import HomeWork from './app/student/HomeWork';
+import Onlitest from './app/student/OnlineTest';
+import Results from './app/student/Results';
 import Attendance from './app/teacher/Attendance';
 import MyTeacherIDCard from './app/teacher/MyTeacherIDCard';
-import TeacherUploadResults from './app/teacher/TeacherUploadResults';
-import TeacherHomework from './app/teacher/teacherHomework';
 import OnlineTestCreate from './app/teacher/OnlineTestexam';
-import Onlitest from './app/student/OnlineTest';
+import DiaryItem from './app/teacher/TeacherDairy';
+import TeacherHomework from './app/teacher/teacherHomework';
+import TeacherUploadResults from './app/teacher/TeacherUploadResults';
+import { configureStatusBar } from './app/utils/statusBarConfig';
 // import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 // import TeacherSelfAttendance from './app/teacher/TeacherAttendance';
 
@@ -124,6 +129,25 @@ export default function App() {
               <StudentDashboard {...props} />
             </Layout>
           )}
+          
+        />
+        <Stack.Screen
+
+        // Complaints page for students
+          name="Complaints"
+          children={props => (
+            <Layout>
+              <Complaints {...props} />
+            </Layout>
+          )}
+        />
+        <Stack.Screen
+          name="HomeWork"
+          children={props => (  
+            <Layout>
+                <HomeWork {...props} />
+            </Layout>
+          )}
         />
         <Stack.Screen
           name="StudentResults"
@@ -172,6 +196,14 @@ export default function App() {
           children={props => (
             <Layout>
               <TeacherDashboard {...props} />
+            </Layout>
+          )}
+        />
+        <Stack.Screen
+          name="DiaryItem"
+          children={props => (
+            <Layout>
+              <DiaryItem {...props} />
             </Layout>
           )}
         />
@@ -366,6 +398,23 @@ export default function App() {
           children={props => (
             <Layout>
               <Results {...props} />
+            </Layout>
+          )}
+        />
+
+        <Stack.Screen
+          name="TeacherDiary"
+          children={props => (
+            <Layout>
+              <TeacherDiaryPrincipal {...props} />
+            </Layout>
+          )}
+        />
+        <Stack.Screen
+          name="ComplaintsDispossle"
+          children={props => (
+            <Layout>
+              <ComplaintsDispossle {...props} />
             </Layout>
           )}
         />

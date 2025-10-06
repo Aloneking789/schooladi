@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/create';
+const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/create';
 
 const questionTypeOptions = [
 	{ label: 'Objective', value: 'objective' },
@@ -50,7 +50,7 @@ const OnlineTestexam = () => {
 			if (!token) return;
 			setLoadingTests(true);
 			try {
-				const res = await fetch('https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests', {
+				const res = await fetch('https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests', {
 					headers: { 'Authorization': `Bearer ${token}` },
 				});
 				const data = await res.json();
@@ -220,7 +220,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/start`, {
+												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/start`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
@@ -239,7 +239,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/stop`, {
+												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/stop`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
@@ -264,7 +264,7 @@ const OnlineTestexam = () => {
 													{
 														text: 'Delete', style: 'destructive', onPress: async () => {
 															try {
-																const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}`, {
+																const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}`, {
 																	method: 'DELETE',
 																	headers: { 'Authorization': `Bearer ${token}` },
 																});

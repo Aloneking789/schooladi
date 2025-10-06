@@ -1,1165 +1,391 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Modal,
-  TextInput,
-  Platform,
-} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_BASE_URL = "https://api.pbmpublicschool.in/api";
+const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
+
+const examTypes = [
+	'Periodic I',
+	'Note Book',
+	'Half Yearly Exam',
+	'Periodic II',
+	'Note Book II ',
+	'Annual Exam',
+	'Test April',
+	'Test May',
+	'Test Jun',
+	'Test July',
+	'Test Aug',
+	'Test Setember',
+	'Test Oct',
+	'Test Nov',
+	'Test Dec',
+	'Test Jan',
+	'Test Fer',
+	'Test march',
+	'Periodic Test I',
+	'Monthly Test',
+];
+
+// map exam type to max marks used to auto-fill maxMarks per subject
+const examMaxMap = {
+	'Monthly Test': 10,
+	'Test April': 10,
+	'Test May': 10,
+	'Test Jun': 10,
+	'Test July': 10,
+	'Test Aug': 10,
+	'Test Setember': 10,
+	'Test Oct': 10,
+	'Test Nov': 10,
+	'Test Dec': 10,
+	'Test Jan': 10,
+	'Test Fer': 10,
+	'Test march': 10,
+	'Periodic I': 40,
+	'Periodic Test I': 40,
+	'Periodic II': 40,
+	'Note Book': 10,
+	'Note Book II ': 10,
+	'Half Yearly Exam': 50,
+	'Annual Exam': 50,
+};
 
 const TeacherUploadResults = () => {
-  const [selectedClass, setSelectedClass] = useState("");
-  const [selectedClassId, setSelectedClassId] = useState("");
-  const [selectedSection, setSelectedSection] = useState("");
-  const [selectedExamType, setSelectedExamType] = useState("");
-  const [sessionId, setSessionId] = useState("a267d756-f4e9-40f5-97ef-33b4c9f967f0");
-  const [file, setFile] = useState(null);
-  const [csvData, setCsvData] = useState([]);
-  const [headerError, setHeaderError] = useState("");
-  const [students, setStudents] = useState([]);
-  const [showStudents, setShowStudents] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [classes, setClasses] = useState([]);
-  const [schoolId, setSchoolId] = useState(null);
-  const [teacherId, setTeacherId] = useState("");
-  const [teacherInfo, setTeacherInfo] = useState(null);
-  const [classId, setClassId] = useState("");
-  const [token, setToken] = useState("");
-  const [subjectConfigs, setSubjectConfigs] = useState({});
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
-  const [studentResults, setStudentResults] = useState({});
-  const [examResults, setExamResults] = useState([]);
-  const [editingResult, setEditingResult] = useState(null);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editForm, setEditForm] = useState({
-    marksArray: [],
-    subject: "",
-    semester: "",
-  });
-
-  const examTypes = [
-    "Periodic I",
-    "Note Book",
-    "Half Yearly Exam",
-    "Periodic II",
-    "Note Book II",
-    "Annual Exam",
-  ];
-
-  const showAlert = (title, message, type = 'info') => {
-    Alert.alert(title, message);
-  };
-
-  const handleClassChange = (classId) => {
-    setSelectedClassId(classId);
-    const selectedClass = classes.find((cls) => cls.id === classId);
-    setSelectedClass(selectedClass?.name || "");
-    setSelectedSection("");
-    setFile(null);
-    setCsvData([]);
-    setHeaderError("");
-  };
-
-  const selectedClassObj = classes.find(
-    (cls) => String(cls.id) === String(selectedClassId)
-  );
-  const sections = selectedClassObj?.sections || [];
-
-  useEffect(() => {
-    const getUserData = async () => {
-      try {
-        const userDataRaw = await AsyncStorage.getItem('teacher_user');
-        const tokenRaw = await AsyncStorage.getItem('teacher_token');
-
-        if (userDataRaw && tokenRaw) {
-          const teacherData = JSON.parse(userDataRaw);
-          setTeacherInfo(teacherData);
-          setTeacherId(teacherData.id || teacherData.user?.id || '');
-          setSchoolId(teacherData.schoolId?.toString() || teacherData.user?.schools?.[0]?.id || '');
-          setClassId(teacherData.classId || teacherData.user?.classId || '');
-          // also preselect the class id in the selector state
-          setSelectedClassId(teacherData.classId || teacherData.user?.classId || '');
-          setToken(tokenRaw);
-        }
-      } catch (error) {
-        console.error('Failed to load user data from storage', error);
-        Alert.alert('Error', 'Failed to load teacher information');
-      }
-    };
-    getUserData();
-  }, []);
-
-  useEffect(() => {
-    if (!schoolId || !token) return;
-
-    const fetchClasses = async () => {
-      try {
-        // If teacher has an assigned classId, try to fetch only that class to limit the selector
-        const assignedClassId = classId || (teacherInfo && (teacherInfo.classId || teacherInfo.user?.classId));
-
-        if (assignedClassId) {
-          // Try to fetch the specific class by id if API supports it
-          try {
-            const resp = await fetch(`${API_BASE_URL}/classes/${schoolId}/${assignedClassId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (resp.ok) {
-              const cls = await resp.json();
-              // normalize: API may return { class: {...} } or the class object directly
-              const classItem = cls.class || cls.data || cls || null;
-              if (classItem) {
-                setClasses(Array.isArray(classItem) ? classItem : [classItem]);
-                // preselect in case it's missing
-                setSelectedClassId(assignedClassId);
-                setSelectedClass(classItem.name || '');
-                return;
-              }
-            }
-          } catch (e) {
-            // fallback to fetching all classes
-            console.warn('Failed to fetch single class, falling back to classes list', e);
-          }
-        }
-
-        // Fallback: fetch all classes for the school
-        const response = await fetch(`${API_BASE_URL}/classes/${schoolId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        setClasses(data.classes || []);
-      } catch (error) {
-        showAlert("Error", "Failed to load classes");
-      }
-    };
-    fetchClasses();
-  }, [schoolId, token]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!selectedClass || !schoolId || !token) return;
-
-      setLoading(true);
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/admission/students/by-school/${schoolId}?class=${selectedClass}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch students");
-        }
-
-        const data = await response.json();
-        const studentsData = data.students || [];
-        setStudents(studentsData);
-
-        try {
-          const subjects = await fetchSubjectsForClass();
-          setSubjectConfigs({ [selectedClass]: subjects });
-        } catch (error) {
-          console.error("Error fetching subjects:", error);
-          setSubjectConfigs({});
-        }
-      } catch (err) {
-        console.error("Error fetching data:", err.message);
-        showAlert("Error", err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (selectedClass && schoolId && token) {
-      fetchData();
-    }
-  }, [selectedClass, schoolId, token]);
-
-  const fetchSubjectsForClass = async () => {
-    try {
-      if (!selectedClassId || !schoolId || !token) {
-        throw new Error("Missing required data");
-      }
-
-      const response = await fetch(
-        `${API_BASE_URL}/classes/${selectedClassId}/subjects?schoolId=${schoolId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch subjects");
-      }
-
-      const data = await response.json();
-
-      if (!data.success || !data.subjects || data.subjects.length === 0) {
-        throw new Error("No subjects found");
-      }
-
-      return data.subjects;
-    } catch (error) {
-      console.error("Error fetching subjects:", error);
-      showAlert("Error", error.message || "Failed to fetch subjects");
-      return [];
-    }
-  };
-
-  const fetchStudentsAndResults = async () => {
-    if (!selectedClass || !selectedSection || !schoolId || !token) return;
-
-    setLoading(true);
-
-    try {
-      let allResults = [];
-      try {
-        const resultsResponse = await fetch(
-          `${API_BASE_URL}/result/results/school/${schoolId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (resultsResponse.ok) {
-          const data = await resultsResponse.json();
-          if (Array.isArray(data)) {
-            allResults = data;
-          } else if (Array.isArray(data.results)) {
-            allResults = data.results;
-          } else if (Array.isArray(data.data)) {
-            allResults = data.data;
-          }
-        }
-      } catch (err) {
-        console.warn("Error fetching school results", err);
-        allResults = [];
-      }
-
-      const studentsResponse = await fetch(
-        `${API_BASE_URL}/admission/students/by-school/${schoolId}?class=${selectedClass}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!studentsResponse.ok) {
-        throw new Error("Failed to fetch students");
-      }
-
-      const data = await studentsResponse.json();
-      const studentsArray = data.students && Array.isArray(data.students) ? data.students : [];
-
-      const filteredStudents = studentsArray.filter(
-        (student) =>
-          student.class_ === selectedClass &&
-          student.sectionclass === selectedSection
-      );
-
-      const resultsMap = {};
-      filteredStudents.forEach((student) => {
-        resultsMap[student.id] = allResults.filter(
-          (result) => result.studentId === student.id
-        );
-      });
-
-      setStudentResults(resultsMap);
-      setStudents(filteredStudents);
-    } catch (err) {
-      showAlert("Error", "Failed to fetch students and results");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStudentsAndResults();
-  }, [selectedClass, selectedSection]);
-
-  const fetchExamResultsForSchool = async () => {
-    if (!schoolId || !token) return;
-
-    try {
-      const res = await fetch(
-        `${API_BASE_URL}/result/exam-results/school/1`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const data = await res.json();
-      const rows = Array.isArray(data) ? data : data.data || data.results || [];
-
-      if (!res.ok) {
-        console.error("Failed to fetch exam results, status:", res.status);
-        setExamResults([]);
-        return;
-      }
-
-      setExamResults(rows || []);
-    } catch (err) {
-      console.error("Error fetching exam results:", err);
-      setExamResults([]);
-    }
-  };
-
-  useEffect(() => {
-    if (schoolId && token) fetchExamResultsForSchool();
-  }, [schoolId, token]);
-
-  const generateSampleCSV = async () => {
-    if (!students || !Array.isArray(students) || students.length === 0) {
-      showAlert("Error", "No students found for selected class and section");
-      return;
-    }
-
-    if (!selectedExamType) {
-      showAlert("Error", "Please select an examination type");
-      return;
-    }
-
-    let subjects = subjectConfigs[selectedClass];
-
-    if (!subjects || subjects.length === 0) {
-      subjects = await fetchSubjectsForClass();
-      setSubjectConfigs({ ...subjectConfigs, [selectedClass]: subjects });
-    }
-
-    if (!subjects || subjects.length === 0) {
-      showAlert("Error", "No subjects found for selected class");
-      return;
-    }
-
-    const headers = [
-      "Student_Sr_Number",
-      "rollNumber",
-      "studentName",
-      "studentId",
-      "schoolId",
-      "classId",
-      "class_",
-      "sectionclass",
-      "examinationType",
-      ...subjects.flatMap((subject) => [
-        `${subject.name} obtainted marks`,
-        `${subject.name} MaxMark`,
-      ]),
-    ];
-
-    let csvContent = headers.join(",") + "\n";
-
-    students.forEach((student, idx) => {
-      const defaultMax = 100;
-      const subjectMarks = subjects.flatMap(() => ["0", String(defaultMax)]);
-
-      const row = [
-        student.Student_Sr_Number || "",
-        student.rollNumber || "",
-        student.studentName || "",
-        student.id || "",
-        schoolId || "",
-        student.classId || selectedClassId || "",
-        student.class_ || selectedClass || "",
-        student.sectionclass || selectedSection || "",
-        selectedExamType || "",
-        ...subjectMarks,
-      ];
-
-      const escaped = row.map((field) => {
-        if (field === null || field === undefined) return "";
-        const str = String(field);
-        if (str.includes(",") || str.includes('"')) {
-          return '"' + str.replace(/"/g, '""') + '"';
-        }
-        return str;
-      });
-
-      csvContent += escaped.join(",") + "\n";
-    });
-
-    try {
-      const fileName = `class_${selectedClass || selectedClassId}${selectedSection ? "_" + selectedSection : ""
-        }_${selectedExamType || "exam"}_results_template.csv`;
-
-      const fileUri = FileSystem.documentDirectory + fileName;
-      await FileSystem.writeAsStringAsync(fileUri, csvContent);
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
-      } else {
-        showAlert("Success", "CSV file generated successfully");
-      }
-    } catch (error) {
-      console.error('Error saving CSV:', error);
-      showAlert("Error", "Failed to generate CSV file");
-    }
-  };
-
-  const handleFileSelect = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'text/csv',
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled) {
-        return;
-      }
-
-      const file = result.assets[0];
-      setFile(file);
-      setCsvData([]);
-      setHeaderError("");
-
-      // Immediately upload the selected file
-      handleUpload(file);
-    } catch (error) {
-      console.error('Error selecting file:', error);
-      showAlert("Error", "Failed to select file");
-    }
-  };
-
-  const handleUpload = async (uploadFile) => {
-    const fileToUpload = uploadFile || file;
-    if (!fileToUpload) {
-      showAlert("Error", "Please select a file to upload");
-      return;
-    }
-
-    if (!schoolId) {
-      showAlert("Error", "School ID is not available");
-      return;
-    }
-
-    if (!token) {
-      showAlert("Error", "Please login to continue");
-      return;
-    }
-
-    setUploadLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: fileToUpload.uri,
-        type: 'text/csv',
-        name: fileToUpload.name || 'results.csv',
-      });
-      formData.append('examType', selectedExamType);
-      formData.append('sessionId', sessionId);
-
-      const response = await fetch(`${API_BASE_URL}/result/import-csv`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to upload results");
-      }
-
-      const result = await response.json();
-      showAlert(
-        "Success",
-        `Successfully processed results: ${result.created} created, ${result.updated} updated`
-      );
-
-      // Reset form
-      setFile(null);
-      setCsvData([]);
-      setHeaderError("");
-      setSelectedClass("");
-      setSelectedSection("");
-      setSelectedExamType("");
-      setStudents([]);
-      setStudentResults({});
-
-      // Refresh the results
-      await fetchStudentsAndResults();
-    } catch (error) {
-      console.error("Upload error:", error);
-      showAlert("Error", error.message || "Error uploading results");
-    } finally {
-      setUploadLoading(false);
-    }
-  };
-
-  const saveEditedResult = async () => {
-    if (!editingResult || !token) return;
-
-    const payload = {};
-    if (Array.isArray(editForm.marksArray) && editForm.marksArray.length > 0) {
-      payload.marks = editForm.marksArray.map((m) => ({
-        subject: m.subject,
-        component: m.component,
-        obtained: typeof m.obtained === "number" && !Number.isNaN(m.obtained) ? Number(m.obtained) : null,
-      }));
-    }
-    if (editForm.subject !== "") payload.subject = editForm.subject;
-    if (editForm.semester !== "") payload.semester = editForm.semester;
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/result/results/${editingResult.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to update result");
-      }
-
-      const updated = await res.json();
-
-      setExamResults((prev) =>
-        prev.map((er) => {
-          if (er.id !== updated.id) return er;
-          const merged = { ...er, ...updated };
-          if (Array.isArray(updated.marks)) {
-            merged.marks = updated.marks;
-          }
-          return merged;
-        })
-      );
-
-      setEditingResult(null);
-      setEditModalVisible(false);
-      showAlert("Success", "Result updated successfully");
-    } catch (err) {
-      console.error("Failed to update result:", err);
-      showAlert("Error", err.message || "Failed to update result");
-    }
-  };
-
-  const renderStudentsTable = () => {
-    if (!showStudents || students.length === 0) return null;
-
-    return (
-      <View style={styles.tableContainer}>
-        <ScrollView horizontal>
-          <View>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderText, { width: 60 }]}>Sr. No.</Text>
-              <Text style={[styles.tableHeaderText, { width: 150 }]}>Student Name</Text>
-              <Text style={[styles.tableHeaderText, { width: 100 }]}>Roll Number</Text>
-              <Text style={[styles.tableHeaderText, { width: 80 }]}>Class</Text>
-              {Array.isArray(subjectConfigs[selectedClass]) &&
-                subjectConfigs[selectedClass].map((subject, index) => (
-                  <Text
-                    key={`${subject.id}-${index}`}
-                    style={[styles.tableHeaderText, { width: 100 }]}
-                  >
-                    {subject.name}
-                  </Text>
-                ))}
-              <Text style={[styles.tableHeaderText, { width: 100 }]}>Total Marks</Text>
-            </View>
-            {students.map((student, index) => {
-              const studentResult = studentResults[student.id] || [];
-              const totalMarks = studentResult.reduce(
-                (sum, result) => sum + (result.marks || 0),
-                0
-              );
-
-              return (
-                <View key={student.id || index} style={styles.tableRow}>
-                  <Text style={[styles.tableCellText, { width: 60 }]}>
-                    {student.Student_Sr_Number}
-                  </Text>
-                  <Text style={[styles.tableCellText, { width: 150 }]}>
-                    {student.studentName}
-                  </Text>
-                  <Text style={[styles.tableCellText, { width: 100 }]}>
-                    {student.rollNumber}
-                  </Text>
-                  <Text style={[styles.tableCellText, { width: 80 }]}>
-                    {student.class_}
-                  </Text>
-                  {Array.isArray(subjectConfigs[selectedClass]) &&
-                    subjectConfigs[selectedClass].map((subject, subIndex) => (
-                      <Text
-                        key={`${subject.id || subject}-${subIndex}`}
-                        style={[styles.tableCellText, { width: 100 }]}
-                      >
-                        -
-                      </Text>
-                    ))}
-                  <Text style={[styles.tableCellText, { width: 100 }]}>
-                    {totalMarks}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </View>
-    );
-  };
-
-  const renderExamResults = () => {
-    if (!examResults || examResults.length === 0) return null;
-
-    const filtered = examResults.filter(
-      (r) => r.class?.name === selectedClass || r.classId === selectedClassId
-    );
-    const byExamType = selectedExamType
-      ? filtered.filter((r) => r.examType === selectedExamType)
-      : filtered;
-
-    const columns = new Set();
-    byExamType.forEach((r) => {
-      (r.marks || []).forEach((m) => columns.add(`${m.subject} ${m.component}`));
-    });
-    const cols = Array.from(columns);
-
-    return (
-      <View style={styles.tableContainer}>
-        <Text style={styles.sectionTitle}>Exam Results</Text>
-        <ScrollView horizontal>
-          <View>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderText, { width: 60 }]}>Sr. No.</Text>
-              <Text style={[styles.tableHeaderText, { width: 150 }]}>Student Name</Text>
-              <Text style={[styles.tableHeaderText, { width: 100 }]}>Roll Number</Text>
-              <Text style={[styles.tableHeaderText, { width: 80 }]}>Class</Text>
-              {cols.map((c) => (
-                <Text key={c} style={[styles.tableHeaderText, { width: 100 }]}>
-                  {c}
-                </Text>
-              ))}
-              <Text style={[styles.tableHeaderText, { width: 100 }]}>Actions</Text>
-              <Text style={[styles.tableHeaderText, { width: 100 }]}>Total Marks</Text>
-            </View>
-            {byExamType.map((r, idx) => {
-              const marksMap = {};
-              (r.marks || []).forEach((m) => {
-                marksMap[`${m.subject} ${m.component}`] = m.obtained;
-              });
-
-              return (
-                <View key={r.id} style={styles.tableRow}>
-                  <Text style={[styles.tableCellText, { width: 60 }]}>
-                    {idx + 1}
-                  </Text>
-                  <Text style={[styles.tableCellText, { width: 150 }]}>
-                    {r.student?.studentName || "-"}
-                  </Text>
-                  <Text style={[styles.tableCellText, { width: 100 }]}>
-                    {r.rollNumber || "-"}
-                  </Text>
-                  <Text style={[styles.tableCellText, { width: 80 }]}>
-                    {r.class?.name || r.classId || "-"}
-                  </Text>
-                  {cols.map((c) => (
-                    <Text key={c} style={[styles.tableCellText, { width: 100 }]}>
-                      {marksMap[c] ?? "-"}
-                    </Text>
-                  ))}
-                  <View style={[styles.actionButtons, { width: 100 }]}>
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={() => {
-                        setEditingResult(r);
-                        setEditForm({
-                          marksArray: (r.marks || []).map((m) => ({
-                            subject: m.subject,
-                            component: m.component,
-                            obtained: typeof m.obtained !== "undefined" ? m.obtained : "",
-                          })),
-                          subject: r.subject || "",
-                          semester: r.semester || "",
-                        });
-                        setEditModalVisible(true);
-                      }}
-                    >
-                      <Text style={styles.buttonText}>Edit</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={[styles.tableCellText, { width: 100 }]}>
-                    {r.obtainedMarks ?? "-"}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </View>
-    );
-  };
-
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Upload Results</Text>
-      </View>
-
-      <View style={styles.formContainer}>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Class</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedClassId}
-              onValueChange={handleClassChange}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select Class" value="" />
-              {classes.map((cls) => (
-                <Picker.Item key={cls.id} label={cls.name} value={cls.id} />
-              ))}
-            </Picker>
-          </View>
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Section</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedSection}
-              onValueChange={(value) => {
-                setSelectedSection(value);
-                setFile(null);
-                setCsvData([]);
-                setHeaderError("");
-              }}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select Section" value="" />
-              {sections.map((section) => (
-                <Picker.Item
-                  key={section.id}
-                  label={section.sectionName}
-                  value={section.sectionName}
-                />
-              ))}
-            </Picker>
-          </View>
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Examination Type</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedExamType}
-              onValueChange={(value) => {
-                setSelectedExamType(value);
-                setFile(null);
-                setCsvData([]);
-                setHeaderError("");
-              }}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select Examination Type" value="" />
-              {examTypes.map((type) => (
-                <Picker.Item key={type} label={type} value={type} />
-              ))}
-            </Picker>
-          </View>
-        </View>
-
-        {/* <View style={styles.formGroup}>
-          <Text style={styles.label}>Session ID</Text>
-          <TextInput
-            value={sessionId}
-            onChangeText={setSessionId}
-            placeholder="Session ID"
-            style={styles.textInput}
-          />
-        </View> */}
-
-        {/* <TouchableOpacity
-          style={[
-            styles.button,
-            (!selectedClass || !selectedSection || !selectedExamType) && styles.buttonDisabled,
-          ]}
-          onPress={generateSampleCSV}
-          disabled={!selectedClass || !selectedSection || !selectedExamType}
-        >
-          <Text style={styles.buttonText}>Download Sample CSV</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button} onPress={handleFileSelect}>
-          <Text style={styles.buttonText}>Select CSV File</Text>
-        </TouchableOpacity> */}
-
-        {file && (
-          <Text style={styles.fileInfo}>Selected: {file.name}</Text>
-        )}
-
-        {headerError ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{headerError}</Text>
-          </View>
-        ) : null}
-
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#000" />
-            <Text style={styles.loadingText}>Loading students...</Text>
-          </View>
-        )}
-
-        {students.length > 0 && !loading && !file && (
-          <View style={styles.studentsContainer}>
-            <View style={styles.studentsHeader}>
-              <Text style={styles.sectionTitle}>Students List</Text>
-              <TouchableOpacity
-                style={styles.toggleButton}
-                onPress={() => setShowStudents(!showStudents)}
-              >
-                <Text style={styles.toggleButtonText}>
-                  {showStudents ? "Hide" : "Show"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {renderStudentsTable()}
-          </View>
-        )}
-
-        {renderExamResults()}
-
-        {uploadLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#000" />
-            <Text style={styles.loadingText}>Uploading...</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Edit Modal */}
-      <Modal
-        visible={editModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Edit Result</Text>
-
-            <View style={styles.modalContent}>
-              {/* Per-subject marks editor */}
-              <Text style={[styles.label, { marginBottom: 6 }]}>Subject Marks</Text>
-              <View style={styles.marksList}>
-                {Array.isArray(editForm.marksArray) && editForm.marksArray.length > 0 ? (
-                  editForm.marksArray.map((m, i) => (
-                    <View key={`${m.subject}-${m.component}-${i}`} style={styles.markRow}>
-                      <Text style={styles.markLabel}>
-                        {m.subject} {m.component ? `(${m.component})` : ''}
-                      </Text>
-                      <TextInput
-                        style={styles.markInput}
-                        keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                        value={m.obtained === '' || m.obtained === null ? '' : String(m.obtained)}
-                        onChangeText={(val) => {
-                          setEditForm((prev) => {
-                            const nextMarks = Array.isArray(prev.marksArray) ? [...prev.marksArray] : [];
-                            nextMarks[i] = { ...nextMarks[i], obtained: val === '' ? '' : Number(val) };
-                            return { ...prev, marksArray: nextMarks };
-                          });
-                        }}
-                        placeholder="Obtained"
-                      />
-                    </View>
-                  ))
-                ) : (
-                  <Text style={{ color: '#666', fontSize: 13 }}>No subject marks available for this result.</Text>
-                )}
-              </View>
-
-              <Text style={styles.label}>Subject</Text>
-              <TextInput
-                value={editForm.subject}
-                onChangeText={(value) =>
-                  setEditForm(prev => ({ ...prev, subject: value }))
-                }
-                style={styles.textInput}
-                placeholder="Subject"
-              />
-
-              <Text style={styles.label}>Semester</Text>
-              <TextInput
-                value={editForm.semester}
-                onChangeText={(value) =>
-                  setEditForm(prev => ({ ...prev, semester: value }))
-                }
-                style={styles.textInput}
-                placeholder="Semester"
-              />
-            </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => setEditModalVisible(false)}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={saveEditedResult}
-              >
-                <Text style={styles.buttonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </ScrollView>
-  );
+	const [token, setToken] = useState('');
+	const [classId, setClassId] = useState('');
+	const [schoolId, setSchoolId] = useState('');
+
+	const [subjects, setSubjects] = useState([]);
+	const [students, setStudents] = useState([]);
+
+	const [selectedExam, setSelectedExam] = useState('');
+	const [selectedStudent, setSelectedStudent] = useState(null);
+
+	const [marksState, setMarksState] = useState({});
+	const [loading, setLoading] = useState(true);
+	const [submitting, setSubmitting] = useState(false);
+
+	const [showExamModal, setShowExamModal] = useState(false);
+	const [showStudentModal, setShowStudentModal] = useState(false);
+
+	// existing marks keyed by sessionId
+	const [existingMarks, setExistingMarks] = useState({});
+	const [marksLoading, setMarksLoading] = useState(false);
+
+	useEffect(() => {
+		const loadUser = async () => {
+			try {
+				const userRaw = await AsyncStorage.getItem('teacher_user');
+				const tokenRaw = await AsyncStorage.getItem('teacher_token');
+				if (userRaw) {
+					const u = JSON.parse(userRaw);
+					setClassId(u.classId || u.user?.classId || '');
+					setSchoolId(u.schoolId?.toString() || u.user?.schools?.[0]?.id || '');
+				}
+				if (tokenRaw) setToken(tokenRaw);
+			} catch (e) {
+				console.warn('Failed to load user/token', e);
+			}
+		};
+		loadUser();
+	}, []);
+
+	useEffect(() => {
+		const fetchData = async () => {
+			if (!classId || !token) {
+				setLoading(false);
+				return;
+			}
+			setLoading(true);
+			try {
+				// fetch subjects for class
+				const subjectsRes = await axios.get(`${API_BASE_URL}/classes/${classId}/subjects`, {
+					params: { schoolId },
+					headers: { Authorization: `Bearer ${token}` },
+				});
+				if (subjectsRes.data && subjectsRes.data.success) {
+					setSubjects(subjectsRes.data.subjects || []);
+				} else {
+					setSubjects([]);
+				}
+
+				// fetch students by class
+				const studentsRes = await axios.get(`${API_BASE_URL}/admission/students/by-class/${classId}`, {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+				if (studentsRes.data && studentsRes.data.success) {
+					setStudents(studentsRes.data.students || []);
+				} else {
+					setStudents([]);
+				}
+			} catch (e) {
+				console.warn('Failed to fetch subjects/students', e);
+				setSubjects([]);
+				setStudents([]);
+			}
+			setLoading(false);
+		};
+		fetchData();
+	}, [classId, token, schoolId]);
+
+	// when exam type changes, auto-fill maxMarks for each subject
+	useEffect(() => {
+		if (!selectedExam || !subjects.length) return;
+		const maxVal = examMaxMap[selectedExam] ?? 100;
+		const next = {};
+		subjects.forEach((s) => {
+			next[s.name] = {
+				obtained: marksState[s.name]?.obtained ?? '',
+				maxMarks: maxVal,
+			};
+		});
+		setMarksState(next);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [selectedExam, subjects]);
+
+	useEffect(() => {
+		const fetchMarks = async () => {
+			if (!selectedStudent || !token) {
+				setExistingMarks({});
+				return;
+			}
+			setMarksLoading(true);
+			try {
+				const res = await axios.get(`${API_BASE_URL}/result/marks/by-student/${selectedStudent.id}`, {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+				if (res.data && res.data.success) {
+					setExistingMarks(res.data.data || {});
+				} else {
+					setExistingMarks({});
+				}
+			} catch (e) {
+				console.warn('Failed to fetch existing marks', e);
+				setExistingMarks({});
+			}
+			setMarksLoading(false);
+		};
+		fetchMarks();
+	}, [selectedStudent, token]);
+
+	const updateObtained = (subjectName, value) => {
+		// allow only numbers
+		const numeric = value.replace(/[^0-9]/g, '');
+		setMarksState((prev) => ({
+			...prev,
+			[subjectName]: {
+				...(prev[subjectName] || {}),
+				obtained: numeric,
+			},
+		}));
+	};
+
+	const submitMarks = async () => {
+		if (!selectedStudent) {
+			Alert.alert('Select student', 'Please select a student');
+			return;
+		}
+		if (!selectedExam) {
+			Alert.alert('Select exam', 'Please select an exam type');
+			return;
+		}
+		const marksPayload = [];
+		for (const subj of subjects) {
+			const state = marksState[subj.name] || {};
+			const obtained = parseInt(state.obtained || '0', 10);
+			const maxMarks = state.maxMarks ?? (examMaxMap[selectedExam] ?? 100);
+			// skip empty entries (entirely blank)
+			if (state.obtained === '' ) continue;
+			// clamp obtained
+			const clamped = Math.max(0, Math.min(obtained, maxMarks));
+			marksPayload.push({ subject: subj.name, component: 'Theory', maxMarks, obtained: clamped });
+			const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
+
+		}
+
+		if (!marksPayload.length) {
+			Alert.alert('No marks', 'Please enter marks for at least one subject');
+			return;
+		}
+
+		const body = {
+			studentId: selectedStudent.id,
+			classId,
+			examType: selectedExam,
+			marks: marksPayload,
+		};
+
+		setSubmitting(true);
+		try {
+			const res = await axios.post(`${API_BASE_URL}/result/add-mark`, body, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			if (res.data && res.data.success) {
+				Alert.alert('Success', 'Marks uploaded successfully');
+				// clear marks
+				setMarksState({});
+				setSelectedExam('');
+			} else {
+				console.warn('Upload failed', res.data);
+				Alert.alert('Failed', 'Server responded with an error');
+			}
+		} catch (e) {
+			console.warn('Submit error', e);
+			Alert.alert('Error', 'Failed to submit marks');
+		}
+		setSubmitting(false);
+	};
+
+	if (loading) {
+		return (
+			<View style={styles.center}>
+				<ActivityIndicator size="large" color="#667eea" />
+				<Text style={{ marginTop: 8 }}>Loading...</Text>
+			</View>
+		);
+	}
+
+	return (
+		<SafeAreaView style={styles.container}>
+			<ScrollView contentContainerStyle={styles.content}>
+				<Text style={styles.title}>Upload Marks</Text>
+
+				<Text style={styles.label}>Select Exam Type</Text>
+				<TouchableOpacity style={styles.selector} onPress={() => setShowExamModal(true)}>
+					<Text style={styles.selectorText}>{selectedExam || 'Choose exam type'}</Text>
+					<Ionicons name="chevron-down" size={20} color="#374151" />
+				</TouchableOpacity>
+
+				<Text style={styles.label}>Select Student</Text>
+				<TouchableOpacity style={styles.selector} onPress={() => setShowStudentModal(true)}>
+					<Text style={styles.selectorText}>{selectedStudent ? selectedStudent.studentName : 'Choose a student'}</Text>
+					<Ionicons name="chevron-down" size={20} color="#374151" />
+				</TouchableOpacity>
+
+				<View style={styles.subjectsHeader}>
+					<Text style={{ fontWeight: '700' }}>Subjects</Text>
+					<Text style={{ color: '#6b7280' }}>{subjects.length} subjects</Text>
+				</View>
+
+				{subjects.map((s) => (
+					<View key={s.id} style={styles.subjectRow}>
+						<View style={{ flex: 1 }}>
+							<Text style={styles.subjectName}>{s.name}</Text>
+							<Text style={styles.subjectCode}>{s.subjectCode}</Text>
+						</View>
+						<View style={styles.marksBox}>
+							<Text style={styles.maxLabel}>Max</Text>
+							<Text style={styles.maxValue}>{marksState[s.name]?.maxMarks ?? (examMaxMap[selectedExam] ?? '-')}</Text>
+						</View>
+						<TextInput
+							keyboardType="numeric"
+							placeholder="Obt"
+							value={marksState[s.name]?.obtained?.toString() ?? ''}
+							onChangeText={(t) => updateObtained(s.name, t)}
+							style={styles.obtInput}
+						/>
+					</View>
+				))}
+
+				<TouchableOpacity style={[styles.submitBtn, submitting && { opacity: 0.6 }]} onPress={submitMarks} disabled={submitting}>
+					{submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Upload Marks</Text>}
+				</TouchableOpacity>
+
+				{/* Existing marks for selected student */}
+				<View style={{ marginTop: 18 }}>
+					<Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Existing Marks</Text>
+					{marksLoading ? (
+						<View style={{ padding: 12 }}><ActivityIndicator /></View>
+					) : Object.keys(existingMarks || {}).length === 0 ? (
+						<Text style={{ color: '#6b7280' }}>No marks found for selected student.</Text>
+					) : (
+						Object.entries(existingMarks).map(([sessionKey, sessions]) => {
+							return (
+								<View key={sessionKey} style={{ marginBottom: 12, backgroundColor: '#fff', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#eef2ff' }}>
+									<Text style={{ fontWeight: '800' }}>Session: {sessionKey}</Text>
+									{Array.isArray(sessions) ? sessions.map((sess) => (
+										<View key={sess.examResultId || Math.random()} style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' }}>
+											<Text style={{ fontWeight: '700' }}>{sess.examType} — {sess.academicYear}</Text>
+											{Array.isArray(sess.marks) && sess.marks.map((m) => (
+												<View key={m.id} style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+													<Text>{m.subject} ({m.component})</Text>
+													<Text>{m.obtained}/{m.maxMarks}</Text>
+												</View>
+											))}
+										</View>
+									)) : null}
+								</View>
+							);
+						})
+					)}
+				</View>
+
+				{/* Exam type modal */}
+				<Modal visible={showExamModal} animationType="slide" transparent>
+					<View style={styles.modalOverlay}>
+						<View style={styles.modalContent}>
+							<Text style={styles.modalTitle}>Choose Exam</Text>
+							<FlatList data={examTypes} keyExtractor={(i) => i} renderItem={({ item }) => (
+								<TouchableOpacity style={styles.modalRow} onPress={() => { setSelectedExam(item); setShowExamModal(false); }}>
+									<Text>{item}</Text>
+								</TouchableOpacity>
+							)} />
+							<TouchableOpacity style={styles.modalClose} onPress={() => setShowExamModal(false)}>
+								<Text style={{ color: '#ef4444' }}>Close</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</Modal>
+
+				{/* Student modal */}
+				<Modal visible={showStudentModal} animationType="slide" transparent>
+					<View style={styles.modalOverlay}>
+						<View style={styles.modalContent}>
+							<Text style={styles.modalTitle}>Choose Student</Text>
+							<FlatList data={students} keyExtractor={(it) => it.id} renderItem={({ item }) => (
+								<TouchableOpacity style={styles.modalRow} onPress={() => { setSelectedStudent(item); setShowStudentModal(false); }}>
+									<Text>{item.studentName} ({item.rollNumber || item.id.slice(0,4)})</Text>
+								</TouchableOpacity>
+							)} />
+							<TouchableOpacity style={styles.modalClose} onPress={() => setShowStudentModal(false)}>
+								<Text style={{ color: '#ef4444' }}>Close</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</Modal>
+
+			</ScrollView>
+		</SafeAreaView>
+	);
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  formContainer: {
-    padding: 20,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fff',
-  },
-  picker: {
-    height: 50,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#000',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  buttonDisabled: {
-    backgroundColor: '#999',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  fileInfo: {
-    fontSize: 14,
-    color: '#555',
-    marginTop: 8,
-  },
-  errorContainer: {
-    backgroundColor: '#fff5f5',
-    padding: 10,
-    borderRadius: 8,
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: '#ffd6d6',
-  },
-  errorText: {
-    color: '#b00020',
-    fontSize: 14,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  loadingText: {
-    marginTop: 8,
-    color: '#333',
-  },
-  studentsContainer: {
-    marginTop: 12,
-  },
-  studentsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
-  },
-  marksList: {
-    maxHeight: 220,
-    marginBottom: 8,
-  },
-  markRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  markLabel: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
-    marginRight: 8,
-  },
-  markInput: {
-    width: 90,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    textAlign: 'center',
-    backgroundColor: '#fff',
-  },
-  toggleButton: {
-    backgroundColor: '#eee',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  toggleButtonText: {
-    color: '#333',
-    fontWeight: '600',
-  },
-  tableContainer: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#fafafa',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    alignItems: 'center',
-  },
-  tableHeaderText: {
-    fontWeight: '700',
-    color: '#333',
-    paddingHorizontal: 6,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f1f1',
-    alignItems: 'center',
-  },
-  tableCellText: {
-    color: '#444',
-    paddingHorizontal: 6,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  editButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '90%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
-    color: '#222',
-  },
-  modalContent: {
-    marginVertical: 8,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 12,
-  },
-  cancelButton: {
-    backgroundColor: '#888',
-    marginRight: 8,
-  },
+	container: { flex: 1, backgroundColor: '#f8fafc' },
+	content: { padding: 16, paddingBottom: 40 },
+	center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+	title: { fontSize: 22, fontWeight: '800', color: '#403ae2', marginBottom: 12 },
+	label: { color: '#374151', marginTop: 8, marginBottom: 6, fontWeight: '600' },
+	selector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e6e9f2' },
+	selectorText: { color: '#111827' },
+	subjectsHeader: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, marginBottom: 8, alignItems: 'center' },
+	subjectRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 10, marginBottom: 8, borderWidth: 1, borderColor: '#eef2ff' },
+	subjectName: { fontWeight: '700' },
+	subjectCode: { color: '#6b7280', fontSize: 12 },
+	marksBox: { alignItems: 'center', marginHorizontal: 8 },
+	maxLabel: { fontSize: 12, color: '#6b7280' },
+	maxValue: { fontWeight: '700' },
+	obtInput: { width: 68, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb', paddingHorizontal: 8, textAlign: 'center', backgroundColor: '#fff' },
+	submitBtn: { marginTop: 16, backgroundColor: '#4f46e5', padding: 14, borderRadius: 12, alignItems: 'center' },
+	submitText: { color: '#fff', fontWeight: '700' },
+	modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+	modalContent: { width: '90%', maxHeight: '70%', backgroundColor: '#fff', borderRadius: 12, padding: 12 },
+	modalTitle: { fontWeight: '800', fontSize: 16, marginBottom: 8 },
+	modalRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+	modalClose: { marginTop: 8, alignItems: 'center' },
 });
 
 export default TeacherUploadResults;
+

@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from "react";
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
+  ScrollView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useNavigation } from '@react-navigation/native';
-import { useFocusEffect } from '@react-navigation/native';
-import Layout from "../components/Layout"; // <-- Import Layout
 
 const quickActions = [
   { label: "Add Student", icon: "👤", route: "StudentOnboarding" },
@@ -20,10 +18,11 @@ const quickActions = [
   { label: "Salary Management", icon: "₹", route: "TeacherSalaryManagement" },
   { label: "Generate TC", icon: "🆔", route: "transferCertificate" },
   { label: "Send Notice", icon: "✉️", route: "AddNotice" },
+  { label: "Teacher Diary", icon: "📔", route: "TeacherDiary" },
+  { label: "Complaints", icon: "🛠️", route: "ComplaintsDispossle" },
 ];
 
 const extraSections = [
-  { label: "Upload Result", icon: "📤", route: "UploadResult" },
   { label: "Teacher ID Card", icon: "🪪", route: "teacherIDcard" },
 ];
 
@@ -35,8 +34,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { StackNavigationProp } from '@react-navigation/stack';
 // import { Sidebar } from "lucide-react-native";
-import Sidebar from "../components/Sidebar";
-import { forceBlackStatusBar, hideStatusBar } from "../utils/statusBarConfig";
+import { hideStatusBar } from "../utils/statusBarConfig";
 
 type RootStackParamList = {
   StudentOnboarding: undefined;
@@ -77,14 +75,7 @@ const Dashboard = () => {
   ]);
   const [admissionsCount, setAdmissionsCount] = useState(0);
   const [admissionsLoading, setAdmissionsLoading] = useState(true);
-  // Placeholder attendance data
-  const attendanceData = [
-    { day: "Mon", Present: 85, Absent: 15 },
-    { day: "Tue", Present: 92, Absent: 8 },
-    { day: "Wed", Present: 88, Absent: 12 },
-    { day: "Thu", Present: 95, Absent: 5 },
-    { day: "Fri", Present: 90, Absent: 10 },
-  ];
+  // (Student Attendance chart removed per request)
 
   // Notices/messages state
   const [messages, setMessages] = useState<any[]>([]);
@@ -235,8 +226,6 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Overview</Text>
-
           {/* First Row - Students and Teachers */}
           <View style={styles.statsRow}>
             <View style={[styles.statsCard, styles.studentCard]}>

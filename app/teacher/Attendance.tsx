@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -63,6 +64,7 @@ const Attendance = () => {
   const [schoolId, setSchoolId] = useState('');
   const [classId, setClassId] = useState('');
   const [token, setToken] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
@@ -73,6 +75,14 @@ const Attendance = () => {
   const classOptions = React.useMemo(() => {
     return classes.map((cls) => ({ label: cls.name, value: cls.id }));
   }, [classes]);
+
+  const sortByRoll = (arr: Student[]) => {
+    return arr.slice().sort((a, b) => {
+      const ra = Number(a.rollNumber) || Number.POSITIVE_INFINITY;
+      const rb = Number(b.rollNumber) || Number.POSITIVE_INFINITY;
+      return ra - rb;
+    });
+  };
 
   // Fetch classes from API
   useEffect(() => {
@@ -159,7 +169,8 @@ const Attendance = () => {
           // If no class is selected, auto-select the first available classId
           if (!selectedClass && studentsData.students.length > 0) {
             setSelectedClass(studentsData.students[0].classId);
-            setStudents(studentsData.students.filter((student: Student) => student.classId === studentsData.students[0].classId));
+            const initial = studentsData.students.filter((student: Student) => student.classId === studentsData.students[0].classId);
+            setStudents(sortByRoll(initial));
             // Reset attendance for new class
             attendanceMap = {};
           } else {
@@ -167,7 +178,7 @@ const Attendance = () => {
             const filtered: Student[] = studentsData.students.filter(
               (student: Student) => student.classId === (selectedClass || classToUse)
             );
-            setStudents(filtered);
+            setStudents(sortByRoll(filtered));
             // Reset attendance for new class
             attendanceMap = {};
           }
@@ -229,23 +240,30 @@ const Attendance = () => {
   };
 
   const handleSubmit = async () => {
+    const classToUse = selectedClass || classId;
     try {
-      const classToUse = selectedClass || classId;
-      // Only submit attendance for students in the selected class
-      const classStudentIds = students.map((s) => s.id);
-      const filteredAttendance = Object.entries(attendance)
-        .filter(([studentId]) => classStudentIds.includes(studentId))
-        .map(([studentId, status]) => ({ studentId, status }));
+      setSubmitting(true);
+      // Build attendance list for ALL students in the selected class,
+      // defaulting to 'present' if not explicitly set.
+      const studentsForClass = sortByRoll(students);
+      const attendanceList = studentsForClass.map((s) => ({
+        studentId: s.id,
+        status: attendance[s.id] || 'present',
+      }));
+
       const payload = {
         date: new Date(date).toISOString(),
         classId: classToUse,
         teacherId,
-        attendance: filteredAttendance,
+        attendance: attendanceList,
       };
+
       const { data } = await axios.post(`${API_BASE_URL}/attendance/mark`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
+        // Re-order students state by roll number after successful submit
+        setStudents(sortByRoll(studentsForClass));
         Alert.alert('Success', 'Attendance submitted successfully!');
       } else {
         Alert.alert('Failed', data.message || 'Could not mark attendance');
@@ -258,6 +276,8 @@ const Attendance = () => {
         errorMessage = err.response?.data?.message || errorMessage;
       }
       Alert.alert('Error', errorMessage);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -301,7 +321,7 @@ const Attendance = () => {
         </Text>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+  <View style={styles.content}>
         {/* View Mode Toggle */}
         <View style={styles.toggleContainer}>
           <TouchableOpacity
@@ -332,116 +352,111 @@ const Attendance = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Daily View */}
+        {/* Daily View: use FlatList so list scrolls and Submit button can be fixed */}
         {viewMode === 'daily' && (
           <View style={styles.section}>
-            {/* Class Dropdown */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 16, fontWeight: '500', marginBottom: 6 }}>Select Class:</Text>
-              <View style={{ backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db' }}>
-                <Picker
-                  selectedValue={selectedClass}
-                  onValueChange={(itemValue) => setSelectedClass(itemValue)}
-                  style={{ height: 44, color: '#000' }}
-                >
-                  <Picker.Item label="Select Class" value="" />
-                  {classOptions.map((option) => (
-                    <Picker.Item key={option.value} label={option.label} value={option.value} />
-                  ))}
-                </Picker>
-              </View>
-            </View>
-
-            <View style={styles.searchContainer}>
-              <TextInput
-                placeholder="Search by name or ID..."
-                value={searchTerm}
-                onChangeText={setSearchTerm}
-                style={styles.searchInput}
-                placeholderTextColor="#999"
-              />
-            </View>
-
-            {/* Attendance Summary */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-              {(() => {
-                let present = 0, absent = 0;
-                filteredStudents.forEach(student => {
-                  const status = attendance[student.id] || 'present';
-                  if (status === 'present') present++;
-                  else absent++;
-                });
+            <FlatList
+              data={filteredStudents}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item: student }) => {
+                const status = attendance[student.id] || 'present';
                 return (
-                  <>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>Present: {present}</Text>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#dc2626' }}>Absent: {absent}</Text>
-                  </>
-                );
-              })()}
-            </View>
-            <View style={styles.studentsContainer}>
-              {filteredStudents.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No students found</Text>
-                </View>
-              ) : (
-                filteredStudents.map((student) => {
-                  const status = attendance[student.id] || 'present';
-                  return (
-                    <View key={student.id} style={styles.studentCard}>
-                      <View style={styles.studentInfo}>
-                        <Text style={styles.studentName}>{student.studentName}</Text>
-                        <Text style={styles.studentId}>ID: {student.idcardNumber}</Text>
-                        <Text style={styles.studentId}>Father: {student.fatherName || 'N/A'}</Text>
-                        <Text style={styles.studentId}>Roll Number: {student.rollNumber}</Text>
-                        <Text style={styles.studentId}>Class: {student.class_}</Text>
-                      </View>
-                      <View style={styles.attendanceButtons}>
-                        <TouchableOpacity
-                          onPress={() => handleAttendanceChange(student.id, 'present')}
-                          style={[
-                            styles.attendanceButton,
-                            styles.presentButton,
-                            status === 'present' && styles.presentButtonActive
-                          ]}
-                        >
-                          <Text style={[
-                            styles.attendanceButtonText,
-                            status === 'present' && styles.attendanceButtonTextActive
-                          ]}>Present</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleAttendanceChange(student.id, 'absent')}
-                          style={[
-                            styles.attendanceButton,
-                            styles.absentButton,
-                            status === 'absent' && styles.absentButtonActive
-                          ]}
-                        >
-                          <Text style={[
-                            styles.attendanceButtonText,
-                            status === 'absent' && styles.attendanceButtonTextActive
-                          ]}>Absent</Text>
-                        </TouchableOpacity>
-                      </View>
+                  <View key={student.id} style={styles.studentCard}>
+                    <View style={styles.studentInfo}>
+                      <Text style={styles.studentName}>{student.studentName}</Text>
+                      <Text style={styles.studentId}>ID: {student.idcardNumber}</Text>
+                      <Text style={styles.studentId}>Father: {student.fatherName || 'N/A'}</Text>
+                      <Text style={styles.studentId}>Roll Number: {student.rollNumber}</Text>
+                      <Text style={styles.studentId}>Class: {student.class_}</Text>
                     </View>
-                  );
-                })
-              )}
-            </View>
+                    <View style={styles.attendanceButtons}>
+                      <TouchableOpacity
+                        onPress={() => handleAttendanceChange(student.id, 'present')}
+                        style={[
+                          styles.attendanceButton,
+                          styles.presentButton,
+                          status === 'present' && styles.presentButtonActive
+                        ]}
+                      >
+                        <Text style={[
+                          styles.attendanceButtonText,
+                          status === 'present' && styles.attendanceButtonTextActive
+                        ]}>Present</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleAttendanceChange(student.id, 'absent')}
+                        style={[
+                          styles.attendanceButton,
+                          styles.absentButton,
+                          status === 'absent' && styles.absentButtonActive
+                        ]}
+                      >
+                        <Text style={[
+                          styles.attendanceButtonText,
+                          status === 'absent' && styles.attendanceButtonTextActive
+                        ]}>Absent</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              }}
+              ListHeaderComponent={
+                <View>
+                  {/* Class Dropdown */}
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '500', marginBottom: 6 }}>Select Class:</Text>
+                    <View style={{ backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db' }}>
+                      <Picker
+                        selectedValue={selectedClass}
+                        onValueChange={(itemValue) => setSelectedClass(itemValue)}
+                        style={{ height: 44, color: '#000' }}
+                      >
+                        <Picker.Item label="Select Class" value="" />
+                        {classOptions.map((option) => (
+                          <Picker.Item key={option.value} label={option.label} value={option.value} />
+                        ))}
+                      </Picker>
+                    </View>
+                  </View>
 
-            <TouchableOpacity
-              onPress={handleSubmit}
-              style={styles.submitButton}
-            >
-              <Text style={styles.submitButtonText}>Submit Attendance</Text>
-            </TouchableOpacity>
+                  <View style={styles.searchContainer}>
+                    <TextInput
+                      placeholder="Search by name or ID..."
+                      value={searchTerm}
+                      onChangeText={setSearchTerm}
+                      style={styles.searchInput}
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+
+                  {/* Attendance Summary */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                    {(() => {
+                      let present = 0, absent = 0;
+                      filteredStudents.forEach(student => {
+                        const status = attendance[student.id] || 'present';
+                        if (status === 'present') present++;
+                        else absent++;
+                      });
+                      return (
+                        <>
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>Present: {present}</Text>
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#dc2626' }}>Absent: {absent}</Text>
+                        </>
+                      );
+                    })()}
+                  </View>
+                </View>
+              }
+              ListFooterComponent={<View style={{ height: 140 }} />}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            />
           </View>
         )}
 
         {/* History View */}
         {viewMode === 'history' && (
-          <View style={styles.section}>
+          <ScrollView style={styles.section}>
             {/* Class Dropdown for History */}
             <View style={{ marginBottom: 16 }}>
               <Text style={{ fontSize: 16, fontWeight: '500', marginBottom: 6 }}>Select Class:</Text>
@@ -515,9 +530,22 @@ const Attendance = () => {
                 ))
               )}
             </View>
-          </View>
+          </ScrollView>
         )}
-      </ScrollView>
+      </View>
+
+      {/* Fixed footer submit button so it's never hidden by bottom nav */}
+      {viewMode === 'daily' && (
+        <View style={styles.footer} pointerEvents="box-none">
+          <TouchableOpacity
+            onPress={handleSubmit}
+            style={[styles.submitButton, submitting ? { opacity: 0.6 } : null]}
+            disabled={submitting}
+          >
+            <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit Attendance'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -721,7 +749,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    marginBottom: 16, // Ensure margin is consistent
+    marginBottom: 100, // Ensure margin is consistent
     height: 48, // Ensure button height is consistent 
 
   },
@@ -841,6 +869,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 12,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
   },
 });
 

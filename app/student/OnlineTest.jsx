@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/class-tests';
+const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/class-tests';
 
 const OnlineTest = () => {
   const [classId, setClassId] = useState('');
@@ -155,7 +155,7 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
     try {
       const token = await AsyncStorage.getItem('student_token');
       setLoading(true);
-      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${selectedTest.id}/submit`, {
+      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${selectedTest.id}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
   const fetchTestResult = async (testId, token) => {
     try {
       setLoading(true);
-      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${testId}/my-result`, {
+      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${testId}/my-result`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const data = await res.json();

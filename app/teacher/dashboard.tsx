@@ -1,4 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 // Type definitions
 type Student = {
   id: string;
@@ -13,14 +18,12 @@ type AttendanceRecord = {
   status: string;
   date: string;
 };
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 
 const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
+import { useNavigation } from '@react-navigation/native';
 const TeacherDashboard = () => {
+  const navigation = useNavigation() as any;
   const [students, setStudents] = useState<Student[]>([]);
   const [goodStudents, setGoodStudents] = useState<(Student & { present: number })[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +32,9 @@ const TeacherDashboard = () => {
   const [classId, setClassId] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
+  const [presentTotal, setPresentTotal] = useState<number | null>(null);
+  const [absentTotal, setAbsentTotal] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     const getUserData = async () => {
@@ -56,7 +62,7 @@ const TeacherDashboard = () => {
         return;
       }
       try {
-        // Fetch students
+        // Fetch students for this school and filter by classId
         const studentsRes = await axios.get(
           `${API_BASE_URL}/admission/students/by-school/${schoolId}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -67,6 +73,8 @@ const TeacherDashboard = () => {
             (student: Student) => student.classId === classId
           );
           setStudents(classStudents);
+        } else {
+          setStudents([]);
         }
 
         // Fetch attendance history for this class (last 60 days)
@@ -86,7 +94,11 @@ const TeacherDashboard = () => {
         if (attendanceRes.data.success) {
           history = attendanceRes.data.data;
           setAttendanceHistory(history);
+        } else {
+          setAttendanceHistory([]);
         }
+
+        // present/absent totals are fetched separately based on selectedDate
 
         // Calculate attendance percentage for each student
         const attendanceCount: { [studentId: string]: number } = {};
@@ -94,7 +106,7 @@ const TeacherDashboard = () => {
         history.forEach((record: AttendanceRecord) => {
           if (!attendanceCount[record.studentId]) attendanceCount[record.studentId] = 0;
           attendanceCount[record.studentId]++;
-          if (record.status === 'Present') {
+          if (record.status === 'absent') {
             if (!presentCount[record.studentId]) presentCount[record.studentId] = 0;
             presentCount[record.studentId]++;
           }
@@ -109,21 +121,65 @@ const TeacherDashboard = () => {
         setGoodStudents(good);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
+        setStudents([]);
+        setAttendanceHistory([]);
+        setGoodStudents([]);
       }
       setLoading(false);
     };
     fetchStudentsAndAttendance();
   }, [schoolId, classId, token]);
 
+  // Fetch present/absent totals for selected date
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!classId || !schoolId || !token) return;
+      try {
+        const res = await axios.get(`${API_BASE_URL}/attendance/by-date-class`, {
+          params: {
+            date: new Date(selectedDate).toISOString(),
+            classId,
+            schoolId,
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.data && res.data.success) {
+          const todays: AttendanceRecord[] = res.data.data || [];
+          const presentCount = todays.filter((r) => String(r.status).toLowerCase() === 'present').length;
+          const totalStudents = students.length;
+          setPresentTotal(presentCount);
+          setAbsentTotal(Math.max(0, totalStudents - presentCount));
+        } else {
+          setPresentTotal(null);
+          setAbsentTotal(null);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch counts for selected date', e);
+        setPresentTotal(null);
+        setAbsentTotal(null);
+      }
+    };
+    fetchCounts();
+  }, [selectedDate, classId, schoolId, token, students]);
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>Teacher Dashboard</Text>
+      {/* Watermark background */}
+      {/* Gradient Header */}
+      <View style={styles.gradientHeaderWrap}>
+        <LinearGradient
+          colors={["#ab7aefcc", "#5b88e3cc", "#e9ecf3cc", "#7f90dd99", "#a758f799"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientHeader}
+        >
+          <Text style={styles.heading}>Teacher Dashboard</Text>
+        </LinearGradient>
       </View>
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#000" />
-          <Text style={{ marginTop: 12, color: '#6b7280' }}>Loading dashboard...</Text>
+          <ActivityIndicator size="large" color="#9daae4ff" />
+          <Text style={{ marginTop: 12, color: '#cedcf7ff' }}>Loading dashboard...</Text>
         </View>
       ) : (
         <ScrollView
@@ -134,52 +190,122 @@ const TeacherDashboard = () => {
           {/* Summary Cards */}
           <View style={styles.statsSection}>
             <View style={styles.cardsRow}>
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="people" color="#fff" size={20} />
-                  </View>
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle}>Total Students</Text>
-                    <Text style={styles.cardValue}>{students.length}</Text>
-                  </View>
+              <View style={[styles.card, styles.cardShadow, { backgroundColor: '#e9ecf3' }]}> 
+                <View style={[styles.iconContainer, { backgroundColor: '#667eea' }]}> 
+                  <Ionicons name="people" size={20} color="#fff" />
+                </View>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle}>Total Students</Text>
+                  <Text style={styles.cardValue}>{Array.isArray(students) ? students.length : 0}</Text>
                 </View>
               </View>
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="star" color="#fff" size={20} />
-                  </View>
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle}>Good Students</Text>
-                    <Text style={styles.cardValue}>{goodStudents.length}</Text>
-                  </View>
+              <View style={[styles.card, styles.cardShadow, { backgroundColor: '#f1d00f22' }]}> 
+                <View style={[styles.iconContainer, { backgroundColor: '#f1d00f' }]}> 
+                  <Ionicons name="checkmark-done" size={20} color="#fff" />
                 </View>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle}>Good Students</Text>
+                  <Text style={styles.cardValue}>{Array.isArray(goodStudents) ? goodStudents.length : 0}</Text>
+                </View>
+              </View>
+              <View style={[styles.card, styles.cardShadow, { backgroundColor: '#c3f0ca' }]}> 
+                <View style={[styles.iconContainer, { backgroundColor: '#059669' }]}> 
+                  <Ionicons name="calendar" size={20} color="#fff" />
+                </View>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle}>Attendance Records</Text>
+                  <Text style={styles.cardValue}>{Array.isArray(attendanceHistory) ? attendanceHistory.length : 0}</Text>
+                </View>
+              </View>
+            </View>
+            {/* Date selector + Present / Absent Totals */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginLeft: 4 }}>
+              <TouchableOpacity onPress={() => {
+                const d = new Date(selectedDate);
+                d.setDate(d.getDate() - 1);
+                setSelectedDate(d.toISOString().split('T')[0]);
+              }} style={{ padding: 8, marginRight: 8, backgroundColor: '#eef2ff', borderRadius: 8 }}>
+                <Text style={{ color: '#4f46e5' }}>Prev</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setSelectedDate(new Date().toISOString().split('T')[0])} style={{ padding: 8, marginRight: 8, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb' }}>
+                <Text style={{ color: '#374151' }}>Today</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                const d = new Date(selectedDate);
+                d.setDate(d.getDate() + 1);
+                setSelectedDate(d.toISOString().split('T')[0]);
+              }} style={{ padding: 8, marginRight: 8, backgroundColor: '#eef2ff', borderRadius: 8 }}>
+                <Text style={{ color: '#4f46e5' }}>Next</Text>
+              </TouchableOpacity>
+              <Text style={{ marginLeft: 8, color: '#6b7280' }}>{selectedDate}</Text>
+            </View>
+
+            <View style={styles.totalsRow}>
+              <View style={styles.presentBadge}>
+                <Text style={styles.totalsLabel}>Present</Text>
+                <Text style={styles.totalsValue}>{presentTotal === null ? '-' : presentTotal}</Text>
+              </View>
+              <View style={styles.absentBadge}>
+                <Text style={styles.totalsLabel}>Absent</Text>
+                <Text style={styles.totalsValue}>{absentTotal === null ? '-' : absentTotal}</Text>
               </View>
             </View>
           </View>
-          {/* Good Students List */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="medal" color="#6b7280" size={20} />
-              <Text style={styles.sectionTitle}>Good Students (&gt;90% Attendance)</Text>
+
+          {/* Quick Actions Section */}
+          <View style={styles.quickActionsSection}>
+            <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+            <View style={styles.quickActionsRow}>
+              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Attendance')}>
+                <Ionicons name="checkbox-outline" size={28} color="#667eea" />
+                <Text style={styles.quickActionText}>Take Attendance</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('MyStudents')}>
+                <Ionicons name="school-outline" size={28} color="#f78316" />
+                <Text style={styles.quickActionText}>My Students</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('TeacherUploadResults')}>
+                <Ionicons name="cloud-upload-outline" size={28} color="#059669" />
+                <Text style={styles.quickActionText}>Upload Results</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.sectionContent}>
-              {goodStudents.length === 0 ? (
-                <Text style={{ color: '#888' }}>No good students found for this period.</Text>
-              ) : (
-                goodStudents.map((student: Student & { present: number }) => (
-                  <View key={student.id} style={styles.listItem}>
-                    <View style={styles.listItemLeft}>
-                      <Text style={styles.listItemTitle}>{student.studentName}</Text>
-                      <Text style={styles.listItemSub}>Present Days: {student.present}</Text>
-                      <Text style={styles.listItemSub}>ID: {student.idcardNumber}</Text>
-                    </View>
-                  </View>
-                ))
-              )}
+            <View style={styles.quickActionsRow}>
+              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('TeacherHomework')}>
+                <Ionicons name="book-outline" size={28} color="#9506d2" />
+                <Text style={styles.quickActionText}>Homework</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('OnlineTestCreate')}>
+                <Ionicons name="flask-outline" size={28} color="#f1d00f" />
+                <Text style={styles.quickActionText}>Online Test</Text>
+              </TouchableOpacity>
+                            <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('DiaryItem')}>
+                <Ionicons name="book" size={28} color="#71d293ff" />
+                <Text style={styles.quickActionText}>Teacher Diary</Text>
+              </TouchableOpacity>
+              <View style={[styles.quickActionBtn, { opacity: 0 }]}/>
             </View>
           </View>
+
+          {/* Large modern card for info */}
+          {/* <View style={styles.largeCardContainer}> */}
+            {/* <View style={styles.largeCard}> */}
+                <Image
+        source={require('../../assets/images/pmblogo.jpg')}
+        style={styles.watermark}
+        resizeMode="contain"
+        accessible={false}
+      />
+              {/* <Text style={styles.largeCardIconWrap}>
+                <Ionicons name="book" size={15} color="#2941a9ff" />
+              </Text>
+              <Text style={styles.largeCardTitle}>Welcome!</Text>
+              <Text style={styles.largeCardDesc}>
+                Access your most important features quickly: take attendance, view students, upload marks, and more. Use the bottom navigation for fast access.
+              </Text> */}
+            {/* </View>
+          </View> */}
+          {/* End content */}
+          {/* ...existing code... */}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -190,36 +316,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    position: 'relative',
   },
-
-  // Header
-  header: {
-    backgroundColor: '#fff',
+  // Gradient Header
+  gradientHeaderWrap: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 8,
+    elevation: 4,
+  },
+  gradientHeader: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingTop: 36,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heading: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#fff',
     textAlign: 'center',
+    letterSpacing: 1,
+    textShadowColor: '#667eea99',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
-
   // Content
   content: {
     flex: 1,
+    zIndex: 1,
   },
   scrollContent: {
     paddingBottom: 20,
   },
-
   // Stats Section
   statsSection: {
     padding: 16,
@@ -230,136 +363,175 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginHorizontal: 2,
+  },
+  cardShadow: {
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 4,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: '#000',
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 10,
   },
   cardInfo: {
     flex: 1,
   },
   cardTitle: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#6b7280',
     marginBottom: 2,
   },
   cardValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#222',
   },
-
-  // Sections
-  section: {
-    backgroundColor: '#fff',
+  // Quick Actions
+  quickActionsSection: {
     marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 8,
+    marginBottom: 18,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 18,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    borderColor: '#e9ecf3',
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  sectionContent: {
-    padding: 12,
-  },
-
-  // List Items
-  listItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 8,
-  },
-  listItemLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  listItemRight: {
-    alignItems: 'flex-end',
-  },
-  listItemTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
-    marginBottom: 2,
-  },
-  listItemSub: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  listItemTime: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#374151',
-  },
-
-  // Status Badges
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 4,
-  },
-  statusGraded: {
-    backgroundColor: '#f0f9ff',
-    borderWidth: 1,
-    borderColor: '#e0f2fe',
-  },
-  statusSubmitted: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#374151',
+  quickActionsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#403ae2',
+    marginBottom: 10,
     textAlign: 'center',
   },
-  statusDate: {
-    fontSize: 10,
-    color: '#9ca3af',
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  quickActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#f8f9fb',
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#e9ecf3',
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quickActionText: {
+    fontSize: 13,
+    color: '#222',
+    fontWeight: '600',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  // Large Card
+  largeCardContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+    zIndex: 1,
+    marginTop: 50,
+    height: 220,
+  },
+  largeCard: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 28,
+    alignItems: 'center',
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecf3',
+  },
+  largeCardIconWrap: {
+    backgroundColor: '#e9ecf3',
+    borderRadius: 32,
+    padding: 18,
+    marginBottom: 16,
+  },
+  largeCardTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#403ae2',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  watermark: {
+    position: 'absolute',
+    width: 150,
+    height: 200,
+    opacity: 0.5,
+    alignSelf: 'center',
+    top: 488,
+    transform: [{ rotate: '-0deg' }],
+    zIndex: 0,
+  },
+  largeCardDesc: {
+    fontSize: 15,
+    color: '#374151',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  totalsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 12,
+    marginTop: 12,
+    marginLeft: 4,
+  },
+  presentBadge: {
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  absentBadge: {
+    backgroundColor: '#fef2f2',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  totalsLabel: {
+    fontSize: 12,
+    color: '#4b5563',
+  },
+  totalsValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
   },
 });
 

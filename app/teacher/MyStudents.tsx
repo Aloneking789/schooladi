@@ -42,8 +42,8 @@ interface Student {
   email: string | null;
   academicYear: string;
   subjects: string;
-  parentLoguserID: string;
-  parentPassword: string;
+  LoguserID: string;
+  password: string;
   religion: string;
   caste: string;
   isActive: boolean;
@@ -68,6 +68,12 @@ const MyStudents = () => {
   const [uploadTargetStudent, setUploadTargetStudent] = useState<Student | null>(null);
   const [uploadFiles, setUploadFiles] = useState<Record<string, { uri: string; name: string; type: string } | null>>({});
   const [uploadingAll, setUploadingAll] = useState(false);
+  // Complaint modal state
+  const [complaintModalVisible, setComplaintModalVisible] = useState(false);
+  const [complaintStudent, setComplaintStudent] = useState<Student | null>(null);
+  const [complaintTitle, setComplaintTitle] = useState('');
+  const [complaintDescription, setComplaintDescription] = useState('');
+  const [complaintSubmitting, setComplaintSubmitting] = useState(false);
 
   const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
@@ -705,6 +711,9 @@ const MyStudents = () => {
                   <TouchableOpacity style={[styles.smallButton, { backgroundColor: '#fde68a' }]} onPress={() => openUploadModal(student)}>
                     <Text style={[styles.smallButtonText, { color: '#92400e' }]}>Upload Documents</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity style={[styles.smallButton, { backgroundColor: '#fee2e2', marginTop: 8 }]} onPress={() => { setComplaintStudent(student); setComplaintModalVisible(true); }}>
+                    <Text style={[styles.smallButtonText, { color: '#b91c1c' }]}>Report Complaint</Text>
+                  </TouchableOpacity>
                 </View>
 
                 <View style={styles.infoRow}>
@@ -782,31 +791,119 @@ const MyStudents = () => {
                 )} */}
 
                 <View style={styles.parentInfo}>
-                  <Text style={styles.parentInfoTitle}>Parent Login Details</Text>
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>User ID</Text>
-                      <Text style={styles.infoValue}>{student.parentLoguserID}</Text>
-                    </View>
-                    <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Password</Text>
-                      <Text style={styles.infoValue}>{student.parentPassword}</Text>
-                    </View>
-                  </View>
+                  
                   {/* Student Login Details */}
                   <Text style={[styles.parentInfoTitle, { marginTop: 10 }]}>Student Login Details</Text>
                   <View style={styles.infoRow}>
                     <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Loguser (Roll No)</Text>
-                      <Text style={styles.infoValue}>{student.rollNumber}</Text>
+                      <Text style={styles.infoLabel}>Login ID </Text>
+                      <Text style={styles.infoValue}>{student.LoguserID}</Text>
                     </View>
                     <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Password (DOB)</Text>
-                      <Text style={styles.infoValue}>{formatDate(student.dateOfBirth)}</Text>
+                      <Text style={styles.infoLabel}>Password</Text>
+                      <Text style={styles.infoValue}>{student.password}</Text>
                     </View>
                   </View>
                 </View>
               </View>
+              {/* Complaint Modal */}
+              <Modal
+                visible={complaintModalVisible && complaintStudent?.id === student.id}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => {
+                  if (complaintSubmitting) return; // prevent closing while submitting
+                  setComplaintModalVisible(false);
+                  setComplaintStudent(null);
+                  setComplaintTitle('');
+                  setComplaintDescription('');
+                }}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContainer}>
+                    <Text style={styles.modalTitle}>Report Complaint for {student.studentName}</Text>
+                    <TextInput
+                      placeholder="Title"
+                      value={complaintTitle}
+                      onChangeText={setComplaintTitle}
+                      style={[styles.input, complaintSubmitting ? { opacity: 0.6 } : {}]}
+                      editable={!complaintSubmitting}
+                    />
+                    <TextInput
+                      placeholder="Description"
+                      value={complaintDescription}
+                      onChangeText={setComplaintDescription}
+                      style={[styles.input, { height: 120 }, complaintSubmitting ? { opacity: 0.6 } : {}]}
+                      multiline
+                      editable={!complaintSubmitting}
+                    />
+                    <View style={styles.modalActions}>
+                      <TouchableOpacity
+                        style={[styles.modalBtn, { backgroundColor: '#e5e7eb', opacity: complaintSubmitting ? 0.6 : 1 }]}
+                        onPress={() => {
+                          if (complaintSubmitting) return;
+                          setComplaintModalVisible(false);
+                          setComplaintStudent(null);
+                          setComplaintTitle('');
+                          setComplaintDescription('');
+                        }}
+                        disabled={complaintSubmitting}
+                      >
+                        <Text style={{ color: '#111' }}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.modalBtn, { backgroundColor: '#667eea', opacity: complaintSubmitting ? 0.8 : 1 }]}
+                        onPress={async () => {
+                          if (complaintSubmitting) return;
+                          if (!complaintStudent) return;
+                          if (!complaintTitle.trim() || !complaintDescription.trim()) {
+                            Alert.alert('Validation', 'Please enter title and description');
+                            return;
+                          }
+                          try {
+                            setComplaintSubmitting(true);
+                            const url = `${API_BASE_URL}/complaints/complaints/teacher`;
+                            const body = {
+                              studentId: complaintStudent.id,
+                              title: complaintTitle,
+                              description: complaintDescription,
+                            };
+                            const headers: any = {};
+                            if (token) headers.Authorization = `Bearer ${token}`;
+                            const res = await axios.post(url, body, { headers });
+                            if (res.data && res.data.success) {
+                              Toast.show({ type: 'success', text1: 'Complaint submitted' });
+                              Alert.alert('Success', 'Complaint submitted successfully');
+                              // reset modal
+                              setComplaintModalVisible(false);
+                              setComplaintStudent(null);
+                              setComplaintTitle('');
+                              setComplaintDescription('');
+                            } else {
+                              const msg = res.data?.message || 'Failed to submit complaint';
+                              Toast.show({ type: 'error', text1: msg });
+                              Alert.alert('Error', msg);
+                            }
+                          } catch (err) {
+                            console.error('Complaint submit error', err);
+                            Toast.show({ type: 'error', text1: 'Failed to submit complaint' });
+                            Alert.alert('Error', 'Failed to submit complaint');
+                          } finally {
+                            setComplaintSubmitting(false);
+                          }
+                        }}
+                        disabled={complaintSubmitting}
+                      >
+                        {complaintSubmitting ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={{ color: '#fff' }}>Send</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
             </View>
           ))
         )}
@@ -1177,6 +1274,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
     color: '#111827',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    marginBottom: 8,
+    color: '#111827',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 8,
+  },
+  modalBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
   },
   fileRow: {
     flexDirection: 'row',

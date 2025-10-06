@@ -4,17 +4,17 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useUser } from "./UserContext";
 
@@ -54,7 +54,7 @@ const Login = () => {
     };
 
     const apiEndpoints = {
-      student: "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/auth/student/login",
+      student: "https://api.pbmpublicschool.in/api/auth/student/login",
       teacher: "https://api.pbmpublicschool.in/api/auth/teacher/login",
       principal: "https://api.pbmpublicschool.in/api/auth/principal/login",
     };

@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { rem } from '../utils/responsive';
 
-const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/create';
+const API_URL = 'https://api.pbmpublicschool.inapi/onlineTest/online-test/create';
 
 const questionTypeOptions = [
 	{ label: 'Objective', value: 'objective' },
@@ -32,7 +33,7 @@ const OnlineTestexam = () => {
 		// Get teacher classId and token from AsyncStorage (like MyStudents)
 		const getClassIdAndToken = async () => {
 			try {
-				const userDataRaw = await AsyncStorage.getItem('teacher_user');
+				const userDataRaw = await AsyncStorage.getItem('user');
 				const tkn = await AsyncStorage.getItem('teacher_token');
 				if (userDataRaw) {
 					const teacherData = JSON.parse(userDataRaw);
@@ -46,15 +47,18 @@ const OnlineTestexam = () => {
 		};
 		getClassIdAndToken();
 	}, []);
-
 	// Fetch my tests (use teacher's assigned classId when available)
 	useEffect(() => {
+		
 		const fetchMyTests = async () => {
 			if (!token) return;
 			setLoadingTests(true);
 			try {
-				const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests';
-				const url = classId ? `${base}?=${encodeURIComponent(classId)}` : base;
+				const base = 'https://api.pbmpublicschool.inapi/onlineTest/online-test/my-tests/';
+				const url = classId ? `${base}${encodeURIComponent(classId)}` : base;
+				console.log('Fetching my tests from', url);
+				console.log('Using token:', token ? 'Yes' : 'No');
+				console.log('Using classId:', classId || 'No classId');
 				const res = await fetch(url, {
 					headers: { 'Authorization': `Bearer ${token}` },
 				});
@@ -129,7 +133,7 @@ const OnlineTestexam = () => {
 				setLoadingResults(false);
 				return;
 			}
-			const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
+			const url = `https://api.pbmpublicschool.inapi/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
 			const res = await fetch(url, { headers: { Authorization: `Bearer ${tkn}` } });
 			if (!res.ok) {
 				const txt = await res.text();
@@ -207,20 +211,20 @@ const OnlineTestexam = () => {
 					{/* Results Modal */}
 					<Modal visible={resultsModalVisible} animationType="slide" onRequestClose={() => setResultsModalVisible(false)}>
 						<SafeAreaView style={{ flex: 1 }}>
-							<View style={{ flex: 1, padding: 16 }}>
-								<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-									<Text style={{ fontSize: 18, fontWeight: '800' }}>Test Results</Text>
+							<View style={{ flex: 1, padding: rem(16) }}>
+								<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: rem(12) }}>
+									<Text style={{ fontSize: rem(18), fontWeight: '800' }}>Test Results</Text>
 									<TouchableOpacity onPress={() => setResultsModalVisible(false)}><Text style={{ color: '#2563eb' }}>Close</Text></TouchableOpacity>
 								</View>
 								{loadingResults ? <ActivityIndicator /> : submissions.length === 0 ? <Text>No submissions found.</Text> : (
 									<ScrollView>
 										{submissions.map((s) => (
-											<View key={s.id} style={{ backgroundColor: '#fff', padding: 12, borderRadius: 8, marginBottom: 12 }}>
+											<View key={s.id} style={{ backgroundColor: '#fff', padding: rem(12), borderRadius: rem(8), marginBottom: rem(12) }}>
 												<Text style={{ fontWeight: '700' }}>{s.studentName} ({s.class}-{s.section})</Text>
 												<Text>Score: {s.score}</Text>
-												<Text style={{ marginTop: 8, fontWeight: '700' }}>Answers</Text>
+												<Text style={{ marginTop: rem(8), fontWeight: '700' }}>Answers</Text>
 												{Object.keys(s.answers || {}).map((qIndex) => (
-													<View key={qIndex} style={{ marginTop: 6 }}>
+													<View key={qIndex} style={{ marginTop: rem(6) }}>
 														<Text style={{ fontWeight: '600' }}>Q{Number(qIndex) + 1}: {s.answers[qIndex]}</Text>
 													</View>
 												))}
@@ -274,15 +278,15 @@ const OnlineTestexam = () => {
 				<View style={styles.myTestsSection}>
 					<Text style={styles.resultHeader}>My Created Tests</Text>
 					{loadingTests ? (
-						<ActivityIndicator size="small" color="#2563eb" style={{ marginTop: 10 }} />
+						<ActivityIndicator size="small" color="#2563eb" style={{ marginTop: rem(10) }} />
 					) : myTests.length === 0 ? (
-						<Text style={{ color: '#64748b', textAlign: 'center', marginTop: 10 }}>No tests found.</Text>
+						<Text style={{ color: '#64748b', textAlign: 'center', marginTop: rem(10) }}>No tests found.</Text>
 					) : (
 						myTests.map((test, idx) => (
 							<View key={test.id || idx} style={styles.testCard}>
 								<Text style={styles.qText}>{test.subject} - {test.chapterPrompt}</Text>
 								<Text style={styles.testMeta}>Type: {test.questionType} | Created: {new Date(test.createdAt).toLocaleString()}</Text>
-								<View style={{ flexDirection: 'row', gap: 8, marginBottom: 6 }}>
+								<View style={{ flexDirection: 'row', marginBottom: rem(6) }}>
 									<TouchableOpacity
 										style={styles.showQuestionsBtn}
 										onPress={() => {
@@ -295,13 +299,13 @@ const OnlineTestexam = () => {
 											);
 										}}
 									>
-										<Text style={styles.showQuestionsBtnText}>Show Questions</Text>
+										<Text style={styles.showQuestionsBtnText}>Ques</Text>
 									</TouchableOpacity>
 									<TouchableOpacity
 										style={[styles.showQuestionsBtn, { backgroundColor: '#111827' }]}
 										onPress={() => fetchTestResults(test.id)}
 									>
-										<Text style={styles.showQuestionsBtnText}>View Results</Text>
+										<Text style={styles.showQuestionsBtnText}>Result</Text>
 									</TouchableOpacity>
 									<TouchableOpacity
 										style={[styles.startStopBtn, { backgroundColor: '#059669', opacity: test.isStartest ? 0.5 : 1 }]}
@@ -309,7 +313,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/start`, {
+												const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${test.id}/start`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
@@ -328,7 +332,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/stop`, {
+												const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${test.id}/stop`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
@@ -353,7 +357,7 @@ const OnlineTestexam = () => {
 													{
 														text: 'Delete', style: 'destructive', onPress: async () => {
 															try {
-																const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}`, {
+																const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${test.id}`, {
 																	method: 'DELETE',
 																	headers: { 'Authorization': `Bearer ${token}` },
 																});
@@ -387,35 +391,35 @@ const OnlineTestexam = () => {
 
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: '#f3f4f6' },
-	scrollContent: { padding: 20, paddingBottom: 40 },
-	header: { fontSize: 28, fontWeight: '800', marginBottom: 22, color: '#1e293b', textAlign: 'center', letterSpacing: 1 },
-	form: { backgroundColor: '#fff', borderRadius: 16, padding: 22, marginBottom: 28, shadowColor: '#2563eb', shadowOpacity: 0.08, shadowRadius: 12, elevation: 4, borderWidth: 1, borderColor: '#e0e7ef' },
-	label: { fontSize: 16, fontWeight: '700', color: '#334155', marginTop: 12, marginBottom: 6, letterSpacing: 0.2 },
-	input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 12, fontSize: 16, backgroundColor: '#f1f5f9', marginBottom: 8 },
-	inputDisabled: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 12, backgroundColor: '#f1f5f9', marginBottom: 8 },
-	pickerRow: { flexDirection: 'row', gap: 12, marginBottom: 8 },
-	pickerBtn: { flex: 1, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 12, alignItems: 'center', backgroundColor: '#f1f5f9', marginHorizontal: 2 },
-	pickerBtnActive: { backgroundColor: '#2563eb', borderColor: '#2563eb', shadowColor: '#2563eb', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 },
-	pickerBtnText: { color: '#334155', fontWeight: '500', fontSize: 15 },
-	pickerBtnTextActive: { color: '#fff', fontWeight: '700', fontSize: 15 },
-	submitBtn: { backgroundColor: '#2563eb', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 18, shadowColor: '#2563eb', shadowOpacity: 0.10, shadowRadius: 4, elevation: 2 },
-	submitBtnText: { color: '#fff', fontWeight: '800', fontSize: 17, letterSpacing: 0.5 },
-	errorText: { color: '#dc2626', marginTop: 12, textAlign: 'center', fontWeight: '700', fontSize: 15 },
-	resultSection: { marginTop: 28 },
-	resultHeader: { fontSize: 22, fontWeight: '800', color: '#0f172a', marginBottom: 14, textAlign: 'center', letterSpacing: 0.2 },
-	questionCard: { backgroundColor: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#2563eb', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
-	qText: { fontSize: 16, fontWeight: '700', color: '#1e293b', marginBottom: 8 },
-	optionsList: { marginLeft: 10, marginBottom: 8 },
-	optionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
-	optionText: { fontSize: 15, color: '#334155', fontWeight: '500' },
-	answerText: { marginTop: 7, color: '#059669', fontWeight: '700', fontSize: 15 },
-	myTestsSection: { marginTop: 36, marginBottom: 18 },
-	testCard: { backgroundColor: '#f9fafb', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#2563eb', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
-	testMeta: { color: '#64748b', fontSize: 13, marginBottom: 7 },
-	showQuestionsBtn: { backgroundColor: '#9506d2ff', borderRadius: 7, paddingVertical: 9, alignItems: 'center', marginTop: 7, flex: 1, marginRight: 4 },
-	showQuestionsBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-	startStopBtn: { flex: 1, borderRadius: 7, paddingVertical: 9, alignItems: 'center', marginTop: 0, marginRight: 4 },
-	startStopBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+	scrollContent: { padding: rem(20), paddingBottom: rem(40) },
+	header: { fontSize: rem(28), fontWeight: '800', marginBottom: rem(22), color: '#1e293b', textAlign: 'center', letterSpacing: 1 },
+	form: { backgroundColor: '#fff', borderRadius: rem(16), padding: rem(22), marginBottom: rem(28), shadowColor: '#2563eb', shadowOpacity: 0.08, shadowRadius: rem(12), elevation: 4, borderWidth: 1, borderColor: '#e0e7ef' },
+	label: { fontSize: rem(16), fontWeight: '700', color: '#334155', marginTop: rem(12), marginBottom: rem(6), letterSpacing: 0.2 },
+	input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: rem(10), padding: rem(12), fontSize: rem(16), backgroundColor: '#f1f5f9', marginBottom: rem(8) },
+	inputDisabled: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: rem(10), padding: rem(12), backgroundColor: '#f1f5f9', marginBottom: rem(8) },
+	pickerRow: { flexDirection: 'row', marginBottom: rem(8) },
+	pickerBtn: { flex: 1, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: rem(10), padding: rem(12), alignItems: 'center', backgroundColor: '#f1f5f9', marginHorizontal: rem(2) },
+	pickerBtnActive: { backgroundColor: '#2563eb', borderColor: '#2563eb', shadowColor: '#2563eb', shadowOpacity: 0.12, shadowRadius: rem(4), elevation: 2 },
+	pickerBtnText: { color: '#334155', fontWeight: '500', fontSize: rem(15) },
+	pickerBtnTextActive: { color: '#fff', fontWeight: '700', fontSize: rem(15) },
+	submitBtn: { backgroundColor: '#2563eb', borderRadius: rem(10), paddingVertical: rem(14), alignItems: 'center', marginTop: rem(18), shadowColor: '#2563eb', shadowOpacity: 0.10, shadowRadius: rem(4), elevation: 2 },
+	submitBtnText: { color: '#fff', fontWeight: '800', fontSize: rem(17), letterSpacing: 0.5 },
+	errorText: { color: '#dc2626', marginTop: rem(12), textAlign: 'center', fontWeight: '700', fontSize: rem(15) },
+	resultSection: { marginTop: rem(28) },
+	resultHeader: { fontSize: rem(22), fontWeight: '800', color: '#0f172a', marginBottom: rem(14), textAlign: 'center', letterSpacing: 0.2 },
+	questionCard: { backgroundColor: '#f9fafb', borderRadius: rem(12), padding: rem(16), marginBottom: rem(16), borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#2563eb', shadowOpacity: 0.04, shadowRadius: rem(4), elevation: 1 },
+	qText: { fontSize: rem(16), fontWeight: '700', color: '#1e293b', marginBottom: rem(8) },
+	optionsList: { marginLeft: rem(10), marginBottom: rem(8) },
+	optionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: rem(3) },
+	optionText: { fontSize: rem(15), color: '#334155', fontWeight: '500' },
+	answerText: { marginTop: rem(7), color: '#059669', fontWeight: '700', fontSize: rem(15) },
+	myTestsSection: { marginTop: rem(36), marginBottom: rem(18) },
+	testCard: { backgroundColor: '#f9fafb', borderRadius: rem(12), padding: rem(16), marginBottom: rem(16), borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#2563eb', shadowOpacity: 0.04, shadowRadius: rem(4), elevation: 1 },
+	testMeta: { color: '#64748b', fontSize: rem(13), marginBottom: rem(7) },
+	showQuestionsBtn: { backgroundColor: '#9506d2ff', borderRadius: rem(7), paddingVertical: rem(9), alignItems: 'center', marginTop: rem(7), flex: 1, marginRight: rem(4) },
+	showQuestionsBtnText: { color: '#fff', fontWeight: '700', fontSize: rem(15) },
+	startStopBtn: { flex: 1, borderRadius: rem(7), paddingVertical: rem(9), alignItems: 'center', marginTop: 0, marginRight: rem(4) },
+	startStopBtnText: { color: '#fff', fontWeight: '700', fontSize: rem(15) },
 });
 
 export default OnlineTestexam;

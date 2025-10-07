@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
+import { rem } from "../utils/responsive";
 import Navbar from "./Navbar";
 import BottomBar from "./Sidebar";
 
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: rem(12),
     paddingTop: 0,
   },
   overlay: {

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import responsive, { rem } from '../utils/responsive';
 
 const Complaints = ({ token: initialToken, studentId: initialStudentId }) => {
   const [token, setToken] = useState(initialToken || '');
@@ -120,27 +121,30 @@ const Complaints = ({ token: initialToken, studentId: initialStudentId }) => {
       ) : complaints.length === 0 ? (
         <View><Text>No complaints found.</Text></View>
       ) : (
-        <FlatList
-          data={complaints}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={complaintStyles.complaintCard}>
-              <View style={complaintStyles.complaintHeader}>
-                <Text style={complaintStyles.complaintTitle}>{item.title}</Text>
-                <View style={[complaintStyles.statusBadge, item.status === 'pending' ? complaintStyles.pendingBadge : complaintStyles.resolvedBadge]}>
-                  <Text style={complaintStyles.statusText}>{item.status}</Text>
+        // Constrain the FlatList so complaints are scrollable within the dashboard
+        <View style={complaintStyles.listContainer}>
+          <FlatList
+            data={complaints}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={complaintStyles.complaintCard}>
+                <View style={complaintStyles.complaintHeader}>
+                  <Text style={complaintStyles.complaintTitle}>{item.title}</Text>
+                  <View style={[complaintStyles.statusBadge, item.status === 'pending' ? complaintStyles.pendingBadge : complaintStyles.resolvedBadge]}>
+                    <Text style={complaintStyles.statusText}>{item.status}</Text>
+                  </View>
+                </View>
+                <Text style={complaintStyles.complaintDesc}>{item.description}</Text>
+                <Text style={complaintStyles.date}>{new Date(item.createdAt).toLocaleString()}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: rem(6) }}>
+                  <TouchableOpacity style={[complaintStyles.quickActionBtn, { paddingHorizontal: rem(12), paddingVertical: rem(8) }]} onPress={() => { setReplyingComplaint(item); setReplyText(''); setReplyModalVisible(true); }}>
+                    <Text style={{ color: '#111827', fontWeight: '700' }}>Reply</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-              <Text style={complaintStyles.complaintDesc}>{item.description}</Text>
-              <Text style={complaintStyles.date}>{new Date(item.createdAt).toLocaleString()}</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
-                <TouchableOpacity style={[complaintStyles.quickActionBtn, { paddingHorizontal: 12, paddingVertical: 8 }]} onPress={() => { setReplyingComplaint(item); setReplyText(''); setReplyModalVisible(true); }}>
-                  <Text style={{ color: '#111827', fontWeight: '700' }}>Reply</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        />
+            )}
+          />
+        </View>
       )}
 
       {replyModalVisible && replyingComplaint && (
@@ -177,24 +181,25 @@ const Complaints = ({ token: initialToken, studentId: initialStudentId }) => {
 };
 
 const complaintStyles = StyleSheet.create({
-  section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12, color: '#1f2937' },
+  section: { marginBottom: rem(24) },
+  sectionTitle: { fontSize: rem(18), fontWeight: '600', marginBottom: rem(12), color: '#1f2937' },
   error: { color: 'red' },
-  complaintCard: { backgroundColor: '#fff', borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#e5e7eb' },
-  complaintHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  complaintTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  complaintDesc: { color: '#374151', marginBottom: 8 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  listContainer: { maxHeight: Math.min(responsive.height * 0.35, 480), marginBottom: rem(8) },
+  complaintCard: { backgroundColor: '#fff', borderRadius: rem(10), padding: rem(12), marginBottom: rem(8), borderWidth: 1, borderColor: '#e5e7eb' },
+  complaintHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: rem(8) },
+  complaintTitle: { fontSize: rem(15), fontWeight: '700', color: '#111827' },
+  complaintDesc: { color: '#374151', marginBottom: rem(8) },
+  statusBadge: { paddingHorizontal: rem(8), paddingVertical: rem(4), borderRadius: rem(8) },
   pendingBadge: { backgroundColor: '#FEF3C7' },
   resolvedBadge: { backgroundColor: '#D1FAE5' },
-  statusText: { fontSize: 12, fontWeight: '700', color: '#111827' },
-  modalOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 },
-  modalContainer: { width: '100%', maxWidth: 720, backgroundColor: '#fff', borderRadius: 10, padding: 16 },
-  modalTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12, color: '#111827' },
-  input: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#fff', marginBottom: 8, color: '#111827' },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  modalBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
-  quickActionBtn: { alignItems: 'center', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: '#f8f9fb' },
+  statusText: { fontSize: rem(12), fontWeight: '700', color: '#111827' },
+  modalOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: rem(12) },
+  modalContainer: { width: '100%', maxWidth: Math.min(responsive.width - rem(32), 720), backgroundColor: '#fff', borderRadius: rem(10), padding: rem(12) },
+  modalTitle: { fontSize: rem(16), fontWeight: '700', marginBottom: rem(12), color: '#111827' },
+  input: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: rem(8), paddingHorizontal: rem(12), paddingVertical: rem(8), backgroundColor: '#fff', marginBottom: rem(8), color: '#111827' },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: rem(8) },
+  modalBtn: { paddingHorizontal: rem(14), paddingVertical: rem(10), borderRadius: rem(8), alignItems: 'center' },
+  quickActionBtn: { alignItems: 'center', borderRadius: rem(8), paddingVertical: rem(6), paddingHorizontal: rem(10), backgroundColor: '#f8f9fb' },
 });
 
 export default Complaints;

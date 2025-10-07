@@ -4,6 +4,7 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import responsive, { rem } from '../utils/responsive';
 // Type definitions
 type Student = {
   id: string;
@@ -167,77 +168,39 @@ const TeacherDashboard = () => {
       {/* Watermark background */}
       {/* Gradient Header */}
       <View style={styles.gradientHeaderWrap}>
-        <LinearGradient
-          colors={["#ab7aefcc", "#5b88e3cc", "#e9ecf3cc", "#7f90dd99", "#a758f799"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientHeader}
-        >
           <Text style={styles.heading}>Teacher Dashboard</Text>
-        </LinearGradient>
       </View>
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#9daae4ff" />
-          <Text style={{ marginTop: 12, color: '#cedcf7ff' }}>Loading dashboard...</Text>
+          <Text style={{ marginTop: rem(12), color: '#cedcf7ff' }}>Loading dashboard...</Text>
         </View>
       ) : (
         <ScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
-        >
-          {/* Summary Cards */}
-          <View style={styles.statsSection}>
-            <View style={styles.cardsRow}>
-              <View style={[styles.card, styles.cardShadow, { backgroundColor: '#e9ecf3' }]}> 
-                <View style={[styles.iconContainer, { backgroundColor: '#667eea' }]}> 
-                  <Ionicons name="people" size={20} color="#fff" />
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>Total Students</Text>
-                  <Text style={styles.cardValue}>{Array.isArray(students) ? students.length : 0}</Text>
-                </View>
-              </View>
-              <View style={[styles.card, styles.cardShadow, { backgroundColor: '#f1d00f22' }]}> 
-                <View style={[styles.iconContainer, { backgroundColor: '#f1d00f' }]}> 
-                  <Ionicons name="checkmark-done" size={20} color="#fff" />
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>Good Students</Text>
-                  <Text style={styles.cardValue}>{Array.isArray(goodStudents) ? goodStudents.length : 0}</Text>
-                </View>
-              </View>
-              <View style={[styles.card, styles.cardShadow, { backgroundColor: '#c3f0ca' }]}> 
-                <View style={[styles.iconContainer, { backgroundColor: '#059669' }]}> 
-                  <Ionicons name="calendar" size={20} color="#fff" />
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>Attendance Records</Text>
-                  <Text style={styles.cardValue}>{Array.isArray(attendanceHistory) ? attendanceHistory.length : 0}</Text>
-                </View>
-              </View>
-            </View>
-            {/* Date selector + Present / Absent Totals */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginLeft: 4 }}>
+        >    
+        {/* Date selector + Present / Absent Totals */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: rem(12), marginLeft: rem(4), flexWrap: 'wrap' }}>
               <TouchableOpacity onPress={() => {
                 const d = new Date(selectedDate);
                 d.setDate(d.getDate() - 1);
                 setSelectedDate(d.toISOString().split('T')[0]);
-              }} style={{ padding: 8, marginRight: 8, backgroundColor: '#eef2ff', borderRadius: 8 }}>
+              }} style={{ padding: rem(8), marginRight: rem(8), backgroundColor: '#eef2ff', borderRadius: rem(8) }}>
                 <Text style={{ color: '#4f46e5' }}>Prev</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedDate(new Date().toISOString().split('T')[0])} style={{ padding: 8, marginRight: 8, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb' }}>
+              <TouchableOpacity onPress={() => setSelectedDate(new Date().toISOString().split('T')[0])} style={{ padding: rem(8), marginRight: rem(8), backgroundColor: '#fff', borderRadius: rem(8), borderWidth: 1, borderColor: '#e5e7eb' }}>
                 <Text style={{ color: '#374151' }}>Today</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => {
                 const d = new Date(selectedDate);
                 d.setDate(d.getDate() + 1);
                 setSelectedDate(d.toISOString().split('T')[0]);
-              }} style={{ padding: 8, marginRight: 8, backgroundColor: '#eef2ff', borderRadius: 8 }}>
+              }} style={{ padding: rem(8), marginRight: rem(8), backgroundColor: '#eef2ff', borderRadius: rem(8) }}>
                 <Text style={{ color: '#4f46e5' }}>Next</Text>
               </TouchableOpacity>
-              <Text style={{ marginLeft: 8, color: '#6b7280' }}>{selectedDate}</Text>
+              <Text style={{ marginLeft: rem(8), color: '#6b7280' }}>{selectedDate}</Text>
             </View>
 
             <View style={styles.totalsRow}>
@@ -250,36 +213,36 @@ const TeacherDashboard = () => {
                 <Text style={styles.totalsValue}>{absentTotal === null ? '-' : absentTotal}</Text>
               </View>
             </View>
-          </View>
+          
 
           {/* Quick Actions Section */}
           <View style={styles.quickActionsSection}>
             <Text style={styles.quickActionsTitle}>Quick Actions</Text>
             <View style={styles.quickActionsRow}>
               <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Attendance')}>
-                <Ionicons name="checkbox-outline" size={28} color="#667eea" />
+                <Ionicons name="checkbox-outline" size={rem(28)} color="#667eea" />
                 <Text style={styles.quickActionText}>Take Attendance</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('MyStudents')}>
-                <Ionicons name="school-outline" size={28} color="#f78316" />
+                <Ionicons name="school-outline" size={rem(28)} color="#f78316" />
                 <Text style={styles.quickActionText}>My Students</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('TeacherUploadResults')}>
-                <Ionicons name="cloud-upload-outline" size={28} color="#059669" />
+                <Ionicons name="cloud-upload-outline" size={rem(28)} color="#059669" />
                 <Text style={styles.quickActionText}>Upload Results</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.quickActionsRow}>
               <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('TeacherHomework')}>
-                <Ionicons name="book-outline" size={28} color="#9506d2" />
+                <Ionicons name="book-outline" size={rem(28)} color="#9506d2" />
                 <Text style={styles.quickActionText}>Homework</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('OnlineTestCreate')}>
-                <Ionicons name="flask-outline" size={28} color="#f1d00f" />
+                <Ionicons name="flask-outline" size={rem(28)} color="#f1d00f" />
                 <Text style={styles.quickActionText}>Online Test</Text>
               </TouchableOpacity>
                             <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('DiaryItem')}>
-                <Ionicons name="book" size={28} color="#71d293ff" />
+                <Ionicons name="book" size={rem(28)} color="#71d293ff" />
                 <Text style={styles.quickActionText}>Teacher Diary</Text>
               </TouchableOpacity>
               <View style={[styles.quickActionBtn, { opacity: 0 }]}/>
@@ -320,30 +283,30 @@ const styles = StyleSheet.create({
   },
   // Gradient Header
   gradientHeaderWrap: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 35,
+    borderBottomRightRadius: 35,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 15,
     elevation: 4,
   },
   gradientHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 36,
-    paddingBottom: 24,
+    paddingHorizontal: rem(16),
+    paddingTop: rem(28),
+    paddingBottom: rem(20),
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heading: {
-    fontSize: 26,
+    fontSize: rem(15),
     fontWeight: '800',
-    color: '#fff',
+    color: '#416b3aff',
     textAlign: 'center',
     letterSpacing: 1,
     textShadowColor: '#667eea99',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowOffset: { width: 0, height: rem(2) },
+    textShadowRadius: rem(8),
   },
   // Content
   content: {
@@ -351,185 +314,189 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: rem(20),
   },
   // Stats Section
   statsSection: {
-    padding: 16,
+    padding: rem(16),
   },
   cardsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: rem(12),
+    flexWrap: 'wrap',
   },
   card: {
     flex: 1,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: rem(12),
+    padding: rem(14),
     borderWidth: 1,
     borderColor: '#e5e7eb',
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 2,
+    marginHorizontal: rem(2),
   },
   cardShadow: {
     shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rem(4) },
     shadowOpacity: 0.10,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
     elevation: 4,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: rem(36),
+    height: rem(36),
+    borderRadius: rem(8),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: rem(10),
   },
   cardInfo: {
     flex: 1,
   },
   cardTitle: {
-    fontSize: 13,
+    fontSize: rem(13),
     fontWeight: '600',
     color: '#6b7280',
-    marginBottom: 2,
+    marginBottom: rem(2),
   },
   cardValue: {
-    fontSize: 20,
+    fontSize: rem(20),
     fontWeight: '800',
     color: '#222',
   },
   // Quick Actions
   quickActionsSection: {
-    marginHorizontal: 16,
-    marginBottom: 18,
+    marginHorizontal: rem(1),
+    marginBottom: rem(15),
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: rem(16),
+    padding: rem(16),
     shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rem(4) },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
+    bottom: rem(-15),
     elevation: 3,
     borderWidth: 1,
     borderColor: '#e9ecf3',
   },
   quickActionsTitle: {
-    fontSize: 18,
+    fontSize: rem(18),
     fontWeight: '700',
     color: '#403ae2',
-    marginBottom: 10,
+    marginBottom: rem(10),
     textAlign: 'center',
   },
   quickActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: rem(10),
+    flexWrap: 'wrap',
   },
   quickActionBtn: {
     flex: 1,
     alignItems: 'center',
     backgroundColor: '#f8f9fb',
-    borderRadius: 12,
-    paddingVertical: 16,
-    marginHorizontal: 4,
+    borderRadius: rem(12),
+    paddingVertical: rem(14),
+    marginHorizontal: rem(4),
     borderWidth: 1,
     borderColor: '#e9ecf3',
     shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: rem(2) },
     shadowOpacity: 0.06,
-    shadowRadius: 4,
+    shadowRadius: rem(4),
     elevation: 2,
   },
   quickActionText: {
-    fontSize: 13,
+    fontSize: rem(13),
     color: '#222',
     fontWeight: '600',
-    marginTop: 6,
+    marginTop: rem(6),
     textAlign: 'center',
   },
   // Large Card
   largeCardContainer: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginHorizontal: rem(16),
+    marginBottom: rem(16),
     alignItems: 'center',
     zIndex: 1,
-    marginTop: 50,
-    height: 220,
+    marginTop: rem(40),
+    height: rem(220),
   },
   largeCard: {
     width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 28,
+    borderRadius: rem(18),
+    padding: rem(20),
     alignItems: 'center',
     shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: rem(8) },
     shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowRadius: rem(16),
     elevation: 8,
     borderWidth: 1,
     borderColor: '#e9ecf3',
   },
   largeCardIconWrap: {
     backgroundColor: '#e9ecf3',
-    borderRadius: 32,
-    padding: 18,
-    marginBottom: 16,
+    borderRadius: rem(32),
+    padding: rem(16),
+    marginBottom: rem(16),
   },
   largeCardTitle: {
-    fontSize: 22,
+    fontSize: rem(20),
     fontWeight: '700',
     color: '#403ae2',
-    marginBottom: 10,
+    marginBottom: rem(10),
     textAlign: 'center',
   },
   watermark: {
     position: 'absolute',
-    width: 150,
-    height: 200,
+    width: rem(150),
+    bottom: rem(-1),
+    height: rem(200),
     opacity: 0.5,
     alignSelf: 'center',
-    top: 488,
+    top: Math.min(responsive.height * 0.6, rem(420)),
     transform: [{ rotate: '-0deg' }],
     zIndex: 0,
   },
   largeCardDesc: {
-    fontSize: 15,
+    fontSize: rem(15),
     color: '#374151',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: rem(22),
   },
   totalsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
-    gap: 12,
-    marginTop: 12,
-    marginLeft: 4,
+    gap: rem(12),
+    marginTop: rem(12),
+    marginLeft: rem(4),
   },
   presentBadge: {
     backgroundColor: '#dcfce7',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: rem(10),
+    paddingVertical: rem(8),
+    borderRadius: rem(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
   absentBadge: {
     backgroundColor: '#fef2f2',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: rem(10),
+    paddingVertical: rem(8),
+    borderRadius: rem(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
   totalsLabel: {
-    fontSize: 12,
+    fontSize: rem(12),
     color: '#4b5563',
   },
   totalsValue: {
-    fontSize: 16,
+    fontSize: rem(16),
     fontWeight: '700',
     color: '#111827',
   },

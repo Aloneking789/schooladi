@@ -20,6 +20,7 @@ const quickActions = [
   { label: "Send Notice", icon: "✉️", route: "AddNotice" },
   { label: "Teacher Diary", icon: "📔", route: "TeacherDiary" },
   { label: "Complaints", icon: "🛠️", route: "ComplaintsDispossle" },
+  { label: 'Online Tests', icon: '📝', route: 'OnlineTestManage' },
 ];
 
 const extraSections = [
@@ -27,6 +28,7 @@ const extraSections = [
 ];
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { rem } from '../utils/responsive';
 
 // Messages will be fetched from notices API
 
@@ -199,7 +201,7 @@ const Dashboard = () => {
         {/* Header */}
         <View style={styles.headerBox}>
           <View style={styles.headerGradient}>
-            <Text style={styles.headerTitle}>Welcome Back, Principal</Text>
+            <Text style={styles.headerTitle}>Principal</Text>
             <Text style={styles.headerSubtitle}>Here's your school overview at a glance</Text>
           </View>
         </View>
@@ -223,155 +225,8 @@ const Dashboard = () => {
             ))}
           </View>
         </View>
-
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          {/* First Row - Students and Teachers */}
-          <View style={styles.statsRow}>
-            <View style={[styles.statsCard, styles.studentCard]}>
-              <View style={styles.statsIconContainer}>
-                <Text style={styles.statsIcon}>👨‍🎓</Text>
-              </View>
-              <Text style={styles.statsTitle}>{studentStats.title}</Text>
-              <Text style={styles.statsValue}>{studentStats.value}</Text>
-              <Text style={styles.statsChange}>
-                {studentStats.change}
-              </Text>
-            </View>
-
-            <View style={[styles.statsCard, styles.teacherCard]}>
-              <View style={styles.statsIconContainer}>
-                <Text style={styles.statsIcon}>👩‍🏫</Text>
-              </View>
-              <Text style={[styles.statsTitle, { color: "#fff" }]}>
-                {teacherStats.title}
-              </Text>
-              <Text style={[styles.statsValue, { color: "#fff" }]}>
-                {teacherStats.value}
-              </Text>
-              <Text style={[styles.statsChange, { color: "#fff" }]}>
-                {teacherStats.change}
-              </Text>
-            </View>
-          </View>
-
-          {/* Second Row - Parents */}
-          <View style={styles.statsRowSingle}>
-            <View style={[styles.statsCard, styles.parentsCard]}>
-              <View style={styles.statsIconContainer}>
-                <Text style={styles.statsIcon}>👨‍👩‍👧‍👦</Text>
-              </View>
-              <Text style={styles.statsTitle}>{parentsStats.title}</Text>
-              <Text style={styles.statsValue}>{parentsStats.value}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Extra Sections */}
-        <View style={styles.extraSectionsRow}>
-          {extraSections.map((section, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.extraSectionBtn}
-              onPress={() => navigation.navigate(section.route as any)}
-            >
-              <Text style={styles.extraSectionIcon}>{section.icon}</Text>
-              <Text style={styles.extraSectionLabel}>{section.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Charts */}
         <View style={styles.chartsContainer}>
-          <Text style={styles.sectionTitle}>Analytics</Text>
-
-          {/* First Row - Attendance */}
-          <View style={styles.chartRow}>
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>Student Attendance</Text>
-              <View style={styles.chartCircleBox}>
-                <View style={styles.chartCircle}>
-                  <Text style={styles.chartCircleText}>92%</Text>
-                </View>
-              </View>
-              <Text style={styles.chartSubtitle}>
-                Average Attendance
-              </Text>
-            </View>
-          </View>
-
-          {/* Second Row - Gender Distribution */}
-          <View style={styles.chartRow}>
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>Gender Distribution</Text>
-              <View style={styles.genderContainer}>
-                <View style={styles.genderItem}>
-                  <View style={styles.genderIconBox}>
-                    <Text style={styles.genderIcon}>👦</Text>
-                  </View>
-                  <Text style={styles.genderLabel}>Boys</Text>
-                  <Text style={styles.genderValue}>{genderData[0].value}</Text>
-                </View>
-                <View style={styles.genderDivider} />
-                <View style={styles.genderItem}>
-                  <View style={styles.genderIconBox}>
-                    <Text style={styles.genderIcon}>👧</Text>
-                  </View>
-                  <Text style={styles.genderLabel}>Girls</Text>
-                  <Text style={styles.genderValue}>{genderData[1].value}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Messages & Admissions */}
-        <View style={styles.bottomRow}>
-          <View style={styles.messagesCard}>
-            <Text style={styles.cardTitle}>Messages</Text>
-            {messagesLoading ? (
-              <ActivityIndicator size="small" color="#000" style={{ marginVertical: 16 }} />
-            ) : messages.length === 0 ? (
-              <Text style={{ color: '#666', textAlign: 'center', marginVertical: 12 }}>No notices yet.</Text>
-            ) : (
-              messages.map((item, idx) => (
-                <View style={styles.messageItem} key={idx}>
-                  <View style={styles.avatar}>
-                    <Text style={{ color: "#fff", fontSize: 14, fontWeight: 'bold' }}>
-                      {item.sender
-                        .split(" ")
-                        .map((n: string) => n[0])
-                        .join("")}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.messageSender}>{item.sender}</Text>
-                    <Text style={styles.messageText}>{item.message}</Text>
-                    <Text style={styles.messageTime}>{item.time}</Text>
-                    {item.unread && <View style={styles.unreadDot} />}
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-          <View style={styles.enquiriesCard}>
-            <Text style={styles.cardTitle}>Admissions</Text>
-            <TouchableOpacity
-              style={styles.admissionsBtn}
-              onPress={() => navigation.navigate('Admissions')}
-            >
-              {admissionsLoading ? (
-                <ActivityIndicator size="small" color="#fff" style={{ marginVertical: 8 }} />
-              ) : (
-                <>
-                  <Text style={styles.admissionsBtnText}>
-                    Total Admissions: {admissionsCount}
-                  </Text>
-                  <Text style={styles.admissionsBtnSubText}>View All Admissions</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+         
         </View>
       </ScrollView>
     </>
@@ -382,60 +237,59 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9fa",
-    paddingHorizontal: 16,
+    paddingHorizontal: rem(16),
     paddingTop: 0,
   },
 
   // Header Styles
   headerBox: {
-
-    marginVertical: 16,
-    marginTop: 20,
-    borderRadius: 20,
+    marginVertical: rem(16),
+    marginTop: rem(20),
+    borderRadius: rem(20),
     overflow: 'hidden',
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#5cc766ff',
+    shadowOffset: { width: 0, height: rem(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
   },
   headerGradient: {
-    backgroundColor: '#000',
-    padding: 24,
+    backgroundColor: '#4fa834ff',
+    padding: rem(24),
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: rem(26),
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: rem(8),
     textAlign: 'center',
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: rem(16),
     color: '#e5e5e5',
     textAlign: 'center',
   },
 
   // Section Title
   sectionTitle: {
-    fontSize: 22,
+    fontSize: rem(22),
     fontWeight: "bold",
-    marginBottom: 16,
-    color: '#000',
+    marginBottom: rem(16),
+    color: '#1e9031ff',
   },
 
   // Quick Actions
   quickActionsCard: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
+    borderRadius: rem(20),
+    padding: rem(20),
+    marginBottom: rem(24),
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: rem(2) },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
   },
   quickActionsRow: {
     flexDirection: "row",
@@ -445,37 +299,37 @@ const styles = StyleSheet.create({
   quickActionBtn: {
     width: "47%",
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: rem(16),
     alignItems: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 8,
-    marginBottom: 16,
+    paddingVertical: rem(16),
+    paddingHorizontal: rem(8),
+    marginBottom: rem(16),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: rem(1) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: rem(4),
     borderWidth: 1,
     borderColor: '#e5e5e5',
   },
   quickActionIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: rem(56),
+    height: rem(56),
+    borderRadius: rem(28),
     backgroundColor: '#f8f9fa',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: rem(12),
   },
   quickActionIcon: {
-    fontSize: 24,
+    fontSize: rem(26),
   },
   quickActionLabel: {
-    fontSize: 13,
+    fontSize: rem(14),
     textAlign: "center",
     fontWeight: '600',
     color: '#333',
-    lineHeight: 18,
+    lineHeight: rem(18),
   },
 
   // Extra Sections
@@ -488,24 +342,24 @@ const styles = StyleSheet.create({
   extraSectionBtn: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: rem(16),
     alignItems: 'center',
-    paddingVertical: 20,
-    marginHorizontal: 8,
+    paddingVertical: rem(16),
+    marginHorizontal: rem(8),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: rem(1) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: rem(4),
     borderWidth: 1,
     borderColor: '#e5e5e5',
   },
   extraSectionIcon: {
-    fontSize: 32,
-    marginBottom: 12,
+    fontSize: rem(32),
+    marginBottom: rem(12),
   },
   extraSectionLabel: {
-    fontSize: 14,
+    fontSize: rem(14),
     textAlign: 'center',
     fontWeight: '600',
     color: '#333',
@@ -525,16 +379,16 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     flex: 1,
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 6,
+    borderRadius: rem(20),
+    padding: rem(20),
+    marginHorizontal: rem(6),
     alignItems: "center",
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: rem(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    minHeight: 160,
+    shadowRadius: rem(8),
+    minHeight: rem(160),
   },
   studentCard: {
     backgroundColor: '#fff',
@@ -549,35 +403,34 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#000',
     maxWidth: '60%',
-    width: 180,
-
+    width: rem(180),
   },
   statsIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: rem(64),
+    height: rem(64),
+    borderRadius: rem(32),
     backgroundColor: '#f8f9fa',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: rem(12),
   },
   statsIcon: {
-    fontSize: 24,
+    fontSize: rem(28),
   },
   statsTitle: {
-    fontSize: 16,
+    fontSize: rem(16),
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: rem(8),
     color: '#666',
   },
   statsValue: {
-    fontSize: 36,
+    fontSize: rem(36),
     fontWeight: "bold",
-    marginBottom: 4,
+    marginBottom: rem(4),
     color: '#000',
   },
   statsChange: {
-    fontSize: 14,
+    fontSize: rem(14),
     fontWeight: "600",
     color: '#000',
   },
@@ -596,19 +449,19 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: rem(20),
+    padding: rem(20),
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: rem(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
     alignItems: 'center',
   },
   chartTitle: {
-    fontSize: 18,
+    fontSize: rem(18),
     fontWeight: "bold",
-    marginBottom: 16,
+    marginBottom: rem(16),
     color: '#000',
     textAlign: 'center',
   },
@@ -623,22 +476,22 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   chartCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: rem(100),
+    height: rem(100),
+    borderRadius: rem(50),
     backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rem(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
   },
   chartCircleText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 28,
+    fontSize: rem(28),
   },
 
   // Gender Distribution
@@ -646,55 +499,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 20,
-    paddingHorizontal: 20,
+    marginTop: rem(20),
+    paddingHorizontal: rem(20),
   },
   genderItem: {
     flex: 1,
     alignItems: 'center',
   },
   genderIconBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: rem(60),
+    height: rem(60),
+    borderRadius: rem(30),
     backgroundColor: '#f8f9fa',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: rem(12),
     borderWidth: 2,
     borderColor: '#e5e5e5',
   },
   genderIcon: {
-    fontSize: 28,
+    fontSize: rem(28),
   },
   genderDivider: {
-    width: 2,
-    height: 60,
+    width: rem(2),
+    height: rem(60),
     backgroundColor: '#e5e5e5',
-    marginHorizontal: 20,
+    marginHorizontal: rem(20),
   },
   genderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 20,
+    marginVertical: rem(20),
     width: '100%',
   },
   genderBox: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: rem(16),
     alignItems: 'center',
-    paddingVertical: 20,
-    marginHorizontal: 8,
+    paddingVertical: rem(20),
+    marginHorizontal: rem(8),
     elevation: 1,
   },
   genderLabel: {
-    fontSize: 16,
+    fontSize: rem(16),
     color: '#666',
-    marginBottom: 8,
+    marginBottom: rem(8),
     fontWeight: '600',
   },
   genderValue: {
-    fontSize: 28,
+    fontSize: rem(28),
     fontWeight: 'bold',
     color: '#000',
   },
@@ -702,36 +555,36 @@ const styles = StyleSheet.create({
   // Bottom Row
   bottomRow: {
     flexDirection: "row",
-    marginBottom: 24,
+    marginBottom: rem(24),
   },
   messagesCard: {
     flex: 1,
     backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    marginRight: 12,
+    borderRadius: rem(20),
+    padding: rem(20),
+    marginRight: rem(12),
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: rem(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
   },
   enquiriesCard: {
     flex: 1,
     backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    marginLeft: 12,
+    borderRadius: rem(20),
+    padding: rem(20),
+    marginLeft: rem(12),
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: rem(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: rem(18),
     fontWeight: "bold",
-    marginBottom: 16,
+    marginBottom: rem(16),
     color: '#000',
   },
 
@@ -739,69 +592,69 @@ const styles = StyleSheet.create({
   messageItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 16,
-    padding: 12,
+    marginBottom: rem(16),
+    padding: rem(12),
     backgroundColor: '#f8f9fa',
-    borderRadius: 12,
+    borderRadius: rem(12),
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: rem(40),
+    height: rem(40),
+    borderRadius: rem(20),
     backgroundColor: "#000",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: rem(12),
   },
   messageSender: {
     fontWeight: "bold",
-    fontSize: 14,
+    fontSize: rem(14),
     color: '#000',
-    marginBottom: 4,
+    marginBottom: rem(4),
   },
   messageText: {
     color: "#666",
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 4,
+    fontSize: rem(13),
+    lineHeight: rem(18),
+    marginBottom: rem(4),
   },
   messageTime: {
     color: "#999",
-    fontSize: 12,
+    fontSize: rem(12),
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: rem(8),
+    height: rem(8),
+    borderRadius: rem(4),
     backgroundColor: "#000",
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: rem(8),
+    right: rem(8),
   },
 
   // Admissions
   admissionsBtn: {
-    backgroundColor: '#000',
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    backgroundColor: '#479f4dff',
+    borderRadius: rem(16),
+    paddingVertical: rem(16),
+    paddingHorizontal: rem(16),
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: rem(12),
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rem(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: rem(8),
   },
   admissionsBtnText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 18,
-    marginBottom: 4,
+    fontSize: rem(18),
+    marginBottom: rem(4),
   },
   admissionsBtnSubText: {
     color: '#e5e5e5',
-    fontSize: 14,
+    fontSize: rem(14),
   },
 
   // Unused styles kept for compatibility

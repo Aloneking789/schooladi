@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import responsive, { rem } from "../utils/responsive";
 import Complaints from './Complaints';
 
 interface Result {
@@ -118,51 +119,32 @@ const StudentDashboard = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Student Dashboard</Text>
       {studentDetails && (
-        <View style={[styles.card, { backgroundColor: '#f3f4f6', marginBottom: 16, alignItems: 'flex-start' }]}>
+        <View style={[styles.card, { backgroundColor: '#f3f4f6', marginBottom: rem(14), alignItems: 'flex-start' }]}>
           {Object.entries(studentDetails).map(([key, value]) => (
-            <Text key={key} style={{ fontSize: 14, color: '#374151', marginBottom: 2 }}>
+              <Text key={key} style={{ fontSize: rem(12), color: '#374151', marginBottom: rem(2) }}>
               {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}: {value === null || value === undefined ? '-' : typeof value === 'object' ? JSON.stringify(value) : String(value)}
             </Text>
           ))}
         </View>
       )}
-
-      <View style={styles.cardRow}>
-        <View style={[styles.card, { backgroundColor: '#DBEAFE' }]}> {/* blue */}
-          <Ionicons name="book" color="#1D4ED8" />
-          <Text style={styles.cardLabel}>Subjects</Text>
-          <Text style={styles.cardValue}>6</Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: '#D1FAE5' }]}> {/* green */}
-          <Ionicons name="calendar" color="#047857" />
-          <Text style={styles.cardLabel}>Attendance</Text>
-          <Text style={styles.cardValue}>92%</Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: '#EDE9FE' }]}> {/* purple */}
-          <Ionicons name="time" color="#6D28D9" />
-          <Text style={styles.cardLabel}>Study Hours</Text>
-          <Text style={styles.cardValue}>24h</Text>
-        </View>
-      </View>
-
       {/* Quick Actions */}
       <View style={[styles.section, styles.quickActionsSectionContainer]}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActionsRow}>
           <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('StudentNotices' as never)}>
-            <Ionicons name="notifications-outline" size={28} color="#667eea" />
+            <Ionicons name="notifications-outline" size={rem(20)} color="#667eea" />
             <Text style={styles.quickActionText}>Notices</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('StudentResults' as never)}>
-            <Ionicons name="document-text-outline" size={28} color="#f78316" />
+              <Ionicons name="document-text-outline" size={rem(20)} color="#f78316" />
             <Text style={styles.quickActionText}>Results</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('OnlineTest' as never)}>
-            <Ionicons name="laptop-outline" size={28} color="#059669" />
+              <Ionicons name="laptop-outline" size={rem(20)} color="#059669" />
             <Text style={styles.quickActionText}>Online Test</Text>
           </TouchableOpacity>
            <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('HomeWork' as never)}>
-            <Ionicons name="book" size={28} color="#059669" />
+              <Ionicons name="book" size={rem(20)} color="#059669" />
             <Text style={styles.quickActionText}>Home Wrok</Text>
           </TouchableOpacity>
         </View>
@@ -178,13 +160,13 @@ const StudentDashboard = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: rem(12),
     backgroundColor: '#fff',
   },
   title: {
-    fontSize: 22,
+    fontSize: rem(20),
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: rem(12),
     color: '#1f2937',
   },
   cardRow: {
@@ -195,17 +177,17 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     alignItems: 'center',
-    padding: 16,
+    padding: rem(12),
     borderRadius: 12,
-    marginHorizontal: 4,
+    marginHorizontal: rem(4),
   },
   cardLabel: {
-    fontSize: 14,
+    fontSize: rem(14),
     color: '#374151',
-    marginTop: 6,
+    marginTop: rem(6),
   },
   cardValue: {
-    fontSize: 24,
+    fontSize: rem(22),
     fontWeight: 'bold',
     color: '#1f2937',
   },
@@ -213,17 +195,18 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: rem(16),
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: rem(10),
     color: '#1f2937',
   },
   quickActionsSectionContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
+    padding: rem(10),
+    marginBottom: rem(12),
     borderWidth: 1,
+    height: responsive.height * 0.18,
     borderColor: '#e9ecf3',
   },
   quickActionsRow: {
@@ -235,16 +218,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f8f9fb',
     borderRadius: 12,
-    paddingVertical: 12,
-    marginHorizontal: 6,
+    paddingVertical: rem(10),
+    marginHorizontal: rem(6),
     borderWidth: 1,
     borderColor: '#e9ecf3',
   },
   quickActionText: {
-    fontSize: 13,
+    fontSize: rem(12),
     color: '#222',
     fontWeight: '600',
-    marginTop: 6,
+    marginTop: rem(6),
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -254,7 +237,7 @@ const styles = StyleSheet.create({
   },
   listItem: {
     backgroundColor: '#f9fafb',
-    padding: 12,
+    padding: rem(10),
     borderRadius: 10,
     marginBottom: 8,
     flexDirection: 'row',
@@ -262,25 +245,25 @@ const styles = StyleSheet.create({
   },
   listTitle: {
     fontWeight: '500',
-    fontSize: 16,
+    fontSize: rem(15),
     color: '#111827',
   },
   listSub: {
-    fontSize: 12,
+    fontSize: rem(12),
     color: '#6b7280',
   },
   time: {
-    fontSize: 14,
+    fontSize: rem(13),
     color: '#4b5563',
   },
   announcement: {
-    borderLeftWidth: 4,
+    borderLeftWidth: rem(4),
     borderLeftColor: '#3B82F6',
-    paddingLeft: 12,
-    marginBottom: 12,
+    paddingLeft: rem(10),
+    marginBottom: rem(12),
   },
   date: {
-    fontSize: 10,
+    fontSize: rem(10),
     color: '#9ca3af',
   },
   error: {
@@ -288,7 +271,7 @@ const styles = StyleSheet.create({
   },
   resultBlock: {
     marginBottom: 16,
-    padding: 12,
+    padding: rem(12),
     backgroundColor: '#f3f4f6',
     borderRadius: 8,
   },
@@ -304,29 +287,35 @@ const styles = StyleSheet.create({
   complaintCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
+    height: responsive.height * 0.18,
     borderColor: '#e5e7eb',
+    borderWidth: 1,
+    padding: rem(10),
+    marginBottom: rem(8),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   complaintHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: rem(8),
   },
   complaintTitle: {
-    fontSize: 15,
+    fontSize: rem(15),
     fontWeight: '700',
     color: '#111827',
   },
   complaintDesc: {
     color: '#374151',
-    marginBottom: 8,
+    marginBottom: rem(8),
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: rem(8),
+    paddingVertical: rem(4),
     borderRadius: 8,
   },
   pendingBadge: {
@@ -336,7 +325,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1FAE5',
   },
   statusText: {
-    fontSize: 12,
+    fontSize: rem(12),
     fontWeight: '700',
     color: '#111827',
   },
@@ -349,41 +338,41 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: rem(12),
   },
   modalContainer: {
     width: '100%',
-    maxWidth: 720,
+    maxWidth: Math.min(responsive.width - rem(32), 720),
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 16,
+    borderRadius: rem(10),
+    padding: rem(12),
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: rem(16),
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: rem(10),
     color: '#111827',
   },
   input: {
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: rem(10),
+    paddingVertical: rem(8),
     backgroundColor: '#fff',
-    marginBottom: 8,
+    marginBottom: rem(8),
     color: '#111827',
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 8,
-    marginTop: 8,
+    marginTop: rem(8),
   },
   modalBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: rem(12),
+    paddingVertical: rem(8),
+    borderRadius: rem(8),
     alignItems: 'center',
   },
 });

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { rem } from '../utils/responsive';
 
 const API_POST = 'https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary';
 const API_GET = 'https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary/my';
@@ -121,7 +122,7 @@ export default function TeacherDairy({ navigation }) {
   };
 
   const renderEmpty = () => (
-    <View style={{ padding: 24, alignItems: 'center' }}>
+    <View style={{ padding: rem(24), alignItems: 'center' }}>
       <Text style={{ color: '#6b7280' }}>No diary entries yet. Tap + to add one.</Text>
     </View>
   );
@@ -136,13 +137,13 @@ export default function TeacherDairy({ navigation }) {
       </View>
 
       {loading ? (
-        <View style={styles.loader}><ActivityIndicator size="large" color="#4f46e5" /><Text style={{ marginTop: 8 }}>Loading diaries...</Text></View>
+        <View style={styles.loader}><ActivityIndicator size="large" color="#4f46e5" /><Text style={{ marginTop: rem(8) }}>Loading diaries...</Text></View>
       ) : (
         <FlatList
           data={diaries}
           keyExtractor={(i) => i.id}
           ListEmptyComponent={renderEmpty}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: rem(16) }}
           renderItem={({ item }) => <DiaryItem item={item} />}
         />
       )}
@@ -153,7 +154,7 @@ export default function TeacherDairy({ navigation }) {
             <Text style={styles.modalTitle}>New Diary Entry</Text>
             <TouchableOpacity onPress={() => setModalVisible(false)}><Ionicons name="close" size={24} color="#374151" /></TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 16 }}>
+          <ScrollView contentContainerStyle={{ padding: rem(16) }}>
             <Text style={styles.label}>Type</Text>
             <View style={styles.rowOptions}>
               {['daily','class_report','leave','event_permission'].map((t) => (
@@ -207,11 +208,11 @@ export default function TeacherDairy({ navigation }) {
               </>
             )}
 
-            <View style={{ height: 12 }} />
+            <View style={{ height: rem(12) }} />
             <TouchableOpacity style={[styles.btn, submitting && { opacity: 0.7 }]} onPress={createDiary} disabled={submitting}>
               {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Submit</Text>}
             </TouchableOpacity>
-            <View style={{ height: 20 }} />
+            <View style={{ height: rem(20) }} />
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -220,30 +221,30 @@ export default function TeacherDairy({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f6f8ff' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eef2ff' },
-  title: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  addBtn: { backgroundColor: '#4f46e5', width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  screen: { flex: 1, backgroundColor: '#f6f8ff', marginBottom:52 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: rem(8), backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eef2ff' },
+  title: { fontSize: rem(20), fontWeight: '800', color: '#111827' },
+  addBtn: { backgroundColor: '#4f46e5', width: rem(36), height: rem(36), borderRadius: rem(10), justifyContent: 'center', alignItems: 'center' },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#e9ecf3' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  card: { backgroundColor: '#efeeeeff', borderRadius: rem(12), padding: rem(16), marginBottom: rem(15), borderWidth: 1, borderColor: '#e9ecf3', height: rem(150) },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: rem(8) },
   cardTitle: { fontWeight: '800', color: '#0b2b5a' },
-  cardDate: { color: '#6b7280', fontSize: 12 },
-  cardBody: { color: '#111827', marginBottom: 8 },
-  reply: { marginTop: 8, color: '#059669', fontWeight: '700' },
+  cardDate: { color: '#6b7280', fontSize: rem(12) },
+  cardBody: { color: '#111827', marginBottom: rem(8) },
+  reply: { marginTop: rem(8), color: '#059669', fontWeight: '700' },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between' },
-  meta: { color: '#6b7280', fontSize: 12 },
-  metaRight: { color: '#6b7280', fontSize: 12 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#eef2ff' },
-  modalTitle: { fontSize: 18, fontWeight: '800' },
-  label: { marginTop: 12, marginBottom: 6, color: '#374151', fontWeight: '600' },
-  input: { backgroundColor: '#fff', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb' },
-  textarea: { backgroundColor: '#fff', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb', minHeight: 100, textAlignVertical: 'top' },
-  rowOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  optionPill: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#fff', borderRadius: 20, borderWidth: 1, borderColor: '#e5e7eb', marginRight: 8, marginBottom: 8 },
+  meta: { color: '#6b7280', fontSize: rem(12) },
+  metaRight: { color: '#6b7280', fontSize: rem(12) },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: rem(16), borderBottomWidth: 1, borderBottomColor: '#eef2ff' },
+  modalTitle: { fontSize: rem(18), fontWeight: '800' },
+  label: { marginTop: rem(12), marginBottom: rem(6), color: '#374151', fontWeight: '600' },
+  input: { backgroundColor: '#fff', padding: rem(10), borderRadius: rem(8), borderWidth: 1, borderColor: '#e5e7eb' },
+  textarea: { backgroundColor: '#fff', padding: rem(10), borderRadius: rem(8), borderWidth: 1, borderColor: '#e5e7eb', minHeight: rem(100), textAlignVertical: 'top' },
+  rowOptions: { flexDirection: 'row', flexWrap: 'wrap' },
+  optionPill: { paddingVertical: rem(8), paddingHorizontal: rem(12), backgroundColor: '#fff', borderRadius: rem(20), borderWidth: 1, borderColor: '#e5e7eb', marginRight: rem(8), marginBottom: rem(8) },
   optionPillActive: { backgroundColor: '#4f46e5' },
   optionText: { color: '#374151' },
   optionTextActive: { color: '#fff' },
-  btn: { backgroundColor: '#4f46e5', padding: 14, borderRadius: 10, alignItems: 'center' },
+  btn: { backgroundColor: '#4f46e5', padding: rem(14), borderRadius: rem(10), alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '800' },
 });

@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import responsive, { rem } from '../utils/responsive';
 
-const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/class-tests';
+const API_URL = 'https://api.pbmpublicschool.inapi/onlineTest/online-test/class-tests';
 
 const OnlineTest = () => {
   const [classId, setClassId] = useState('');
@@ -51,7 +52,9 @@ const OnlineTest = () => {
         });
         const data = await res.json();
         if (data.success && Array.isArray(data.tests)) {
-          setTests(data.tests);
+          // Sort tests by createdAt descending so most recent tests show first
+          const sorted = data.tests.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setTests(sorted);
         } else {
           setTests([]);
           setError('No tests found.');
@@ -110,17 +113,15 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
   }
 };
   const renderTestCard = (test) => (
-    <TouchableOpacity
-      key={test.id}
-      onPress={() => setSelectedTest(test)}
-      activeOpacity={0.85}
-    >
-      <Text style={styles.testTitle}>{test.subject} - {test.chapterPrompt}</Text>
-      <Text style={styles.testMeta}>Type: {test.questionType} | Created: {new Date(test.createdAt).toLocaleString()}</Text>
-      <Text style={[styles.status, test.isStartest ? styles.statusActive : styles.statusInactive]}>
-        {test.isStartest ? 'Test is Active' : 'Test Not Started'}
-      </Text>
-    </TouchableOpacity>
+    <View key={test.id} style={styles.testCard}>
+      <TouchableOpacity onPress={() => setSelectedTest(test)} activeOpacity={0.85}>
+        <Text style={styles.testTitle}>{test.subject} - {test.chapterPrompt}</Text>
+        <Text style={styles.testMeta}>Type: {test.questionType} | Created: {new Date(test.createdAt).toLocaleString()}</Text>
+        <Text style={[styles.status, test.isStartest ? styles.statusActive : styles.statusInactive]}>
+          {test.isStartest ? 'Test is Active' : 'Test Not Started'}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 
 
@@ -163,7 +164,7 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
        
       }
       setLoading(true);
-      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${selectedTest.id}/submit`, {
+      const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${selectedTest.id}/submit`, {
         
         method: 'POST',
         headers: {
@@ -205,7 +206,7 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
     console.log('Fetching result for StudentId:', StudentId);
     try {
       setLoading(true);
-      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
+      const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const data = await res.json();
@@ -399,33 +400,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 18,
   },
-  timerBar: { position: 'absolute', top: 18, left: 0, right: 0, alignItems: 'center', zIndex: 20, backgroundColor: 'rgba(255,255,255,0.95)', paddingVertical: 6, borderBottomWidth: 1, borderColor: '#e2e8f0' },
-  timerText: { fontSize: 20, fontWeight: 'bold', color: '#059669', letterSpacing: 1 },
-  container: { flex: 1, backgroundColor: '#f8f9fa', padding: 16 },
-  header: { fontSize: 24, fontWeight: '700', color: '#1e293b', textAlign: 'center', marginVertical: 18 },
+  timerBar: { position: 'absolute', top: rem(18), left: 0, right: 0, alignItems: 'center', zIndex: 20, backgroundColor: 'rgba(255,255,255,0.95)', paddingVertical: rem(6), borderBottomWidth: 1, borderColor: '#e2e8f0' },
+  timerText: { fontSize: rem(20), fontWeight: 'bold', color: '#059669', letterSpacing: 1 },
+  container: { flex: 1, backgroundColor: '#f8f9fa', padding: rem(16) },
+  header: { fontSize: rem(24), fontWeight: '700', color: '#1e293b', textAlign: 'center', marginVertical: rem(18) },
   cameraContainer: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
   cameraView: { flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center' },
-  cameraCloseBtn: { backgroundColor: '#fff', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 30, alignItems: 'center', position: 'absolute', bottom: 40, alignSelf: 'center' },
-  cameraCloseBtnText: { color: '#000', fontWeight: '700', fontSize: 16 },
-  testsList: { paddingBottom: 40 },
-  testCard: { backgroundColor: '#fff', borderRadius: 12, padding: 18, marginBottom: 18, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2, borderWidth: 1, borderColor: '#e2e8f0' },
-  testTitle: { fontSize: 18, fontWeight: '700', color: '#334155', marginBottom: 6 },
-  testMeta: { color: '#64748b', fontSize: 13, marginBottom: 8 },
-  status: { fontWeight: '700', fontSize: 15, marginTop: 2 },
+  cameraCloseBtn: { backgroundColor: '#fff', borderRadius: rem(8), paddingVertical: rem(12), paddingHorizontal: rem(30), alignItems: 'center', position: 'absolute', bottom: rem(40), alignSelf: 'center' },
+  cameraCloseBtnText: { color: '#000', fontWeight: '700', fontSize: rem(16) },
+  testsList: { paddingBottom: rem(40) },
+  testCard: { backgroundColor: '#fff', borderRadius: rem(12), padding: rem(18), marginBottom: rem(18), shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: rem(6), elevation: 2, borderWidth: 1, borderColor: '#e2e8f0', width: '100%', maxWidth: Math.min(responsive.width - rem(32), 900) },
+  testTitle: { fontSize: rem(18), fontWeight: '700', color: '#334155', marginBottom: rem(6) },
+  testMeta: { color: '#64748b', fontSize: rem(13), marginBottom: rem(8) },
+  status: { fontWeight: '700', fontSize: rem(15), marginTop: rem(2) },
   statusActive: { color: '#059669' },
   statusInactive: { color: '#dc2626' },
   errorText: { color: '#dc2626', textAlign: 'center', marginTop: 30, fontWeight: '600' },
   emptyText: { color: '#64748b', textAlign: 'center', marginTop: 30, fontWeight: '500' },
-  questionsContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(248,249,250,0.98)', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 10 },
-  questionsHeader: { fontSize: 22, fontWeight: '700', color: '#0f172a', marginBottom: 18, textAlign: 'center' },
-  questionBlock: { backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#e2e8f0', width: 320 },
-  questionText: { fontSize: 16, fontWeight: '600', color: '#1e293b', marginBottom: 8 },
-  optionsList: { marginLeft: 8, marginBottom: 6 },
-  optionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  optionLetter: { fontWeight: '700', color: '#3f75eaff', marginRight: 6 },
-  optionText: { fontSize: 15, color: '#334155' },
-  closeBtn: { backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 30, alignItems: 'center', marginTop: 18 },
-  closeBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  questionsContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(248,249,250,0.98)', justifyContent: 'center', alignItems: 'center', padding: rem(20), zIndex: 10 },
+  questionsHeader: { fontSize: rem(22), fontWeight: '700', color: '#0f172a', marginBottom: rem(18), textAlign: 'center' },
+  questionBlock: { backgroundColor: '#fff', borderRadius: rem(10), padding: rem(14), marginBottom: rem(14), borderWidth: 1, borderColor: '#e2e8f0', width: Math.min(responsive.width - rem(40), rem(340)) },
+  questionText: { fontSize: rem(16), fontWeight: '600', color: '#1e293b', marginBottom: rem(8) },
+  optionsList: { marginLeft: rem(8), marginBottom: rem(6) },
+  optionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: rem(6) },
+  optionLetter: { fontWeight: '700', color: '#3f75eaff', marginRight: rem(6) },
+  optionText: { fontSize: rem(15), color: '#334155' },
+  closeBtn: { backgroundColor: '#2563eb', borderRadius: rem(8), paddingVertical: rem(10), paddingHorizontal: rem(30), alignItems: 'center', marginTop: rem(18) },
+  closeBtnText: { color: '#fff', fontWeight: '700', fontSize: rem(16) },
 });
 
 export default OnlineTest;

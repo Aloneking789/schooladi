@@ -3,17 +3,17 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-
+import { rem } from '../utils/responsive';
 const API_URL = 'https://api.pbmpublicschool.in/api/homeworks/homeworks';
 
 const TeacherHomework = () => {
@@ -43,9 +43,7 @@ const TeacherHomework = () => {
     const fetchHomeworks = async () => {
       setFetchingHomeworks(true);
       try {
-        let url = showAll
-          ? 'https://api.pbmpublicschool.in/api/homeworks/homeworks'
-          : `https://api.pbmpublicschool.in/api/homeworks/homeworks/by-class/${classId}`;
+        let url = showAll ? 'https://api.pbmpublicschool.in/api/homeworks/homeworks' : `https://api.pbmpublicschool.in/api/homeworks/homeworks/by-class/${classId}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -315,26 +313,27 @@ const TeacherHomework = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  title: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
-  label: { fontSize: 14, marginBottom: 6, color: '#333' },
+  title: { fontSize: rem(20), fontWeight: '700', marginBottom: rem(12) },
+  label: { fontSize: rem(14), marginBottom: rem(6), color: '#333' },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
+    borderRadius: rem(8),
+    padding: rem(10),
+    marginBottom: rem(12),
     backgroundColor: '#fff',
+    marginBottom:-1,
   },
   button: {
-    backgroundColor: '#0066cc',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: '#5f906fff',
+    padding: rem(8),
+    borderRadius: rem(8),
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: rem(-16),
   },
   buttonText: { color: '#fff', fontWeight: '600' },
-  pickerContainer: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 12, overflow: 'hidden' },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  pickerContainer: { borderWidth: 1, borderColor: '#ddd', borderRadius: rem(8), marginBottom: rem(12), overflow: 'hidden' },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: rem(12) },
 });
 
 export default TeacherHomework;

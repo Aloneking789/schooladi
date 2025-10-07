@@ -4,8 +4,8 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_GET = 'https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary';
-const API_REPLY = (id) => `https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary/${id}/reply`;
+const API_GET = 'https://api.pbmpublicschool.inapi/teacherdairy/teacher-diary';
+const API_REPLY = (id) => `https://api.pbmpublicschool.inapi/teacherdairy/teacher-diary/${id}/reply`;
 
 export default function TeacherDiary({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -17,6 +17,8 @@ export default function TeacherDiary({ navigation }) {
   useEffect(() => {
     const load = async () => {
       const t = await AsyncStorage.getItem('principal_token');
+      console.log('Loaded principal_token:', t ? 'Yes' : 'No');
+      console.log("Token value:", t);
       if (!t) {
         Alert.alert('Missing token', 'principal_token not found in storage.');
         setLoading(false);

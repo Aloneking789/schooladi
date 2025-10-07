@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { rem } from '../utils/responsive';
 
 const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
@@ -243,7 +244,7 @@ const TeacherUploadResults = () => {
 		return (
 			<View style={styles.center}>
 				<ActivityIndicator size="large" color="#667eea" />
-				<Text style={{ marginTop: 8 }}>Loading...</Text>
+				<Text style={{ marginTop: rem(8) }}>Loading...</Text>
 			</View>
 		);
 	}
@@ -295,10 +296,10 @@ const TeacherUploadResults = () => {
 				</TouchableOpacity>
 
 				{/* Existing marks for selected student */}
-				<View style={{ marginTop: 18 }}>
-					<Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Existing Marks</Text>
+				<View style={{ marginTop: rem(18) }}>
+					<Text style={{ fontSize: rem(18), fontWeight: '700', marginBottom: rem(8) }}>Existing Marks</Text>
 					{marksLoading ? (
-						<View style={{ padding: 12 }}><ActivityIndicator /></View>
+						<View style={{ padding: rem(12) }}><ActivityIndicator /></View>
 					) : Object.keys(existingMarks || {}).length === 0 ? (
 						<Text style={{ color: '#6b7280' }}>No marks found for selected student.</Text>
 					) : (
@@ -364,27 +365,27 @@ const TeacherUploadResults = () => {
 
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: '#f8fafc' },
-	content: { padding: 16, paddingBottom: 40 },
+	content: { padding: rem(16), paddingBottom: rem(40) },
 	center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-	title: { fontSize: 22, fontWeight: '800', color: '#403ae2', marginBottom: 12 },
-	label: { color: '#374151', marginTop: 8, marginBottom: 6, fontWeight: '600' },
-	selector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e6e9f2' },
+	title: { fontSize: rem(22), fontWeight: '800', color: '#403ae2', marginBottom: rem(12) },
+	label: { color: '#374151', marginTop: rem(8), marginBottom: rem(6), fontWeight: '600' },
+	selector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: rem(12), borderRadius: rem(10), borderWidth: 1, borderColor: '#e6e9f2' },
 	selectorText: { color: '#111827' },
-	subjectsHeader: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, marginBottom: 8, alignItems: 'center' },
-	subjectRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 10, marginBottom: 8, borderWidth: 1, borderColor: '#eef2ff' },
+	subjectsHeader: { flexDirection: 'row', justifyContent: 'space-between', marginTop: rem(12), marginBottom: rem(8), alignItems: 'center' },
+	subjectRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: rem(12), borderRadius: rem(10), marginBottom: rem(8), borderWidth: 1, borderColor: '#eef2ff' },
 	subjectName: { fontWeight: '700' },
-	subjectCode: { color: '#6b7280', fontSize: 12 },
-	marksBox: { alignItems: 'center', marginHorizontal: 8 },
-	maxLabel: { fontSize: 12, color: '#6b7280' },
+	subjectCode: { color: '#6b7280', fontSize: rem(12) },
+	marksBox: { alignItems: 'center', marginHorizontal: rem(8) },
+	maxLabel: { fontSize: rem(12), color: '#6b7280' },
 	maxValue: { fontWeight: '700' },
-	obtInput: { width: 68, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb', paddingHorizontal: 8, textAlign: 'center', backgroundColor: '#fff' },
-	submitBtn: { marginTop: 16, backgroundColor: '#4f46e5', padding: 14, borderRadius: 12, alignItems: 'center' },
+	obtInput: { width: rem(68), height: rem(36), borderRadius: rem(8), borderWidth: 1, borderColor: '#e5e7eb', paddingHorizontal: rem(8), textAlign: 'center', backgroundColor: '#fff' },
+	submitBtn: { marginTop: rem(16), backgroundColor: '#4f46e5', padding: rem(14), borderRadius: rem(12), alignItems: 'center' },
 	submitText: { color: '#fff', fontWeight: '700' },
 	modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-	modalContent: { width: '90%', maxHeight: '70%', backgroundColor: '#fff', borderRadius: 12, padding: 12 },
-	modalTitle: { fontWeight: '800', fontSize: 16, marginBottom: 8 },
-	modalRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-	modalClose: { marginTop: 8, alignItems: 'center' },
+	modalContent: { width: '90%', maxHeight: '70%', backgroundColor: '#fff', borderRadius: rem(12), padding: rem(12) },
+	modalTitle: { fontWeight: '800', fontSize: rem(16), marginBottom: rem(8) },
+	modalRow: { paddingVertical: rem(12), borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+	modalClose: { marginTop: rem(8), alignItems: 'center' },
 });
 
 export default TeacherUploadResults;

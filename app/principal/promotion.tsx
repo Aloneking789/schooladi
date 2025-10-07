@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   historyBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
   historySection: { backgroundColor: '#f9fafb', borderRadius: 12, padding: 12, marginTop: 12 },
   historyRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderColor: '#e5e7eb', paddingVertical: 6, flexWrap: 'wrap' },
-  historyCell: { minWidth: 60, fontSize: 12, color: '#374151', marginHorizontal: 2 },
+  historyCell: { minWidth: 60, fontSize: 4, color: '#374151', marginHorizontal: 2 },
   reloadingOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', zIndex: 100 },
 });
 

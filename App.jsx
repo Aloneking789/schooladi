@@ -54,6 +54,7 @@ import DiaryItem from './app/teacher/TeacherDairy';
 import TeacherHomework from './app/teacher/teacherHomework';
 import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 import { configureStatusBar } from './app/utils/statusBarConfig';
+import OnlineTestManage from './app/principal/OnlineTestManage';
 // import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 // import TeacherSelfAttendance from './app/teacher/TeacherAttendance';
 
@@ -162,6 +163,14 @@ export default function App() {
           children={props => (
             <Layout>
               <ShowNotice {...props} />
+            </Layout>
+          )}
+        />
+        <Stack.Screen
+          name="OnlineTestManage" 
+          children={props => (
+            <Layout>
+              <OnlineTestManage {...props} />
             </Layout>
           )}
         />

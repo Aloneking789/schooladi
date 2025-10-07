@@ -1,12 +1,17 @@
 {
   "expo": {
     "name": "PMB PUBLIC SCHOOL",
-    "slug": "expo-starter",
+    "slug": "pmb-public-school",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/pmblogo.jpg",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "newArchEnabled": true,
     "jsEngine": "hermes",
     "ios": {
@@ -32,7 +37,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "56d4a5d0-01e4-4423-90b9-05a8e4dbe466"
+        "projectId": "199aa28c-a3fb-4d22-9676-a95caed3b6f0"
       }
     }
     ,

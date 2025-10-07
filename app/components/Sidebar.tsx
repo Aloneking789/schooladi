@@ -26,27 +26,28 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
     switch (userType) {
       case "principal":
         return [
-          { name: "Dashboard", path: "PrincipalDashboard", iconName: "home" },
-          { name: "Promote", path: "promotion", iconName: "school" },
-          { name: "DropBox", path: "dropbox", iconName: "trash" },
-          { name: "Gallery", path: "SchoolGallary", iconName: "images" },
+          
+          { name: "", path: "promotion", iconName: "school" },
+          { name: "", path: "PrincipalDashboard", iconName: "home" },
+          { name: "", path: "dropbox", iconName: "trash" },
+          { name: "", path: "SchoolGallary", iconName: "images" },
         ];
       case "teacher":
         return [
           
-          { name: "Attendance", path: "Attendance", iconName: "book" },
-          { name: "My Students", path: "MyStudents", iconName: "people" },
-          { name: "Dashboard", path: "TeacherDashboard", iconName: "home" },
-          { name: "OnlineTest", path: "OnlineTestCreate", iconName: "laptop" },
-          { name: "Teacher", path: "TeacherAttendance", iconName: "book" },
+          { name: "", path: "Attendance", iconName: "book" },
+          { name: "", path: "MyStudents", iconName: "people" },
+          { name: "", path: "TeacherDashboard", iconName: "home" },
+          { name: "", path: "OnlineTestCreate", iconName: "laptop" },
+          { name: "", path: "TeacherAttendance", iconName: "book" },
         ];
       case "student":
         return [
-          { name: "Notices", path: "StudentNotices", iconName: "notifications" },
-          { name: "Results", path: "StudentResults", iconName: "document-text" },
-           { name: "Dashboard", path: "StudentDashboard", iconName: "home" },
-          { name: "OnlineTest", path: "OnlineTest", iconName: "laptop" },
-          {name : "Complaints", path: "Complaints", iconName: "chatbubbles"},
+          { name: "", path: "StudentNotices", iconName: "notifications" },
+          { name: "", path: "StudentResults", iconName: "document-text" },
+           { name: "", path: "StudentDashboard", iconName: "home" },
+          { name: "", path: "OnlineTest", iconName: "laptop" },
+          {name : "", path: "Complaints", iconName: "chatbubbles"},
         ];
       default:
         return [

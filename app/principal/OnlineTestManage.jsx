@@ -1,14 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Modal,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { rem } from '../utils/responsive';
 
@@ -42,7 +42,7 @@ const OnlineTestManage = ({ navigation }) => {
     setLoading(true);
     try {
       const { principal_token, schoolId } = await getAuthAndSchool();
-      const res = await fetch(`https://api.pbmpublicschool.inapi/classes/${schoolId}`, {
+      const res = await fetch(`https://api.pbmpublicschool.in/api/classes/${schoolId}`, {
         headers: { Authorization: `Bearer ${principal_token}` },
       });
       const body = await res.json();
@@ -64,7 +64,7 @@ const OnlineTestManage = ({ navigation }) => {
     setTestsLoading(true);
     try {
       const { principal_token } = await getAuthAndSchool();
-      const url = `https://api.pbmpublicschool.inapi/onlineTest/online-test?classId=${encodeURIComponent(classId)}`;
+      const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test?classId=${encodeURIComponent(classId)}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${principal_token}` } });
       const body = await res.json();
       if (body?.success && Array.isArray(body.tests)) {
@@ -95,7 +95,7 @@ const OnlineTestManage = ({ navigation }) => {
     setSubLoading(true);
     try {
       const { principal_token } = await getAuthAndSchool();
-      const url = `https://api.pbmpublicschool.inapi/onlineTest/online-test/${testId}/submissions`;
+      const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test/${testId}/submissions`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${principal_token}` } });
       const body = await res.json();
       if (body?.success && Array.isArray(body.submissions)) setSubmissions(body.submissions);
@@ -116,20 +116,20 @@ const OnlineTestManage = ({ navigation }) => {
       {/* Class selector */}
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.classBar} contentContainerStyle={{ paddingHorizontal: rem(8), paddingRight: rem(8) }}>
-        {loading ? (
-          <ActivityIndicator />
-        ) : (
-          classes.map((c) => (
-            <TouchableOpacity
-              key={c.id}
-              style={[styles.classPill, selectedClass === c.id && styles.classPillActive]}
-              onPress={() => setSelectedClass(c.id)}
-            >
-              <Text style={[styles.classText, selectedClass === c.id && styles.classTextActive]}>{c.name}</Text>
-              <Text style={styles.classSubtitle}>{(c.sections || c.section || []).length} sections</Text>
-            </TouchableOpacity>
-          ))
-        )}
+          {loading ? (
+            <ActivityIndicator />
+          ) : (
+            classes.map((c) => (
+              <TouchableOpacity
+                key={c.id}
+                style={[styles.classPill, selectedClass === c.id && styles.classPillActive]}
+                onPress={() => setSelectedClass(c.id)}
+              >
+                <Text style={[styles.classText, selectedClass === c.id && styles.classTextActive]}>{c.name}</Text>
+                <Text style={styles.classSubtitle}>{(c.sections || c.section || []).length} sections</Text>
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
 
         {/* Open full classes selector */}

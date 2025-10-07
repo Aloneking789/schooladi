@@ -4,8 +4,8 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_GET = 'https://api.pbmpublicschool.inapi/teacherdairy/teacher-diary';
-const API_REPLY = (id) => `https://api.pbmpublicschool.inapi/teacherdairy/teacher-diary/${id}/reply`;
+const API_GET = 'https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary';
+const API_REPLY = (id) => `https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary/${id}/reply`;
 
 export default function TeacherDiary({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -34,7 +34,7 @@ export default function TeacherDiary({ navigation }) {
     setLoading(true);
     try {
       const res = await axios.get(API_GET, { headers: { Authorization: `Bearer ${tkn}` } });
-      if (res.data && res.data.success) setEntries(res.data.diaries,res.teacher || []);
+      if (res.data && res.data.success) setEntries(res.data.diaries, res.teacher || []);
       else setEntries([]);
     } catch (e) {
       console.warn('fetch failed', e);

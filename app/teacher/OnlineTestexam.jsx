@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { rem } from '../utils/responsive';
 
-const API_URL = 'https://api.pbmpublicschool.inapi/onlineTest/online-test/create';
+const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/create';
 
 const questionTypeOptions = [
 	{ label: 'Objective', value: 'objective' },
@@ -49,12 +49,12 @@ const OnlineTestexam = () => {
 	}, []);
 	// Fetch my tests (use teacher's assigned classId when available)
 	useEffect(() => {
-		
+
 		const fetchMyTests = async () => {
 			if (!token) return;
 			setLoadingTests(true);
 			try {
-				const base = 'https://api.pbmpublicschool.inapi/onlineTest/online-test/my-tests/';
+				const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
 				const url = classId ? `${base}${encodeURIComponent(classId)}` : base;
 				console.log('Fetching my tests from', url);
 				console.log('Using token:', token ? 'Yes' : 'No');
@@ -133,7 +133,7 @@ const OnlineTestexam = () => {
 				setLoadingResults(false);
 				return;
 			}
-			const url = `https://api.pbmpublicschool.inapi/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
+			const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
 			const res = await fetch(url, { headers: { Authorization: `Bearer ${tkn}` } });
 			if (!res.ok) {
 				const txt = await res.text();
@@ -313,7 +313,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${test.id}/start`, {
+												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/start`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
@@ -332,7 +332,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${test.id}/stop`, {
+												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/stop`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
@@ -357,7 +357,7 @@ const OnlineTestexam = () => {
 													{
 														text: 'Delete', style: 'destructive', onPress: async () => {
 															try {
-																const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${test.id}`, {
+																const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}`, {
 																	method: 'DELETE',
 																	headers: { 'Authorization': `Bearer ${token}` },
 																});

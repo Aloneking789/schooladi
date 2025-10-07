@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import responsive, { rem } from '../utils/responsive';
 
-const API_URL = 'https://api.pbmpublicschool.inapi/onlineTest/online-test/class-tests';
+const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/class-tests';
 
 const OnlineTest = () => {
   const [classId, setClassId] = useState('');
@@ -69,49 +69,49 @@ const OnlineTest = () => {
     fetchClassIdAndTests();
   }, []);
 
-// Real camera modal using expo-camera
-// Dummy modal for exam start (no camera)
-const DummyStartModal = ({ visible, onClose }) => (
-  <Modal visible={visible} animationType="slide" transparent={false}>
-    <View style={styles.cameraContainer}>
-      <View style={styles.cameraView}>
-        <Text style={styles.cameraIcon}>📝</Text>
-        <Text style={styles.cameraText}>Get ready to start your test!</Text>
-        <TouchableOpacity style={styles.cameraCloseBtn} onPress={onClose}>
-          <Text style={styles.cameraCloseBtnText}>Start Test</Text>
-        </TouchableOpacity>
+  // Real camera modal using expo-camera
+  // Dummy modal for exam start (no camera)
+  const DummyStartModal = ({ visible, onClose }) => (
+    <Modal visible={visible} animationType="slide" transparent={false}>
+      <View style={styles.cameraContainer}>
+        <View style={styles.cameraView}>
+          <Text style={styles.cameraIcon}>📝</Text>
+          <Text style={styles.cameraText}>Get ready to start your test!</Text>
+          <TouchableOpacity style={styles.cameraCloseBtn} onPress={onClose}>
+            <Text style={styles.cameraCloseBtnText}>Start Test</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
 
-// Called when dummy camera is closed (start the test for real)
-const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQuestionTimes, setCurrentQuestion, setStartedAt, questionStartTime, setRemainingTime, selectedTest, timerRef, handleSubmitTest) => {
-  setShowCamera(false);
-  setTakingTest(true);
-  setAnswers({});
-  setPerQuestionTimes([]);
-  setCurrentQuestion(0);
-  setStartedAt(new Date().toISOString());
-  questionStartTime.current = Date.now();
-  // Set timer if test has duration (in minutes)
-  if (selectedTest && selectedTest.duration) {
-    setRemainingTime(selectedTest.duration * 60); // convert min to sec
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setRemainingTime(prev => {
-        if (prev === 1) {
-          clearInterval(timerRef.current);
-          handleSubmitTest();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  } else {
-    setRemainingTime(null);
-  }
-};
+  // Called when dummy camera is closed (start the test for real)
+  const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQuestionTimes, setCurrentQuestion, setStartedAt, questionStartTime, setRemainingTime, selectedTest, timerRef, handleSubmitTest) => {
+    setShowCamera(false);
+    setTakingTest(true);
+    setAnswers({});
+    setPerQuestionTimes([]);
+    setCurrentQuestion(0);
+    setStartedAt(new Date().toISOString());
+    questionStartTime.current = Date.now();
+    // Set timer if test has duration (in minutes)
+    if (selectedTest && selectedTest.duration) {
+      setRemainingTime(selectedTest.duration * 60); // convert min to sec
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setRemainingTime(prev => {
+          if (prev === 1) {
+            clearInterval(timerRef.current);
+            handleSubmitTest();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setRemainingTime(null);
+    }
+  };
   const renderTestCard = (test) => (
     <View key={test.id} style={styles.testCard}>
       <TouchableOpacity onPress={() => setSelectedTest(test)} activeOpacity={0.85}>
@@ -157,20 +157,20 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
       const token = await AsyncStorage.getItem('student_token');
       const UserRaw = await AsyncStorage.getItem('user');
       const User = JSON.parse(UserRaw);
-       console.log('Fetched StudentId from AsyncStorage:', User.StudentId);
+      console.log('Fetched StudentId from AsyncStorage:', User.StudentId);
       if (!User || !User.StudentId) {
         Alert.alert('Submission Failed', 'Student ID not found.');
         return;
-       
+
       }
       setLoading(true);
-      const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${selectedTest.id}/submit`, {
-        
+      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${selectedTest.id}/submit`, {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-           
+
         },
         body: JSON.stringify({
           answers,
@@ -198,7 +198,7 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
   };
 
   // Fetch test result by testId
-  
+
   const fetchTestResult = async (testId, token) => {
     const UserRaw = await AsyncStorage.getItem('user');
     const User = JSON.parse(UserRaw);
@@ -206,7 +206,7 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
     console.log('Fetching result for StudentId:', StudentId);
     try {
       setLoading(true);
-      const res = await fetch(`https://api.pbmpublicschool.inapi/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
+      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const data = await res.json();
@@ -244,7 +244,7 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
         )}
         <View style={{ width: '100%', flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={styles.questionsHeader}>Question {currentQuestion + 1} of {total}</Text>
-          <View style={[styles.questionBlock, { marginBottom: 18, borderWidth: 2, borderColor: answers[currentQuestion] ? '#059669' : '#e2e8f0', backgroundColor: answers[currentQuestion] ? '#f0fdf4' : '#fff', width: 340, maxWidth: '100%' }]}> 
+          <View style={[styles.questionBlock, { marginBottom: 18, borderWidth: 2, borderColor: answers[currentQuestion] ? '#059669' : '#e2e8f0', backgroundColor: answers[currentQuestion] ? '#f0fdf4' : '#fff', width: 340, maxWidth: '100%' }]}>
             <Text style={styles.questionText}>{q.question}</Text>
             {q.options && Array.isArray(q.options) && (
               <View style={styles.optionsList}>
@@ -340,40 +340,40 @@ const handleCameraClosed = (setShowCamera, setTakingTest, setAnswers, setPerQues
         </View>
       )}
       {selectedTest && takingTest && renderTakeTest(selectedTest)}
-  {/* Dummy Start Modal - always rendered at root */}
-  <DummyStartModal visible={showCamera} onClose={() => handleCameraClosed(setShowCamera, setTakingTest, setAnswers, setPerQuestionTimes, setCurrentQuestion, setStartedAt, questionStartTime, setRemainingTime, selectedTest, timerRef, handleSubmitTest)} />
+      {/* Dummy Start Modal - always rendered at root */}
+      <DummyStartModal visible={showCamera} onClose={() => handleCameraClosed(setShowCamera, setTakingTest, setAnswers, setPerQuestionTimes, setCurrentQuestion, setStartedAt, questionStartTime, setRemainingTime, selectedTest, timerRef, handleSubmitTest)} />
 
-  {/* Result Modal */}
-  <Modal visible={showResult} animationType="slide" transparent={false} onRequestClose={() => setShowResult(false)}>
-    <View style={[styles.cameraContainer, { backgroundColor: '#fff' }]}> 
-      <View style={[styles.cameraView, { justifyContent: 'flex-start', alignItems: 'flex-start', width: '100%' }]}> 
-        <Text style={{ fontSize: 26, fontWeight: '700', color: '#059669', marginBottom: 10, alignSelf: 'center', width: '100%', textAlign: 'center' }}>Test Result</Text>
-        {resultData && resultData.success ? (
-          <>
-            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Score: <Text style={{ color: '#059669' }}>{resultData.submission?.score}</Text></Text>
-            <ScrollView style={{ width: '100%' }}>
-              {resultData.questions && resultData.questions.map((q, idx) => (
-                <View key={idx} style={{ marginBottom: 18, backgroundColor: '#f1f5f9', borderRadius: 8, padding: 12 }}>
-                  <Text style={{ fontWeight: '700', color: '#1e293b', marginBottom: 4 }}>{idx + 1}. {q.question}</Text>
-                  {q.options && q.options.map((opt, i) => (
-                    <Text key={i} style={{ marginLeft: 12, color: opt === q.answer ? '#059669' : (resultData.answers && resultData.answers[idx] === opt ? '#dc2626' : '#334155'), fontWeight: opt === q.answer ? '700' : '400' }}>
-                      {String.fromCharCode(65 + i)}. {opt}
-                      {opt === q.answer ? ' (Correct)' : (resultData.answers && resultData.answers[idx] === opt ? ' (Your Answer)' : '')}
-                    </Text>
+      {/* Result Modal */}
+      <Modal visible={showResult} animationType="slide" transparent={false} onRequestClose={() => setShowResult(false)}>
+        <View style={[styles.cameraContainer, { backgroundColor: '#fff' }]}>
+          <View style={[styles.cameraView, { justifyContent: 'flex-start', alignItems: 'flex-start', width: '100%' }]}>
+            <Text style={{ fontSize: 26, fontWeight: '700', color: '#059669', marginBottom: 10, alignSelf: 'center', width: '100%', textAlign: 'center' }}>Test Result</Text>
+            {resultData && resultData.success ? (
+              <>
+                <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Score: <Text style={{ color: '#059669' }}>{resultData.submission?.score}</Text></Text>
+                <ScrollView style={{ width: '100%' }}>
+                  {resultData.questions && resultData.questions.map((q, idx) => (
+                    <View key={idx} style={{ marginBottom: 18, backgroundColor: '#f1f5f9', borderRadius: 8, padding: 12 }}>
+                      <Text style={{ fontWeight: '700', color: '#1e293b', marginBottom: 4 }}>{idx + 1}. {q.question}</Text>
+                      {q.options && q.options.map((opt, i) => (
+                        <Text key={i} style={{ marginLeft: 12, color: opt === q.answer ? '#059669' : (resultData.answers && resultData.answers[idx] === opt ? '#dc2626' : '#334155'), fontWeight: opt === q.answer ? '700' : '400' }}>
+                          {String.fromCharCode(65 + i)}. {opt}
+                          {opt === q.answer ? ' (Correct)' : (resultData.answers && resultData.answers[idx] === opt ? ' (Your Answer)' : '')}
+                        </Text>
+                      ))}
+                    </View>
                   ))}
-                </View>
-              ))}
-            </ScrollView>
-          </>
-        ) : (
-          <Text style={{ color: '#dc2626', fontWeight: '600', fontSize: 18 }}>No result found.</Text>
-        )}
-        <TouchableOpacity style={[styles.closeBtn, { backgroundColor: '#059669', marginTop: 20 }]} onPress={() => setShowResult(false)}>
-          <Text style={styles.closeBtnText}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
+                </ScrollView>
+              </>
+            ) : (
+              <Text style={{ color: '#dc2626', fontWeight: '600', fontSize: 18 }}>No result found.</Text>
+            )}
+            <TouchableOpacity style={[styles.closeBtn, { backgroundColor: '#059669', marginTop: 20 }]} onPress={() => setShowResult(false)}>
+              <Text style={styles.closeBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

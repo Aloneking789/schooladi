@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Modal, ActivityIndicator, StyleSheet, Platform } from "react-native";
-import { useForm, Controller } from "react-hook-form";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from '@react-native-community/datetimepicker';
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const months = [
   "April", "May", "June", "July", "August", "September",
@@ -90,7 +90,7 @@ const StudentOnboarding = () => {
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
         const res = await axios.get(
-          `https://api.pbmpublicschool.in/api/classes/${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${principal_token}`,
@@ -114,7 +114,7 @@ const StudentOnboarding = () => {
     const fetchSubjects = async () => {
       try {
         const res = await axios.get(
-          `https://api.pbmpublicschool.in/api/newSchool/schools/${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/schools/${schoolId}`,
           {
             params: {
               schoolId: schoolId,
@@ -152,7 +152,7 @@ const StudentOnboarding = () => {
       const principal_token = await AsyncStorage.getItem("principal_token");
 
       const response = await axios.post(
-        "https://api.pbmpublicschool.in/api/admission/admission",
+        "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/admission",
         formattedData,
         {
           headers: {

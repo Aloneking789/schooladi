@@ -6,7 +6,7 @@ import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const PUBLIC_API = 'https://api.pbmpublicschool.in/api/resultpublish/public/results/by-idcard';
+const PUBLIC_API = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/resultpublish/public/results/by-idcard';
 
 const Results = () => {
   const [idcard, setIdcard] = useState('');
@@ -175,7 +175,7 @@ const Results = () => {
       let logoBase64: string | undefined;
       try {
         // Download remote logo and read as base64 so it can be embedded in the PDF HTML
-        const remoteUrl = 'https://api.pbmpublicschool.in/uploads/1758045530526.png';
+        const remoteUrl = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/uploads/1758045530526.png';
   const baseDir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory || '';
   const downloadRes = await FileSystem.downloadAsync(remoteUrl, baseDir + 'pbm_logo.png');
         const fileInfo = await FileSystem.readAsStringAsync(downloadRes.uri, { encoding: 'base64' });
@@ -212,7 +212,7 @@ const Results = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
       <View style={styles.header}>
-        <Image source={{ uri: 'https://api.pbmpublicschool.in/uploads/1758045530526.png' }} style={styles.logo} />
+        <Image source={{ uri: 'https://1rzlgxk8-5001.inc1.devtunnels.ms/uploads/1758045530526.png' }} style={styles.logo} />
         <Text style={styles.school}>P.B.M Public School</Text>
         <Text style={styles.subtitle}>Student Report Card</Text>
       </View>
@@ -320,7 +320,7 @@ const onExportAll = async () => {
     // prepare logo
     let logoBase64: string | undefined;
     try {
-      const remoteUrl = 'https://api.pbmpublicschool.in/uploads/1758045530526.png';
+      const remoteUrl = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/uploads/1758045530526.png';
       const baseDir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory || '';
       const downloadRes = await FileSystem.downloadAsync(remoteUrl, baseDir + 'pbm_logo_all.png');
       const fileInfo = await FileSystem.readAsStringAsync(downloadRes.uri, { encoding: 'base64' });
@@ -347,7 +347,7 @@ const onExportAll = async () => {
     // Fallback: if no cached results, attempt to call the public API directly
     if (!allResults || allResults.length === 0) {
       try {
-        const PUBLIC_API = 'https://api.pbmpublicschool.in/api/resultpublish/public/results/by-idcard';
+        const PUBLIC_API = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/resultpublish/public/results/by-idcard';
         if (id) {
           const res = await axios.get(`${PUBLIC_API}/${encodeURIComponent(id)}`);
           if (res.data && res.data.success) {

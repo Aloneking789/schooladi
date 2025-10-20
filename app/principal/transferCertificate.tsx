@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet, Alert, Modal, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const TransferCertificate = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +51,7 @@ const TransferCertificate = () => {
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
         const response = await fetch(
-          `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
           {
             headers: { Authorization: `Bearer ${principal_token}` },
           }

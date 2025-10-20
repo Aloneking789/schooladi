@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ActivityIndicator, Alert, ScrollView, Platform } from "react-native";
-import { useForm, Controller } from "react-hook-form";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type TeacherOnboardFormData = {
   fullName: string;
@@ -60,7 +60,7 @@ const TeacherOnboard = () => {
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
         const res = await axios.get(
-          `https://api.pbmpublicschool.in/api/classes/${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${principal_token}`,
@@ -113,7 +113,7 @@ const TeacherOnboard = () => {
         salaryPaid: data.salaryPaid || [],
       };
       const response = await axios.post(
-        "https://api.pbmpublicschool.in/api/teacher/register",
+        "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher/register",
         payload,
         {
           headers: {

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import responsive, { rem } from '../utils/responsive';
 
-const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/class-tests';
+const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/class-tests';
 
 const OnlineTest = () => {
   const [classId, setClassId] = useState('');
@@ -164,7 +164,7 @@ const OnlineTest = () => {
 
       }
       setLoading(true);
-      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${selectedTest.id}/submit`, {
+      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${selectedTest.id}/submit`, {
 
         method: 'POST',
         headers: {
@@ -206,7 +206,7 @@ const OnlineTest = () => {
     console.log('Fetching result for StudentId:', StudentId);
     try {
       setLoading(true);
-      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
+      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const data = await res.json();

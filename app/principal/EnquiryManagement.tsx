@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Modal, TextInput, ScrollView } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 const MessageModal = ({ visible, message, type, onConfirm, onCancel, showConfirmCancelButtons }: any) => {
   if (!visible) return null;
@@ -53,7 +53,7 @@ const EnquiryManagement = () => {
 
   const [search, setSearch] = useState('');
 
-  const API_BASE_URL = "https://api.pbmpublicschool.in/api/enquiry";
+  const API_BASE_URL = "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/enquiry";
 
   const fetchEnquiries = async () => {
     setLoading(true);

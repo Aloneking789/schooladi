@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Alert,
-} from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 const months = [
   "January",
@@ -75,7 +75,7 @@ const TeacherSalaryManagement = () => {
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
         const response = await fetch(
-          `https://api.pbmpublicschool.in/api/teacher/teachers/by-school/${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher/teachers/by-school/${schoolId}`,
           {
             headers: { Authorization: `Bearer ${principal_token}` },
           }
@@ -143,7 +143,7 @@ const TeacherSalaryManagement = () => {
       // TODO: Replace with AsyncStorage for production
       const principal_token = null; // await AsyncStorage.getItem("principal_token");
       await fetch(
-        `https://api.pbmpublicschool.in/api/teacher/teacher/${selectedTeacher.id}/salaryPaid`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher/teacher/${selectedTeacher.id}/salaryPaid`,
         {
           method: "PUT",
           headers: {

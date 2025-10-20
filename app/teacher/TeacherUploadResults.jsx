@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { rem } from '../utils/responsive';
 
-const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
+const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
 
 const examTypes = [
 	'Periodic I',
@@ -203,7 +203,7 @@ const TeacherUploadResults = () => {
 			// clamp obtained
 			const clamped = Math.max(0, Math.min(obtained, maxMarks));
 			marksPayload.push({ subject: subj.name, component: 'Theory', maxMarks, obtained: clamped });
-			const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
+			const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
 
 		}
 

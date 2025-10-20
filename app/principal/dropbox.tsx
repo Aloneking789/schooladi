@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from "react-native";
-import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const DropBox = () => {
   const [droppedStudents, setDroppedStudents] = useState<any[]>([]);
@@ -28,7 +28,7 @@ const DropBox = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await axios.get(
-        `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -58,7 +58,7 @@ const DropBox = () => {
             try {
               const token = await AsyncStorage.getItem("principal_token");
               await axios.patch(
-                `https://api.pbmpublicschool.in/api/sessions/students/${studentId}/revoke`,
+                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/students/${studentId}/revoke`,
                 {},
                 {
                   headers: {
@@ -90,7 +90,7 @@ const DropBox = () => {
             try {
               const token = await AsyncStorage.getItem("principal_token");
               await axios.delete(
-                `https://api.pbmpublicschool.in/api/admission/students/${studentId}`,
+                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${studentId}`,
                 {
                   headers: {
                     Authorization: `Bearer ${token}`,

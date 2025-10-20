@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import responsive, { rem } from '../utils/responsive';
@@ -20,7 +19,7 @@ type AttendanceRecord = {
   date: string;
 };
 
-const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
+const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
 
 import { useNavigation } from '@react-navigation/native';
 const TeacherDashboard = () => {

@@ -1,34 +1,32 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-  Image,
-  Alert,
-  FlatList,
-  ActivityIndicator,
-  Pressable
-} from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { Link } from "@react-navigation/native";
-import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import axios from "axios";
+import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from "react-native";
+import Toast from "react-native-toast-message";
 
 type PrincipalStackParamList = {
   Admissions: undefined;
   StudentOnboarding: undefined;
   // add other screens here if needed
 };
-import Toast from "react-native-toast-message";
-import { Picker } from "@react-native-picker/picker";
-import * as ImagePicker from 'expo-image-picker';
-import { Table, Row, Rows } from 'react-native-table-component';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface Student {
   _id?: string;
@@ -89,7 +87,7 @@ const Admissions = () => {
       try {
         const token = await AsyncStorage.getItem("principal_token");
         const response = await axios.get(
-          `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -148,7 +146,7 @@ const Admissions = () => {
     try {
       const token = AsyncStorage.getItem("principal_token");
       const res = await axios.put(
-        `https://api.pbmpublicschool.in/api/admission/students/${selectedStudent?.id}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${selectedStudent?.id}`,
         editData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -186,7 +184,7 @@ const Admissions = () => {
             try {
               const token = AsyncStorage.getItem("principal_token");
               const res = await axios.delete(
-                `https://api.pbmpublicschool.in/api/admission/students/${selectedStudent?.id}`,
+                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${selectedStudent?.id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               if (res.data.success) {
@@ -290,7 +288,7 @@ const Admissions = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await axios.post(
-        `https://api.pbmpublicschool.in/api/admission/students/${student.Admission_Number}/photo`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${student.Admission_Number}/photo`,
         formData,
         {
           headers: {
@@ -340,7 +338,7 @@ const Admissions = () => {
             try {
               const token = await AsyncStorage.getItem("principal_token");
               const res = await axios.delete(
-                `https://api.pbmpublicschool.in/api/admission/students/${student.Admission_Number}/photo`,
+                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${student.Admission_Number}/photo`,
                 {
                   headers: {
                     Authorization: `Bearer ${localStorage.getItem("principal_token")}`,
@@ -384,8 +382,8 @@ const Admissions = () => {
           <Image
             source={{
               uri: student.photo
-                ? `https://api.pbmpublicschool.in/${student.photo.replace(/\\/g, "/")}`
-                : 'https://api.pbmpublicschool.in/no-photo.png'
+                ? `https://1rzlgxk8-5001.inc1.devtunnels.ms/${student.photo.replace(/\\/g, "/")}`
+                : 'https://1rzlgxk8-5001.inc1.devtunnels.ms/no-photo.png'
             }}
             style={styles.cardStudentPhoto}
             onError={() => console.log("Image load error")}

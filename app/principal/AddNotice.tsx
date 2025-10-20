@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  TextInput,
-  StyleSheet,
-  Modal,
-  ActivityIndicator,
-  ScrollView
-} from 'react-native';
-import * as DocumentPicker from 'expo-document-picker';
-import { useForm, Controller } from 'react-hook-form';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as DocumentPicker from 'expo-document-picker';
+import React, { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 // Simple toast replacement using Alert
 const toast = (message: string) => Alert.alert('Notice', message);
@@ -52,7 +52,7 @@ const AddNotice = () => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('principal_token');
-      const res = await fetch('https://api.pbmpublicschool.in/api/notices/notices', {
+      const res = await fetch('https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -93,7 +93,7 @@ const AddNotice = () => {
 
     try {
       const token = await AsyncStorage.getItem('principal_token');
-      const res = await fetch('https://api.pbmpublicschool.in/api/notices/notices/1', {
+      const res = await fetch('https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices/1', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -129,7 +129,7 @@ const AddNotice = () => {
     try {
       setDeleting(true);
       const token = await AsyncStorage.getItem('principal_token');
-      const res = await fetch(`https://api.pbmpublicschool.in/api/notices/notices/${id}`, {
+      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  View, Text, FlatList, Image,
-  TouchableOpacity, Modal, StyleSheet,
-  ActivityIndicator, Alert
-} from "react-native";
-import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { captureRef } from "react-native-view-shot";
+import axios from "axios";
 import * as MediaLibrary from "expo-media-library";
+import React, { useEffect, useRef, useState } from "react";
+import {
+    ActivityIndicator, Alert,
+    FlatList, Image,
+    Modal, StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from "react-native";
+import { captureRef } from "react-native-view-shot";
 import RemoteImage from "../utils/getImageUrl";
 // import AdmissionsSkeleton from "../../Loading/AdmissionsLoading"; // RN-compatible loader
 
@@ -60,7 +63,7 @@ const TeacherIDCard = () => {
       try {
         const token = await AsyncStorage.getItem("principal_token");
         const res = await axios.get(
-          `https://api.pbmpublicschool.in/api/teacher/teachers/by-school/${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher/teachers/by-school/${schoolId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setTeachers(res.data.teachers || []);
@@ -77,7 +80,7 @@ const TeacherIDCard = () => {
     (async () => {
       try {
         const res = await fetch(
-          `https://api.pbmpublicschool.in/api/newSchool/school-assets/by-school/${schoolId}`
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/school-assets/by-school/${schoolId}`
         );
         const data = await res.json();
         setSchoolLogo(data.schoolLogo);

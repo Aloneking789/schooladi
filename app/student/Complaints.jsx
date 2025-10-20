@@ -42,7 +42,7 @@ const Complaints = ({ token: initialToken, studentId: initialStudentId }) => {
       setLoadingComplaints(true);
       setComplaintsError(null);
       try {
-        const url = `https://api.pbmpublicschool.in/api/complaints/complaints/my/${studentId}`;
+        const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/complaints/complaints/my/${studentId}`;
         const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
         if (res.data && res.data.success) {
           const sorted = Array.isArray(res.data.complaints) ? res.data.complaints.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : [];
@@ -72,7 +72,7 @@ const Complaints = ({ token: initialToken, studentId: initialStudentId }) => {
       const id = replyingComplaint.id;
       const body = { reply: replyText };
       const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-      const base = 'https://api.pbmpublicschool.in/api';
+      const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
       const candidates = [
         `${base}/complaints/${id}/student-reply/${studentId}`,
         `${base}/complaints/complaints/${id}/student-reply/${studentId}`,

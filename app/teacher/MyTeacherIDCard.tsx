@@ -1,9 +1,9 @@
 
-import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { captureRef } from "react-native-view-shot";
 import * as MediaLibrary from "expo-media-library";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { captureRef } from "react-native-view-shot";
 import RemoteImage from "../utils/getImageUrl";
 
 // Define the Teacher type for proper type checking
@@ -53,7 +53,7 @@ const MyTeacherIDCard = () => {
         // Optionally update school logo and principal signature from API if schoolId exists
         if (schoolId) {
           try {
-            const res = await fetch(`https://api.pbmpublicschool.in/api/newSchool/school-assets/by-school/${schoolId}`);
+            const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/school-assets/by-school/${schoolId}`);
             const data = await res.json();
             if (data.schoolLogo) setSchoolLogo(data.schoolLogo);
             if (data.principalSignature) setPrincipalSignature(data.principalSignature);

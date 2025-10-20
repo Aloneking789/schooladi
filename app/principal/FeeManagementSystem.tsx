@@ -6,20 +6,20 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Linking,
-  Modal,
-  Platform,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Linking,
+    Modal,
+    Platform,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/Feather';
@@ -120,7 +120,7 @@ export default function FeeManagementSystem({ }: FeeManagementSystemProps) {
     try {
       const headers = await getAuthHeaders();
       const response = await fetch(
-        `https://api.pbmpublicschool.in/api/newSchool/school-assets/by-school/${schoolId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/school-assets/by-school/${schoolId}`,
         headers
       );
       const data: SchoolAssetsResponse = await response.json();
@@ -164,7 +164,7 @@ export default function FeeManagementSystem({ }: FeeManagementSystemProps) {
     try {
       const headers = await getAuthHeaders();
       const response = await fetch(
-        `https://api.pbmpublicschool.in/api/classes/${schoolId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`,
         headers
       );
       const data: FetchClassesResponse = await response.json();
@@ -202,7 +202,7 @@ export default function FeeManagementSystem({ }: FeeManagementSystemProps) {
     try {
       const headers = await getAuthHeaders();
       const response = await fetch(
-        `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
         headers
       );
       const data: FetchStudentsResponse = await response.json();
@@ -265,15 +265,15 @@ export default function FeeManagementSystem({ }: FeeManagementSystemProps) {
       const [feeManagementRes, feeCollectionRes, schoolFeeRes] =
         await Promise.all([
           fetch(
-            `https://api.pbmpublicschool.in/api/fees/feemanagement?schoolId=${schoolId}`,
+            `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/fees/feemanagement?schoolId=${schoolId}`,
             headers
           ),
           fetch(
-            `https://api.pbmpublicschool.in/api/fees/feecollection?schoolId=${schoolId}`,
+            `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/fees/feecollection?schoolId=${schoolId}`,
             headers
           ),
           fetch(
-            `https://api.pbmpublicschool.in/api/fees/schoolfee?schoolId=${schoolId}`,
+            `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/fees/schoolfee?schoolId=${schoolId}`,
             headers
           ),
         ]);
@@ -384,7 +384,7 @@ export default function FeeManagementSystem({ }: FeeManagementSystemProps) {
             try {
               const headers = await getAuthHeaders();
               const response = await fetch(
-                `https://api.pbmpublicschool.in/api/fees/${activeTab}/${id}`,
+                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/fees/${activeTab}/${id}`,
                 {
                   method: 'DELETE',
                   ...headers,
@@ -438,8 +438,8 @@ export default function FeeManagementSystem({ }: FeeManagementSystemProps) {
     try {
       const url =
         modalType === 'create'
-          ? `https://api.pbmpublicschool.in/api/fees/${activeTab}`
-          : `https://api.pbmpublicschool.in/api/fees/${activeTab}/${selectedItem?.id}`;
+          ? `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/fees/${activeTab}`
+          : `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/fees/${activeTab}/${selectedItem?.id}`;
 
       const method = modalType === 'create' ? 'POST' : 'PUT';
       const headers = await getAuthHeaders();

@@ -6,18 +6,18 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    Linking,
+    Modal,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
@@ -75,7 +75,7 @@ const MyStudents = () => {
   const [complaintDescription, setComplaintDescription] = useState('');
   const [complaintSubmitting, setComplaintSubmitting] = useState(false);
 
-  const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
+  const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
 
   useEffect(() => {
     const getUserData = async () => {
@@ -139,7 +139,7 @@ const MyStudents = () => {
     if (!studentId || !token) return;
     try {
       const res = await axios.get(
-        `https://api.pbmpublicschool.in/api/StudentDocUpload/students/${studentId}/documents`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/StudentDocUpload/students/${studentId}/documents`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data && res.data.success) {
@@ -153,7 +153,7 @@ const MyStudents = () => {
   const openDocumentUrl = (relUrl: string) => {
     if (!relUrl) return;
     const clean = relUrl.replace(/\\/g, '/');
-    const full = `https://api.pbmpublicschool.in/${clean}`;
+    const full = `https://1rzlgxk8-5001.inc1.devtunnels.ms/${clean}`;
     Linking.openURL(full).catch((e) => console.warn('Unable to open url', e));
   };
 
@@ -192,7 +192,7 @@ const MyStudents = () => {
       // Append the blob with a filename so server receives a file field
       formData.append(keyName, fileBlob as any, fileName);
 
-      const uploadUrl = `https://api.pbmpublicschool.in/api/StudentDocUpload/students/${student.id}/documents`;
+      const uploadUrl = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/StudentDocUpload/students/${student.id}/documents`;
       const res = await axios.post(uploadUrl, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -403,7 +403,7 @@ const MyStudents = () => {
         return;
       }
 
-      const uploadUrl = `https://api.pbmpublicschool.in/api/StudentDocUpload/students/${student.id}/documents`;
+      const uploadUrl = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/StudentDocUpload/students/${student.id}/documents`;
 
       // Log the FormData contents for debugging
       for (let pair of (formData as any).entries()) {
@@ -505,7 +505,7 @@ const MyStudents = () => {
     }
     // If already a full URL, return as is
     if (/^https?:\/\//.test(photo)) return photo;
-    return `https://api.pbmpublicschool.in/${photo.replace(/\\/g, '/')}`;
+    return `https://1rzlgxk8-5001.inc1.devtunnels.ms/${photo.replace(/\\/g, '/')}`;
   };
 
   // Photo upload handler with automatic resizing to meet 25-50KB requirement

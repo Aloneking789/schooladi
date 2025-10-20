@@ -4,8 +4,8 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_LIST = 'https://api.pbmpublicschool.in/api/complaints/complaints';
-const API_REPLY = (id) => `https://api.pbmpublicschool.in/api/complaints/complaints/${id}/reply`;
+const API_LIST = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/complaints/complaints';
+const API_REPLY = (id) => `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/complaints/complaints/${id}/reply`;
 
 export default function ComplaintsDispossle({ navigation }) {
   const [loading, setLoading] = useState(true);

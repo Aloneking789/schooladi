@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, ScrollView, Button, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Button, FlatList, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 interface DailyAttendanceSummaryProps {
   schoolId: string;
@@ -23,7 +23,7 @@ const DailyAttendanceSummary = ({ schoolId, teacherId }: DailyAttendanceSummaryP
       const token = await AsyncStorage.getItem("principal_token");
 
       const response = await axios.get(
-        `https://api.pbmpublicschool.in/api/teacher-attendance/daily-summary`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher-attendance/daily-summary`,
         {
           params: {
             schoolId,

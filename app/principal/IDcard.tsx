@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  FlatList,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Image,
-  ScrollView,
-} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 // import AdmissionsSkeleton from "../../Loading/AdmissionsLoading";
 import { getImageUrl } from "../utils/getImageUrl";
@@ -115,7 +115,7 @@ const IDCardBuilder: React.FC = () => {
       try {
         const token = await AsyncStorage.getItem("principal_token");
         const response = await fetch(
-          `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -139,7 +139,7 @@ const IDCardBuilder: React.FC = () => {
     const fetchAssets = async () => {
       try {
         const res = await fetch(
-          `https://api.pbmpublicschool.in/api/newSchool/school-assets/by-school/${schoolId}`
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/school-assets/by-school/${schoolId}`
         );
         const data = await res.json();
         setSchoolLogo(data.schoolLogo || null);

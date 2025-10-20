@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, TextInput, TouchableOpacity, Modal, ActivityIndicator, Alert, StyleSheet, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type Teacher = {
   id: string;
@@ -34,7 +34,7 @@ const Teachers = () => {
       return;
     }
     fetch(
-      `https://api.pbmpublicschool.in/api/teacher/teachers/by-school/${schoolId}`,
+      `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher/teachers/by-school/${schoolId}`,
       {
         headers: {
           Authorization: `Bearer ${principal_token}`,
@@ -54,7 +54,7 @@ const Teachers = () => {
   }, [schoolId, principal_token]);
 
   const handleDelete = (id: string) => {
-    fetch(`https://api.pbmpublicschool.in/api/teacher/teacher/${id}`, {
+    fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher/teacher/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${principal_token}`,

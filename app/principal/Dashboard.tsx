@@ -1,13 +1,12 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 const quickActions = [
@@ -112,7 +111,7 @@ const Dashboard = () => {
           setAdmissionsLoading(true);
           // Fetch all dashboard stats in one call
           const dashboardRes = await fetch(
-            `https://api.pbmpublicschool.in/api/dashboard/${schoolId}`,
+            `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/dashboard/${schoolId}`,
             { headers: { Authorization: `Bearer ${principal_token}` } }
           );
           const dashboardData = await dashboardRes.json();
@@ -160,7 +159,7 @@ const Dashboard = () => {
       setMessagesLoading(true);
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
-        const res = await fetch("https://api.pbmpublicschool.in/api/enquiry", {
+        const res = await fetch("https://1rzlgxk8-5001.inc1.devtunnels.ms/api/enquiry", {
           headers: {
             Authorization: `Bearer ${principal_token}`,
             "Content-Type": "application/json",

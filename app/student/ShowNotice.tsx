@@ -1,13 +1,13 @@
+import axios from "axios";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import axios from "axios";
 
 interface Notice {
   id: string;
@@ -32,7 +32,7 @@ const ShowNotice: React.FC = () => {
   useEffect(() => {
     const fetchNotices = async () => {
       try {
-        const response = await axios.get("https://api.pbmpublicschool.in/api/notices/notices");
+        const response = await axios.get("https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices");
         if (response.data.success) {
           setNotices(response.data.notices.slice(0, 5));
         }

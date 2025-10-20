@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  Modal,
-  FlatList,
-  StyleSheet,
-  Button,
-  Platform,
-} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import type { ImagePickerAsset } from 'expo-image-picker';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Button,
+    FlatList,
+    Image,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import RemoteImage from '../utils/getImageUrl';
 
 const SchoolGallery = () => {
@@ -62,7 +61,7 @@ const SchoolGallery = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://api.pbmpublicschool.in/api/newSchool/landing-images/by-school/${schoolid}`
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/landing-images/by-school/${schoolid}`
       );
       const data = await res.json();
       setGallery(data.images || []);
@@ -139,7 +138,7 @@ const SchoolGallery = () => {
 
     setLoading(true);
     try {
-      await fetch('https://api.pbmpublicschool.in/api/newSchool/landing-images', {
+      await fetch('https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/landing-images', {
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -174,7 +173,7 @@ const SchoolGallery = () => {
     setLoading(true);
     try {
       await fetch(
-        `https://api.pbmpublicschool.in/api/newSchool/landing-images/${deleteItemId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/landing-images/${deleteItemId}`,
         { method: 'DELETE' }
       );
       Alert.alert('Success', 'Image deleted.');

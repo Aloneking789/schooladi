@@ -3,7 +3,7 @@ import { Image, ImageProps } from "react-native";
 
 export function getImageUrl(path: string | null | undefined): string {
   if (!path) return "/no-photo.png";
-  return `https://api.pbmpublicschool.in/${path.replace(/\\/g, "/")}`;
+  return `https://1rzlgxk8-5001.inc1.devtunnels.ms/${path.replace(/\\/g, "/")}`;
 }
 
 interface RemoteImageProps extends Omit<ImageProps, 'source'> {

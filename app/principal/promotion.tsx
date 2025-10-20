@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView, Switch } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 interface Student {
   id: string;
@@ -81,7 +81,7 @@ const Promotion: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await fetch(
-        `https://api.pbmpublicschool.in/api/sessions/schools/${schoolId}/sessions`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/schools/${schoolId}/sessions`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -89,7 +89,7 @@ const Promotion: React.FC = () => {
       if (data.sessions && data.sessions.length > 0) {
         // Fetch active session info
         const activeRes = await fetch(
-          `https://api.pbmpublicschool.in/api/sessions/sessions/active?schoolId=${schoolId}`,
+          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/sessions/active?schoolId=${schoolId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const active = (await activeRes.json()).session;
@@ -114,7 +114,7 @@ const Promotion: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await fetch(
-        `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}?sessionId=${sessionId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}?sessionId=${sessionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -130,7 +130,7 @@ const Promotion: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await fetch(
-        `https://api.pbmpublicschool.in/api/sessions/sessions/active?schoolId=${schoolId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/sessions/active?schoolId=${schoolId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -151,7 +151,7 @@ const Promotion: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await fetch(
-        `https://api.pbmpublicschool.in/api/classes/${schoolId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -166,7 +166,7 @@ const Promotion: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await fetch(
-        `https://api.pbmpublicschool.in/api/sessions/studentsessions/by-school/${schoolId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/studentsessions/by-school/${schoolId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -245,7 +245,7 @@ const Promotion: React.FC = () => {
       const token = await AsyncStorage.getItem("principal_token");
       if (promoted.length > 0) {
         await fetch(
-          "https://api.pbmpublicschool.in/api/sessions/students/promote",
+          "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/students/promote",
           {
             method: 'POST',
             headers: {
@@ -262,7 +262,7 @@ const Promotion: React.FC = () => {
       }
       if (dropped.length > 0) {
         await fetch(
-          "https://api.pbmpublicschool.in/api/sessions/students/drop",
+          "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/students/drop",
           {
             method: 'POST',
             headers: {
@@ -299,7 +299,7 @@ const Promotion: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       await fetch(
-        `https://api.pbmpublicschool.in/api/sessions/schools/${schoolId}/sessions`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/schools/${schoolId}/sessions`,
         {
           method: 'POST',
           headers: {
@@ -323,7 +323,7 @@ const Promotion: React.FC = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       await fetch(
-        `https://api.pbmpublicschool.in/api/sessions/sessions/${sessionId}`,
+        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/sessions/${sessionId}`,
         {
           method: 'PATCH',
           headers: {

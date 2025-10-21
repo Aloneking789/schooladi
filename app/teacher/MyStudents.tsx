@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import PaymentCalendar from '../../app/components/PaymentCalendar';
+import responsive, { rem } from '../utils/responsive';
 
 interface Student {
   id: string;
@@ -703,7 +704,7 @@ const MyStudents = () => {
               </View>
 
               <View style={styles.cardBody}>
-                <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
+                <View style={{ alignItems: 'flex-end', marginBottom: rem(8) }}>
                   <TouchableOpacity style={[styles.smallButton, { backgroundColor: '#fde68a' }]} onPress={() => openUploadModal(student)}>
                     <Text style={[styles.smallButtonText, { color: '#92400e' }]}>Upload Documents</Text>
                   </TouchableOpacity>
@@ -713,7 +714,7 @@ const MyStudents = () => {
                 </View>
 
               {/* Payments toggle */}
-              <View style={{ marginTop: 12 }}>
+              <View style={{ marginTop: rem(12) }}>
                 <TouchableOpacity
                   style={[styles.smallButton, { backgroundColor: '#ecfdf5' }]}
                   onPress={() => setExpandedPaymentStudentId(prev => prev === student.id ? null : student.id)}
@@ -723,7 +724,7 @@ const MyStudents = () => {
               </View>
 
               {expandedPaymentStudentId === student.id && (
-                <View style={{ marginTop: 12 }}>
+                <View style={{ marginTop: rem(12) }}>
                   <PaymentCalendar studentId={student.id} apiBaseUrl={API_BASE_URL} />
                 </View>
               )}
@@ -836,7 +837,7 @@ const MyStudents = () => {
                       placeholder="Description"
                       value={complaintDescription}
                       onChangeText={setComplaintDescription}
-                      style={[styles.input, { height: 120 }, complaintSubmitting ? { opacity: 0.6 } : {}]}
+                      style={[styles.input, { height: rem(120) }, complaintSubmitting ? { opacity: 0.6 } : {}]}
                       multiline
                       editable={!complaintSubmitting}
                     />
@@ -916,7 +917,7 @@ const MyStudents = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Upload Documents for {uploadTargetStudent?.studentName}</Text>
-            <ScrollView style={{ maxHeight: 380 }}>
+            <ScrollView style={{ maxHeight: Math.min(responsive.height * 0.75, rem(380)) }}>
               {[
                 { key: 'Student_adhaarCopyUrl', label: 'Student Aadhar' },
                 { key: 'Parents_adharCopyUrl', label: 'Parents Aadhar' },
@@ -953,7 +954,7 @@ const MyStudents = () => {
                 </View>
               ))}
             </ScrollView>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: rem(12) }}>
               <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => { setUploadModalVisible(false); setUploadTargetStudent(null); }}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>

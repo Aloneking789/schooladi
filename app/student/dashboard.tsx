@@ -134,20 +134,24 @@ const StudentDashboard = () => {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActionsRow}>
           <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('StudentNotices' as never)}>
-            <Ionicons name="notifications-outline" size={rem(20)} color="#667eea" />
-            <Text style={styles.quickActionText}>Notices</Text>
+            <Ionicons name="notifications-outline" size={rem(30)} color="#667eea" />
+            <Text style={styles.quickActionText}></Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('StudentResults' as never)}>
-              <Ionicons name="document-text-outline" size={rem(20)} color="#f78316" />
-            <Text style={styles.quickActionText}>Results</Text>
+              <Ionicons name="document-text-outline" size={rem(30)} color="#f78316" />
+            <Text style={styles.quickActionText}></Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('OnlineTest' as never)}>
-              <Ionicons name="laptop-outline" size={rem(20)} color="#059669" />
-            <Text style={styles.quickActionText}>Online Test</Text>
+              <Ionicons name="laptop-outline" size={rem(30)} color="#059669" />
+            <Text style={styles.quickActionText}></Text>
           </TouchableOpacity>
            <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('HomeWork' as never)}>
-              <Ionicons name="book" size={rem(20)} color="#059669" />
-            <Text style={styles.quickActionText}>Home Wrok</Text>
+              <Ionicons name="book" size={rem(30)} color="#059669" />
+            <Text style={styles.quickActionText}></Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('StudentAttendanceCalendar' as never)}>
+              <Ionicons name="calendar-outline" size={rem(30)} color="#10b981" />
+            <Text style={styles.quickActionText}></Text>
           </TouchableOpacity>
         </View>
       </View>

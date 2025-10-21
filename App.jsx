@@ -55,6 +55,7 @@ import TeacherHomework from './app/teacher/teacherHomework';
 import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 import { configureStatusBar } from './app/utils/statusBarConfig';
 import OnlineTestManage from './app/principal/OnlineTestManage';
+import AttendanceCalendar from './app/student/AttendanceReport';
 // import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 // import TeacherSelfAttendance from './app/teacher/TeacherAttendance';
 
@@ -155,6 +156,14 @@ export default function App() {
           children={props => (
             <Layout>
               <StudentResults {...props} />
+            </Layout>
+          )}
+        />
+         <Stack.Screen
+          name="StudentAttendanceCalendar"
+          children={props => (
+            <Layout>
+              <AttendanceCalendar {...props} />
             </Layout>
           )}
         />

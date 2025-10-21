@@ -121,7 +121,6 @@ const Results = () => {
 
       {/* Academic Session Banner */}
       <View style={styles.sessionBanner}>
-        <Text style={styles.sessionText}>ACADEMIC SESSION: 2025-26</Text>
         <Text style={styles.reportTitle}>EXAMINATION REPORT CARD</Text>
       </View>
 
@@ -293,8 +292,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   logo: {
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 60,
     marginRight: 15,
     borderRadius: 35,
   },
@@ -310,15 +309,15 @@ const styles = StyleSheet.create({
   schoolAddress: {
     fontSize: 12,
     color: '#6b7280',
-    marginBottom: 3,
+    marginBottom: 1,
   },
   schoolContact: {
-    fontSize: 11,
+    fontSize: 9,
     color: '#6b7280',
   },
   sessionBanner: {
-    backgroundColor: '#3b82f6',
-    padding: 15,
+    backgroundColor: '#f97316',
+    padding: 1,
     alignItems: 'center',
   },
   sessionText: {

@@ -3,8 +3,9 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useUser } from '../UserContext';
+import { rem } from '../utils/responsive';
 
 interface MenuItem {
   name: string;
@@ -83,15 +84,18 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
             {items.map((item) => {
               const isActive = currentRoute === item.path;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={item.name}
-                  style={[styles.tabItem, isActive && styles.tabItemActive]}
                   onPress={() => handleTabPress(item)}
-                  activeOpacity={0.8}
+                  style={({ pressed }) => [
+                    styles.tabItem,
+                    isActive && styles.tabItemActive,
+                    pressed ? { transform: [{ scale: 0.94 }], opacity: 0.9 } : {},
+                  ]}
                 >
-                  <Ionicons name={item.iconName as any} size={26} color={isActive ? '#403ae2ff' : '#64748b'} />
+                  <Ionicons name={item.iconName as any} size={rem(20)} color={isActive ? '#403ae2ff' : '#64748b'} />
                   <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{item.name.replace('OnlineTest', 'Test')}</Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>

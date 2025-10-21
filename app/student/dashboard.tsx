@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import PaymentCalendar from '../components/PaymentCalendar';
 import responsive, { rem } from "../utils/responsive";
 import Complaints from './Complaints';
@@ -133,26 +133,25 @@ const StudentDashboard = () => {
       <View style={[styles.section, styles.quickActionsSectionContainer]}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActionsRow}>
-          <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('StudentNotices' as never)}>
-            <Ionicons name="notifications-outline" size={rem(30)} color="#667eea" />
-            <Text style={styles.quickActionText}></Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('StudentResults' as never)}>
-              <Ionicons name="document-text-outline" size={rem(30)} color="#f78316" />
-            <Text style={styles.quickActionText}></Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('OnlineTest' as never)}>
-              <Ionicons name="laptop-outline" size={rem(30)} color="#059669" />
-            <Text style={styles.quickActionText}></Text>
-          </TouchableOpacity>
-           <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('HomeWork' as never)}>
-              <Ionicons name="book" size={rem(30)} color="#059669" />
-            <Text style={styles.quickActionText}></Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('StudentAttendanceCalendar' as never)}>
-              <Ionicons name="calendar-outline" size={rem(30)} color="#10b981" />
-            <Text style={styles.quickActionText}></Text>
-          </TouchableOpacity>
+          {[
+            { route: 'StudentNotices', icon: 'notifications-outline', color: '#667eea' },
+            { route: 'StudentResults', icon: 'document-text-outline', color: '#f78316' },
+            { route: 'OnlineTest', icon: 'laptop-outline', color: '#059669' },
+            { route: 'HomeWork', icon: 'book', color: '#446ff1ff' },
+            { route: 'StudentAttendanceCalendar', icon: 'calendar-outline', color: '#10b981' },
+          ].map((it) => (
+            <Pressable
+              key={it.route}
+              onPress={() => navigation.navigate(it.route as never)}
+              style={({ pressed }) => [
+                styles.quickActionBtn,
+                pressed ? { transform: [{ scale: 0.96 }], opacity: 0.9 } : {},
+              ]}
+            >
+              <Ionicons name={it.icon as any} size={rem(30)} color={it.color} />
+              <Text style={styles.quickActionText}></Text>
+            </Pressable>
+          ))}
         </View>
       </View>
 

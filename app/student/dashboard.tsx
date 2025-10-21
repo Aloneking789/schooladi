@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import PaymentCalendar from '../components/PaymentCalendar';
 import responsive, { rem } from "../utils/responsive";
 import Complaints from './Complaints';
 
@@ -43,6 +44,7 @@ const StudentDashboard = () => {
   const [replyingComplaint, setReplyingComplaint] = useState<any | null>(null);
   const [replyText, setReplyText] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
+  const [showPayments, setShowPayments] = useState(true);
   const navigation = useNavigation() as any;
 
   useEffect(() => {
@@ -154,17 +156,36 @@ const StudentDashboard = () => {
 
 
       <Complaints token={token} studentId={studentId} />
+
+      {/* Payments toggle for student */}
+      <View style={{ marginTop: rem(-30) }}>
+        <TouchableOpacity
+          style={[styles.quickActionBtn, { backgroundColor: '#ecfdf5' }]}
+          onPress={() => {
+            setShowPayments(s => !s);
+            console.log('Toggled payments, now showPayments =', !showPayments);
+          }}
+        >
+          <Text style={[styles.quickActionText, { color: '#065f46' }]}>{showPayments ? 'Hide Payments' : 'Show Payments'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {showPayments && studentId ? (
+        <View style={{ marginTop: rem(12) }}>
+          <PaymentCalendar studentId={studentId} apiBaseUrl={'https://1rzlgxk8-5001.inc1.devtunnels.ms/api'} tokenKey={'student_token'} />
+        </View>
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: rem(12),
+    padding: rem(1),
     backgroundColor: '#fff',
   },
   title: {
-    fontSize: rem(20),
+    fontSize: rem(1),
     fontWeight: 'bold',
     marginBottom: rem(12),
     color: '#1f2937',
@@ -172,7 +193,7 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   card: {
     flex: 1,

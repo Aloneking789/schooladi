@@ -2,9 +2,12 @@ import { Dimensions } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
-// Based on guidelines from react-native-size-matters / scaled-size
-const guidelineBaseWidth = 350; // good baseline for mobile devices
-const guidelineBaseHeight = 680;
+// Detect tablet vs phone heuristics
+export const isTablet = Math.min(width, height) >= 600 || Math.max(width, height) >= 900;
+
+// Adjust guideline base sizes for tablet vs phone
+const guidelineBaseWidth = isTablet ? 820 : 350;
+const guidelineBaseHeight = isTablet ? 1180 : 680;
 
 export const scale = (size: number) => (width / guidelineBaseWidth) * size;
 export const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;

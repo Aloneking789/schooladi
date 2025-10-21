@@ -6,20 +6,21 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Linking,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import PaymentCalendar from '../../app/components/PaymentCalendar';
 
 interface Student {
   id: string;
@@ -68,12 +69,12 @@ const MyStudents = () => {
   const [uploadTargetStudent, setUploadTargetStudent] = useState<Student | null>(null);
   const [uploadFiles, setUploadFiles] = useState<Record<string, { uri: string; name: string; type: string } | null>>({});
   const [uploadingAll, setUploadingAll] = useState(false);
-  // Complaint modal state
   const [complaintModalVisible, setComplaintModalVisible] = useState(false);
   const [complaintStudent, setComplaintStudent] = useState<Student | null>(null);
   const [complaintTitle, setComplaintTitle] = useState('');
   const [complaintDescription, setComplaintDescription] = useState('');
   const [complaintSubmitting, setComplaintSubmitting] = useState(false);
+  const [expandedPaymentStudentId, setExpandedPaymentStudentId] = useState<string | null>(null);
 
   const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
 
@@ -100,7 +101,6 @@ const MyStudents = () => {
     getUserData();
   }, []);
 
-  // Move fetchStudents outside useEffect for reload
   const fetchStudents = async () => {
     if (!schoolId || !classId || !token) {
       setLoading(false);
@@ -114,13 +114,11 @@ const MyStudents = () => {
         }
       );
       if (response.data.success) {
-        // Filter students by teacher's classId
         const classStudents = response.data.students.filter(
           (student: Student) => student.classId === classId
         );
         setStudents(classStudents);
         setFilteredStudents(classStudents);
-        // fetch documents for each student
         classStudents.forEach((st: Student) => {
           fetchDocumentsForStudent(st.id);
         });
@@ -157,68 +155,228 @@ const MyStudents = () => {
     Linking.openURL(full).catch((e) => console.warn('Unable to open url', e));
   };
 
-  const handleDocumentUpload = async (student: Student, keyName: string) => {
+  // Helper function to get file size from URI
+  const getFileSize = async (uri: string): Promise<number> => {
     try {
-      if (!token) {
-        Alert.alert('Authentication', 'Please login to upload documents');
-        return;
-      }
-      setDocUploading((p) => ({ ...p, [student.id]: true }));
-
-      const picker = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
-      if ((picker as any).type === 'cancel') {
-        setDocUploading((p) => ({ ...p, [student.id]: false }));
-        return;
-      }
-
-      // Some platforms/versions may provide different properties; guard defensively
-      const fileUri = (picker as any).uri || (picker as any).fileUri || (picker as any).output || (picker as any).outputUri;
-      const fileName = (picker as any).name || (fileUri ? String(fileUri).split('/').pop() : undefined) || 'upload.file';
-      if (!fileUri) {
-        throw new Error('Selected file has no URI');
-      }
-      // infer mime type by extension
-      const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
-      let mime = 'application/octet-stream';
-      if (ext === 'pdf') mime = 'application/pdf';
-      else if (['jpg', 'jpeg'].includes(ext)) mime = 'image/jpeg';
-      else if (ext === 'png') mime = 'image/png';
-
-      // fetch file content and convert to blob so we append real file body to FormData
-      const fileResp = await fetch(fileUri);
-      const fileBlob = await fileResp.blob();
-
-      const formData = new FormData();
-      // Append the blob with a filename so server receives a file field
-      formData.append(keyName, fileBlob as any, fileName);
-
-      const uploadUrl = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/StudentDocUpload/students/${student.id}/documents`;
-      const res = await axios.post(uploadUrl, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (res.data && res.data.success) {
-        Toast.show({ type: 'success', text1: 'Document uploaded' });
-        Alert.alert('Success', 'Document uploaded successfully');
-        // refresh documents for this student
-        await fetchDocumentsForStudent(student.id);
-      } else {
-        Toast.show({ type: 'error', text1: res.data.message || 'Upload failed' });
-      }
-    } catch (err) {
-      console.error('Document upload error', err);
-      Toast.show({ type: 'error', text1: 'Upload failed' });
-    } finally {
-      setDocUploading((p) => ({ ...p, [student.id]: false }));
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return blob.size;
+    } catch (error) {
+      console.error('Error getting file size:', error);
+      return 0;
     }
   };
 
-  // Open modal to select multiple files and upload together
+  // Resize photo to 25-50KB range
+  const resizePhotoToTarget = async (uri: string): Promise<{ uri: string; size: number }> => {
+    let currentUri = uri;
+    let currentSize = await getFileSize(uri);
+    
+    const MIN_SIZE = 25 * 1024; // 25KB
+    const MAX_SIZE = 50 * 1024; // 50KB
+    
+    // Start with different resize dimensions based on initial size
+    let width = currentSize > 500000 ? 600 : 800;
+    let quality = 0.9;
+    
+    console.log(`Initial photo size: ${(currentSize / 1024).toFixed(2)}KB`);
+    
+    // Try to get within range
+    let attempts = 0;
+    const maxAttempts = 15;
+    
+    while (attempts < maxAttempts) {
+      if (currentSize >= MIN_SIZE && currentSize <= MAX_SIZE) {
+        console.log(`Photo resized successfully to ${(currentSize / 1024).toFixed(2)}KB in ${attempts} attempts`);
+        break;
+      }
+      
+      if (currentSize > MAX_SIZE) {
+        // Too large, reduce size
+        width = Math.max(200, Math.floor(width * 0.85));
+        quality = Math.max(0.3, quality - 0.1);
+      } else if (currentSize < MIN_SIZE) {
+        // Too small, increase size
+        width = Math.min(1200, Math.floor(width * 1.2));
+        quality = Math.min(1.0, quality + 0.1);
+      }
+      
+      const result = await ImageManipulator.manipulateAsync(
+        currentUri,
+        [{ resize: { width } }],
+        { compress: quality, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      
+      currentUri = result.uri;
+      currentSize = await getFileSize(currentUri);
+      attempts++;
+      
+      console.log(`Attempt ${attempts}: Size=${(currentSize / 1024).toFixed(2)}KB, Width=${width}, Quality=${quality.toFixed(2)}`);
+    }
+    
+    return { uri: currentUri, size: currentSize };
+  };
+
+  // Resize document to 100-200KB range
+  const resizeDocumentToTarget = async (uri: string, mimeType: string): Promise<{ uri: string; size: number }> => {
+    const MIN_SIZE = 100 * 1024; // 100KB
+    const MAX_SIZE = 200 * 1024; // 200KB
+    
+    // For PDFs and non-image files, return as-is since we can't compress them easily
+    if (!mimeType.startsWith('image/')) {
+      const size = await getFileSize(uri);
+      if (size > MAX_SIZE) {
+        throw new Error(`Document size (${(size / 1024).toFixed(2)}KB) exceeds maximum allowed size of 200KB. Please select a smaller file.`);
+      }
+      return { uri, size };
+    }
+    
+    // For images
+    let currentUri = uri;
+    let currentSize = await getFileSize(uri);
+    
+    console.log(`Initial document size: ${(currentSize / 1024).toFixed(2)}KB`);
+    
+    let width = currentSize > 1000000 ? 1200 : 1600;
+    let quality = 0.9;
+    
+    let attempts = 0;
+    const maxAttempts = 15;
+    
+    while (attempts < maxAttempts) {
+      if (currentSize >= MIN_SIZE && currentSize <= MAX_SIZE) {
+        console.log(`Document resized successfully to ${(currentSize / 1024).toFixed(2)}KB in ${attempts} attempts`);
+        break;
+      }
+      
+      if (currentSize > MAX_SIZE) {
+        // Too large, reduce size
+        width = Math.max(400, Math.floor(width * 0.85));
+        quality = Math.max(0.3, quality - 0.1);
+      } else if (currentSize < MIN_SIZE) {
+        // Too small, increase size
+        width = Math.min(2400, Math.floor(width * 1.2));
+        quality = Math.min(1.0, quality + 0.1);
+      }
+      
+      const result = await ImageManipulator.manipulateAsync(
+        currentUri,
+        [{ resize: { width } }],
+        { compress: quality, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      
+      currentUri = result.uri;
+      currentSize = await getFileSize(currentUri);
+      attempts++;
+      
+      console.log(`Attempt ${attempts}: Size=${(currentSize / 1024).toFixed(2)}KB, Width=${width}, Quality=${quality.toFixed(2)}`);
+    }
+    
+    return { uri: currentUri, size: currentSize };
+  };
+
+  // Photo upload handler with automatic resizing to 25-50KB
+  const handlePhotoUpload = async (student: Student) => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Toast.show({ type: 'error', text1: 'Camera permission required' });
+        return;
+      }
+
+      Toast.show({ type: 'info', text1: 'Taking photo...', text2: 'Please wait' });
+
+      const pickerResult = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (pickerResult.canceled) return;
+
+      Toast.show({ type: 'info', text1: 'Resizing photo...', text2: 'Please wait' });
+
+      let uri = pickerResult.assets[0].uri;
+
+      // Crop to square
+      const file = pickerResult.assets[0];
+      const cropWidth = file.width < file.height ? file.width : file.height;
+      const cropHeight = cropWidth;
+      const cropOriginX = (file.width - cropWidth) / 2;
+      const cropOriginY = (file.height - cropHeight) / 2;
+
+      const cropped = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ crop: { originX: cropOriginX, originY: cropOriginY, width: cropWidth, height: cropHeight } }],
+        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      // Resize to target range (25-50KB)
+      const resized = await resizePhotoToTarget(cropped.uri);
+      
+      const MIN_SIZE = 25 * 1024;
+      const MAX_SIZE = 50 * 1024;
+
+      if (resized.size < MIN_SIZE || resized.size > MAX_SIZE) {
+        Toast.show({ 
+          type: 'error', 
+          text1: 'Size out of range', 
+          text2: `Photo is ${(resized.size / 1024).toFixed(2)}KB (need 25-50KB)` 
+        });
+        return;
+      }
+
+      Toast.show({ type: 'info', text1: 'Uploading...', text2: `Size: ${(resized.size / 1024).toFixed(2)}KB` });
+
+      const formData = new FormData();
+      formData.append('photo', {
+        uri: resized.uri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as any);
+
+      const res = await axios.post(
+        `${API_BASE_URL}/admission/students/id/${student.id}/photo`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (res.data.success) {
+        const updateStudentPhoto = (list: Student[]) =>
+          list.map(s =>
+            s.Admission_Number === student.Admission_Number
+              ? { ...s, photo: `${res.data.photoUrl}` }
+              : s
+          );
+
+        setStudents(updateStudentPhoto);
+        setFilteredStudents(updateStudentPhoto);
+
+        Toast.show({
+          type: 'success',
+          text1: 'Photo uploaded successfully',
+          text2: `Size: ${(resized.size / 1024).toFixed(2)}KB`
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Upload failed',
+          text2: res.data.message || 'Failed to upload photo'
+        });
+      }
+    } catch (err) {
+      console.error('Photo upload error:', err);
+      Toast.show({ type: 'error', text1: 'Photo upload failed', text2: err instanceof Error ? err.message : 'Unknown error' });
+    }
+  };
+
   const openUploadModal = (student: Student) => {
-    // initialize uploadFiles with nulls
     const init: Record<string, null> = {
       Student_adhaarCopyUrl: null,
       Parents_adharCopyUrl: null,
@@ -232,35 +390,15 @@ const MyStudents = () => {
     setUploadModalVisible(true);
   };
 
-  const reduceFileSize = async (uri: string, mimeType: string): Promise<{ uri: string; size: number }> => {
-    if (mimeType.startsWith('image/')) {
-      let currentUri = uri;
-      let currentSize = (await fetch(uri).then(r => r.blob())).size;
-      let quality = 1;
-
-      // Target size is 1MB (1048576 bytes)
-      while (currentSize > 1048576 && quality > 0.1) {
-        const result = await ImageManipulator.manipulateAsync(
-          currentUri,
-          [{ resize: { width: 1024, height: 1024 } }],
-          { compress: quality, format: ImageManipulator.SaveFormat.JPEG }
-        );
-        currentUri = result.uri;
-        currentSize = (await fetch(currentUri).then(r => r.blob())).size;
-        quality -= 0.1;
-      }
-
-      return { uri: currentUri, size: currentSize };
-    }
-
-    // For non-image files, just return the original URI and size
-    const size = (await fetch(uri).then(r => r.blob())).size;
-    return { uri, size };
-  };
-
   const pickFileForKey = async (key: string) => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+      Toast.show({ type: 'info', text1: 'Selecting file...', text2: 'Please wait' });
+
+      const result = await DocumentPicker.getDocumentAsync({ 
+        type: '*/*', 
+        copyToCacheDirectory: true 
+      });
+
       if (!result.assets || result.assets.length === 0) return;
 
       const file = result.assets[0];
@@ -268,78 +406,67 @@ const MyStudents = () => {
         Alert.alert('File error', 'Failed to get file data. Please try again.');
         return;
       }
+
       const fileName = file.name || 'file';
-      // Get file data directly
+      const mimeType = file.mimeType || 'application/octet-stream';
+
+      Toast.show({ type: 'info', text1: 'Processing file...', text2: 'Please wait' });
+
       try {
-        // If it's an image, allow cropping and editing
-        if (file.mimeType?.startsWith('image/')) {
-          // First allow user to crop/edit the image
-          const editResult = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 1,
+        // Resize document to 100-200KB range
+        const resized = await resizeDocumentToTarget(file.uri, mimeType);
+        
+        const MIN_SIZE = 100 * 1024;
+        const MAX_SIZE = 200 * 1024;
+
+        // For non-image files that can't be resized, just check size
+        if (!mimeType.startsWith('image/')) {
+          if (resized.size > MAX_SIZE) {
+            Alert.alert(
+              'File too large', 
+              `File size is ${(resized.size / 1024).toFixed(2)}KB. Maximum allowed is 200KB. Please select a smaller file.`
+            );
+            return;
+          }
+          // Accept files under 200KB even if under 100KB for PDFs
+          Toast.show({ 
+            type: 'success', 
+            text1: 'File selected', 
+            text2: `Size: ${(resized.size / 1024).toFixed(2)}KB` 
           });
-
-          if (editResult.canceled) {
-            // Process original file if editing is canceled
-            const reduced = await reduceFileSize(file.uri, file.mimeType);
-            if (reduced.size > 1048576) { // 1MB
-              Alert.alert('File too large', 'Please select a smaller file (max 1MB)');
-              return;
-            }
-
-            setUploadFiles((prev) => ({
-              ...prev,
-              [key]: {
-                uri: reduced.uri,
-                name: fileName,
-                type: file.mimeType || 'image/jpeg'
-              }
-            }));
-            return;
-          }
-
-          // Get edited image and reduce its size
-          const editedImage = editResult.assets[0];
-          const reduced = await reduceFileSize(editedImage.uri, 'image/jpeg');
-
-          if (reduced.size > 1048576) { // 1MB
-            Alert.alert('File too large', 'Please select a smaller file (max 1MB)');
-            return;
-          }
-
-          setUploadFiles((prev) => ({
-            ...prev,
-            [key]: {
-              uri: reduced.uri,
-              name: fileName,
-              type: 'image/jpeg'
-            }
-          }));
         } else {
-          // Check size for non-image files
-          const reduced = await reduceFileSize(file.uri, file.mimeType || 'application/octet-stream');
-          if (reduced.size > 1048576) { // 1MB
-            Alert.alert('File too large', 'Please select a smaller file (max 1MB)');
+          // For images, enforce the range
+          if (resized.size < MIN_SIZE || resized.size > MAX_SIZE) {
+            Toast.show({ 
+              type: 'error', 
+              text1: 'Size out of range', 
+              text2: `Document is ${(resized.size / 1024).toFixed(2)}KB (need 100-200KB)` 
+            });
             return;
           }
-
-          setUploadFiles((prev) => ({
-            ...prev,
-            [key]: {
-              uri: reduced.uri,
-              name: fileName,
-              type: file.mimeType || 'application/octet-stream'
-            }
-          }));
+          Toast.show({ 
+            type: 'success', 
+            text1: 'Document resized', 
+            text2: `Size: ${(resized.size / 1024).toFixed(2)}KB` 
+          });
         }
+
+        setUploadFiles((prev) => ({
+          ...prev,
+          [key]: {
+            uri: resized.uri,
+            name: fileName,
+            type: mimeType
+          }
+        }));
+
       } catch (error) {
-        console.error('Failed to read file data:', error);
-        Alert.alert('File error', 'Failed to read file data. Please try again.');
+        console.error('Failed to process file:', error);
+        Alert.alert('File error', error instanceof Error ? error.message : 'Failed to process file. Please try again.');
       }
     } catch (err) {
       console.warn('File pick error', err);
+      Toast.show({ type: 'error', text1: 'Failed to select file' });
     }
   };
 
@@ -354,7 +481,6 @@ const MyStudents = () => {
       setUploadingAll(true);
       setDocUploading((p) => ({ ...p, [student.id]: true }));
       const formData = new FormData();
-      // append every key if a file was selected
       const keys = [
         'Student_adhaarCopyUrl',
         'Parents_adharCopyUrl',
@@ -363,16 +489,16 @@ const MyStudents = () => {
         'priviousSchoolMarksheetUrl',
         'Student_TC_UploadUrl',
       ];
-      let appended = false; // whether any file (new or existing) makes this a valid upload
-      let appendedFilesCount = 0; // number of files actually appended to FormData
-      let existingFilesCount = 0; // number of files already present on server
+      let appended = false;
+      let appendedFilesCount = 0;
+      let existingFilesCount = 0;
+      
       for (const k of keys) {
         const f = uploadFiles[k];
         const already = documentsMap[student.id]?.[k]?.uploaded;
         if (f?.uri) {
           appended = true;
           appendedFilesCount += 1;
-          // Append each file directly with its URI
           formData.append(k, {
             uri: f.uri,
             type: f.type || 'image/jpeg',
@@ -383,16 +509,14 @@ const MyStudents = () => {
           existingFilesCount += 1;
         }
       }
+      
       if (!appended) {
-        // Reset uploading states before returning so UI doesn't stay disabled
         setUploadingAll(false);
         setDocUploading((p) => ({ ...p, [student.id]: false }));
         Alert.alert('No files', 'Please select at least one file to upload');
         return;
       }
 
-      // If there are no newly selected files but some files already exist on server,
-      // there's nothing to POST — treat as success and close the modal.
       if (appendedFilesCount === 0 && existingFilesCount > 0) {
         Toast.show({ type: 'success', text1: 'All documents already uploaded' });
         setUploadModalVisible(false);
@@ -405,11 +529,6 @@ const MyStudents = () => {
 
       const uploadUrl = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/StudentDocUpload/students/${student.id}/documents`;
 
-      // Log the FormData contents for debugging
-      for (let pair of (formData as any).entries()) {
-        console.log('FormData entry:', pair[0], pair[1]);
-      }
-
       try {
         const response = await fetch(uploadUrl, {
           method: 'POST',
@@ -421,11 +540,6 @@ const MyStudents = () => {
           body: formData
         });
 
-        // Log response details for debugging
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-
-        // Get response text first to check content
         const responseText = await response.text();
         console.log('Raw response:', responseText);
 
@@ -434,7 +548,6 @@ const MyStudents = () => {
           responseData = JSON.parse(responseText);
         } catch (parseError) {
           console.error('Failed to parse response as JSON:', parseError);
-          console.error('Response was:', responseText);
           throw new Error(`Server returned invalid JSON response (Status: ${response.status})`);
         }
 
@@ -452,19 +565,9 @@ const MyStudents = () => {
           Alert.alert('Upload failed', responseData?.message || 'Failed to upload documents');
         }
       } catch (error) {
-        // Log error details with safe type handling
-        const formDataKeys = [];
-        for (const pair of (formData as any).entries()) {
-          formDataKeys.push(pair[0]);
-        }
-        console.error('Upload error details:', {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          uploadUrl,
-          formDataKeys
-        });
+        console.error('Upload error details:', error);
         throw error;
       }
-      // Response is handled in the try block above
     } catch (err) {
       console.error('Bulk upload error', err);
       Alert.alert('Error', 'Failed to upload documents');
@@ -500,111 +603,10 @@ const MyStudents = () => {
 
   const getImageUrl = (photo: string | null) => {
     if (!photo || photo === 'null' || photo === 'undefined') {
-      // Use a public placeholder image
       return 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
     }
-    // If already a full URL, return as is
     if (/^https?:\/\//.test(photo)) return photo;
     return `https://1rzlgxk8-5001.inc1.devtunnels.ms/${photo.replace(/\\/g, '/')}`;
-  };
-
-  // Photo upload handler with automatic resizing to meet 25-50KB requirement
-  const handlePhotoUpload = async (student: Student) => {
-    try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permissionResult.granted) {
-        Toast.show({ type: 'error', text1: 'Camera permission required' });
-        return;
-      }
-      const pickerResult = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
-      });
-      if (pickerResult.canceled) return;
-      let file = pickerResult.assets[0];
-      let uri = file.uri;
-
-      // Crop the image to a square (center crop)
-      const cropWidth = file.width < file.height ? file.width : file.height;
-      const cropHeight = cropWidth;
-      const cropOriginX = (file.width - cropWidth) / 2;
-      const cropOriginY = (file.height - cropHeight) / 2;
-      const cropped = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ crop: { originX: cropOriginX, originY: cropOriginY, width: cropWidth, height: cropHeight } }],
-        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      uri = cropped.uri;
-
-      // Compress and resize as before
-      let fileSize = file.fileSize ?? 0;
-      let compress = 1;
-      while ((fileSize < 25600 || fileSize > 51200) && compress > 0) {
-        const manipResult = await ImageManipulator.manipulateAsync(
-          uri,
-          [{ resize: { width: 400, height: 400 } }],
-          { compress: compress, format: ImageManipulator.SaveFormat.JPEG }
-        );
-        uri = manipResult.uri;
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        fileSize = blob.size;
-        compress -= 0.1;
-        if (compress < 0.1) break;
-      }
-      if (fileSize < 25600 || fileSize > 51200) {
-        Toast.show({ type: 'error', text1: 'Photo must be between 25KB and 50KB' });
-        return;
-      }
-      // Create form data with the processed image
-      const formData = new FormData();
-      formData.append('photo', {
-        uri: uri,
-        name: 'photo.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      // Upload the photo
-      const res = await axios.post(
-        `${API_BASE_URL}/admission/students/${student.Admission_Number}/photo`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      if (res.data.success) {
-        // Update both students lists with the new photo URL
-        const updateStudentPhoto = (list: Student[]) =>
-          list.map(s =>
-            s.Admission_Number === student.Admission_Number
-              ? { ...s, photo: `${res.data.photoUrl}` }
-              : s
-          );
-
-        setStudents(updateStudentPhoto);
-        setFilteredStudents(updateStudentPhoto);
-
-        Toast.show({
-          type: 'success',
-          text1: 'Photo uploaded successfully',
-          text2: 'Student photo has been updated'
-        });
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Upload failed',
-          text2: res.data.message || 'Failed to upload photo'
-        });
-      }
-    } catch (err) {
-      Toast.show({ type: 'error', text1: 'Photo upload failed' });
-    }
   };
 
   if (loading) {
@@ -620,7 +622,6 @@ const MyStudents = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Ionicons name="people" size={24} color="#000" />
@@ -633,7 +634,6 @@ const MyStudents = () => {
         </View>
       </View>
 
-      {/* Search Bar */}
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
@@ -647,14 +647,12 @@ const MyStudents = () => {
         </View>
       </View>
 
-      {/* Students Count */}
       <View style={styles.countSection}>
         <Text style={styles.countText}>
           Showing {filteredStudents.length} of {students.length} students
         </Text>
       </View>
 
-      {/* Students List */}
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -669,9 +667,8 @@ const MyStudents = () => {
             </Text>
           </View>
         ) : (
-          filteredStudents.map((student) => (
-            <View key={student.id} style={styles.studentCard}>
-              {/* Student Header */}
+          filteredStudents.map((student, idx) => (
+            <View key={(student.id || student.Admission_Number || student.idcardNumber || idx).toString()} style={styles.studentCard}>
               <View style={styles.cardHeader}>
                 <View style={styles.studentPhotoSection}>
                   <Image
@@ -705,7 +702,6 @@ const MyStudents = () => {
                 </View>
               </View>
 
-              {/* Student Details */}
               <View style={styles.cardBody}>
                 <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
                   <TouchableOpacity style={[styles.smallButton, { backgroundColor: '#fde68a' }]} onPress={() => openUploadModal(student)}>
@@ -715,6 +711,22 @@ const MyStudents = () => {
                     <Text style={[styles.smallButtonText, { color: '#b91c1c' }]}>Report Complaint</Text>
                   </TouchableOpacity>
                 </View>
+
+              {/* Payments toggle */}
+              <View style={{ marginTop: 12 }}>
+                <TouchableOpacity
+                  style={[styles.smallButton, { backgroundColor: '#ecfdf5' }]}
+                  onPress={() => setExpandedPaymentStudentId(prev => prev === student.id ? null : student.id)}
+                >
+                  <Text style={[styles.smallButtonText, { color: '#065f46' }]}>{expandedPaymentStudentId === student.id ? 'Hide Payments' : 'Show Payments'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {expandedPaymentStudentId === student.id && (
+                <View style={{ marginTop: 12 }}>
+                  <PaymentCalendar studentId={student.id} apiBaseUrl={API_BASE_URL} />
+                </View>
+              )}
 
                 <View style={styles.infoRow}>
                   <View style={styles.infoItem}>
@@ -783,16 +795,7 @@ const MyStudents = () => {
                   </View>
                 </View>
 
-                {/* {student.subjects && (
-                  <View style={styles.infoRowFull}>
-                    <Text style={styles.infoLabel}>Subjects</Text>
-                    <Text style={styles.infoValue}>{student.subjects}</Text>
-                  </View>
-                )} */}
-
                 <View style={styles.parentInfo}>
-                  
-                  {/* Student Login Details */}
                   <Text style={[styles.parentInfoTitle, { marginTop: 10 }]}>Student Login Details</Text>
                   <View style={styles.infoRow}>
                     <View style={styles.infoItem}>
@@ -806,13 +809,13 @@ const MyStudents = () => {
                   </View>
                 </View>
               </View>
-              {/* Complaint Modal */}
+
               <Modal
                 visible={complaintModalVisible && complaintStudent?.id === student.id}
                 transparent={true}
                 animationType="slide"
                 onRequestClose={() => {
-                  if (complaintSubmitting) return; // prevent closing while submitting
+                  if (complaintSubmitting) return;
                   setComplaintModalVisible(false);
                   setComplaintStudent(null);
                   setComplaintTitle('');
@@ -874,7 +877,6 @@ const MyStudents = () => {
                             if (res.data && res.data.success) {
                               Toast.show({ type: 'success', text1: 'Complaint submitted' });
                               Alert.alert('Success', 'Complaint submitted successfully');
-                              // reset modal
                               setComplaintModalVisible(false);
                               setComplaintStudent(null);
                               setComplaintTitle('');
@@ -910,7 +912,6 @@ const MyStudents = () => {
       </ScrollView>
       <Toast />
 
-      {/* Upload Modal */}
       <Modal visible={uploadModalVisible} transparent animationType="slide" onRequestClose={() => setUploadModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -998,8 +999,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-
-  // Loading
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1011,8 +1010,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
   },
-
-  // Header
   header: {
     backgroundColor: '#fff',
     paddingHorizontal: 16,
@@ -1043,8 +1040,6 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 2,
   },
-
-  // Search
   searchSection: {
     backgroundColor: '#fff',
     paddingHorizontal: 16,
@@ -1068,8 +1063,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
-
-  // Count Section
   countSection: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1081,8 +1074,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
   },
-
-  // Content
   content: {
     flex: 1,
   },
@@ -1090,8 +1081,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 20,
   },
-
-  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1110,8 +1099,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-
-  // Student Card
   studentCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -1125,8 +1112,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-
-  // Card Header
   cardHeader: {
     flexDirection: 'row',
     marginBottom: 16,
@@ -1171,7 +1156,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
   },
-
   studentMainInfo: {
     flex: 1,
     justifyContent: 'center',
@@ -1196,8 +1180,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
   },
-
-  // Card Body
   cardBody: {
     gap: 12,
   },
@@ -1228,8 +1210,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '400',
   },
-
-  // Parent Info
   parentInfo: {
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
@@ -1313,6 +1293,7 @@ const styles = StyleSheet.create({
   fileName: {
     color: '#6b7280',
     marginRight: 8,
+    fontSize: 12,
   },
   fileSelectButton: {
     backgroundColor: '#e6f4ff',

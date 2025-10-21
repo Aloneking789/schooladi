@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Dimensions } from 'react-native';
 import { rem } from '../utils/responsive';
 
+const { width } = Dimensions.get('window');
 const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
 
 const examTypes = [
@@ -30,7 +31,6 @@ const examTypes = [
 	'Monthly Test',
 ];
 
-// map exam type to max marks used to auto-fill maxMarks per subject
 const examMaxMap = {
 	'Monthly Test': 10,
 	'Test April': 10,
@@ -72,9 +72,11 @@ const TeacherUploadResults = () => {
 	const [showExamModal, setShowExamModal] = useState(false);
 	const [showStudentModal, setShowStudentModal] = useState(false);
 
-	// existing marks keyed by sessionId
 	const [existingMarks, setExistingMarks] = useState({});
 	const [marksLoading, setMarksLoading] = useState(false);
+
+	// Validation errors state
+	const [errors, setErrors] = useState({});
 
 	useEffect(() => {
 		const loadUser = async () => {
@@ -102,7 +104,6 @@ const TeacherUploadResults = () => {
 			}
 			setLoading(true);
 			try {
-				// fetch subjects for class
 				const subjectsRes = await axios.get(`${API_BASE_URL}/classes/${classId}/subjects`, {
 					params: { schoolId },
 					headers: { Authorization: `Bearer ${token}` },
@@ -113,7 +114,6 @@ const TeacherUploadResults = () => {
 					setSubjects([]);
 				}
 
-				// fetch students by class
 				const studentsRes = await axios.get(`${API_BASE_URL}/admission/students/by-class/${classId}`, {
 					headers: { Authorization: `Bearer ${token}` },
 				});
@@ -132,7 +132,6 @@ const TeacherUploadResults = () => {
 		fetchData();
 	}, [classId, token, schoolId]);
 
-	// when exam type changes, auto-fill maxMarks for each subject
 	useEffect(() => {
 		if (!selectedExam || !subjects.length) return;
 		const maxVal = examMaxMap[selectedExam] ?? 100;
@@ -144,6 +143,7 @@ const TeacherUploadResults = () => {
 			};
 		});
 		setMarksState(next);
+		setErrors({}); // Clear errors when exam type changes
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selectedExam, subjects]);
 
@@ -173,7 +173,6 @@ const TeacherUploadResults = () => {
 	}, [selectedStudent, token]);
 
 	const updateObtained = (subjectName, value) => {
-		// allow only numbers
 		const numeric = value.replace(/[^0-9]/g, '');
 		setMarksState((prev) => ({
 			...prev,
@@ -182,34 +181,72 @@ const TeacherUploadResults = () => {
 				obtained: numeric,
 			},
 		}));
+		
+		// Clear error for this subject when user starts typing
+		if (errors[subjectName]) {
+			setErrors((prev) => {
+				const next = { ...prev };
+				delete next[subjectName];
+				return next;
+			});
+		}
+	};
+
+	const validateMarks = () => {
+		const newErrors = {};
+		let hasErrors = false;
+
+		for (const subj of subjects) {
+			const state = marksState[subj.name] || {};
+			const obtained = state.obtained?.toString().trim();
+			
+			// Check if marks are entered
+			if (!obtained || obtained === '') {
+				newErrors[subj.name] = 'Required';
+				hasErrors = true;
+			} else {
+				const obtainedNum = parseInt(obtained, 10);
+				const maxMarks = state.maxMarks ?? (examMaxMap[selectedExam] ?? 100);
+				
+				// Check if marks exceed max marks
+				if (obtainedNum > maxMarks) {
+					newErrors[subj.name] = `Max ${maxMarks}`;
+					hasErrors = true;
+				}
+			}
+		}
+
+		setErrors(newErrors);
+		return !hasErrors;
 	};
 
 	const submitMarks = async () => {
 		if (!selectedStudent) {
-			Alert.alert('Select student', 'Please select a student');
+			Alert.alert('Select Student', 'Please select a student first');
 			return;
 		}
 		if (!selectedExam) {
-			Alert.alert('Select exam', 'Please select an exam type');
+			Alert.alert('Select Exam', 'Please select an exam type first');
 			return;
 		}
+
+		// Validate all marks are entered
+		if (!validateMarks()) {
+			Alert.alert(
+				'Incomplete Marks', 
+				'Please enter marks for all subjects. All fields are required.',
+				[{ text: 'OK' }]
+			);
+			return;
+		}
+
 		const marksPayload = [];
 		for (const subj of subjects) {
 			const state = marksState[subj.name] || {};
 			const obtained = parseInt(state.obtained || '0', 10);
 			const maxMarks = state.maxMarks ?? (examMaxMap[selectedExam] ?? 100);
-			// skip empty entries (entirely blank)
-			if (state.obtained === '' ) continue;
-			// clamp obtained
 			const clamped = Math.max(0, Math.min(obtained, maxMarks));
 			marksPayload.push({ subject: subj.name, component: 'Theory', maxMarks, obtained: clamped });
-			const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
-
-		}
-
-		if (!marksPayload.length) {
-			Alert.alert('No marks', 'Please enter marks for at least one subject');
-			return;
 		}
 
 		const body = {
@@ -225,17 +262,23 @@ const TeacherUploadResults = () => {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 			if (res.data && res.data.success) {
-				Alert.alert('Success', 'Marks uploaded successfully');
-				// clear marks
-				setMarksState({});
-				setSelectedExam('');
+				Alert.alert('Success', 'Marks uploaded successfully!', [
+					{
+						text: 'OK',
+						onPress: () => {
+							setMarksState({});
+							setSelectedExam('');
+							setErrors({});
+						}
+					}
+				]);
 			} else {
 				console.warn('Upload failed', res.data);
 				Alert.alert('Failed', 'Server responded with an error');
 			}
 		} catch (e) {
 			console.warn('Submit error', e);
-			Alert.alert('Error', 'Failed to submit marks');
+			Alert.alert('Error', 'Failed to submit marks. Please try again.');
 		}
 		setSubmitting(false);
 	};
@@ -244,99 +287,200 @@ const TeacherUploadResults = () => {
 		return (
 			<View style={styles.center}>
 				<ActivityIndicator size="large" color="#667eea" />
-				<Text style={{ marginTop: rem(8) }}>Loading...</Text>
+				<Text style={styles.loadingText}>Loading data...</Text>
 			</View>
 		);
 	}
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<ScrollView contentContainerStyle={styles.content}>
-				<Text style={styles.title}>Upload Marks</Text>
-
-				<Text style={styles.label}>Select Exam Type</Text>
-				<TouchableOpacity style={styles.selector} onPress={() => setShowExamModal(true)}>
-					<Text style={styles.selectorText}>{selectedExam || 'Choose exam type'}</Text>
-					<Ionicons name="chevron-down" size={20} color="#374151" />
-				</TouchableOpacity>
-
-				<Text style={styles.label}>Select Student</Text>
-				<TouchableOpacity style={styles.selector} onPress={() => setShowStudentModal(true)}>
-					<Text style={styles.selectorText}>{selectedStudent ? selectedStudent.studentName : 'Choose a student'}</Text>
-					<Ionicons name="chevron-down" size={20} color="#374151" />
-				</TouchableOpacity>
-
-				<View style={styles.subjectsHeader}>
-					<Text style={{ fontWeight: '700' }}>Subjects</Text>
-					<Text style={{ color: '#6b7280' }}>{subjects.length} subjects</Text>
+			<ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+				<View style={styles.header}>
+					<Ionicons name="school" size={rem(28)} color="#4f46e5" />
+					<Text style={styles.title}>Upload Marks</Text>
 				</View>
 
-				{subjects.map((s) => (
-					<View key={s.id} style={styles.subjectRow}>
-						<View style={{ flex: 1 }}>
-							<Text style={styles.subjectName}>{s.name}</Text>
-							<Text style={styles.subjectCode}>{s.subjectCode}</Text>
-						</View>
-						<View style={styles.marksBox}>
-							<Text style={styles.maxLabel}>Max</Text>
-							<Text style={styles.maxValue}>{marksState[s.name]?.maxMarks ?? (examMaxMap[selectedExam] ?? '-')}</Text>
-						</View>
-						<TextInput
-							keyboardType="numeric"
-							placeholder="Obt"
-							value={marksState[s.name]?.obtained?.toString() ?? ''}
-							onChangeText={(t) => updateObtained(s.name, t)}
-							style={styles.obtInput}
-						/>
+				<View style={styles.card}>
+					<View style={styles.labelRow}>
+						<Ionicons name="document-text" size={rem(16)} color="#6b7280" />
+						<Text style={styles.label}>Exam Type</Text>
 					</View>
-				))}
+					<TouchableOpacity 
+						style={[styles.selector, !selectedExam && styles.selectorEmpty]} 
+						onPress={() => setShowExamModal(true)}
+					>
+						<Text style={[styles.selectorText, !selectedExam && styles.placeholderText]}>
+							{selectedExam || 'Choose exam type'}
+						</Text>
+						<Ionicons name="chevron-down" size={rem(20)} color="#6b7280" />
+					</TouchableOpacity>
+				</View>
 
-				<TouchableOpacity style={[styles.submitBtn, submitting && { opacity: 0.6 }]} onPress={submitMarks} disabled={submitting}>
-					{submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Upload Marks</Text>}
-				</TouchableOpacity>
+				<View style={styles.card}>
+					<View style={styles.labelRow}>
+						<Ionicons name="person" size={rem(16)} color="#6b7280" />
+						<Text style={styles.label}>Student</Text>
+					</View>
+					<TouchableOpacity 
+						style={[styles.selector, !selectedStudent && styles.selectorEmpty]} 
+						onPress={() => setShowStudentModal(true)}
+					>
+						<View style={styles.selectorContent}>
+							<Text style={[styles.selectorText, !selectedStudent && styles.placeholderText]}>
+								{selectedStudent ? selectedStudent.studentName : 'Choose a student'}
+							</Text>
+							{selectedStudent && selectedStudent.rollNumber && (
+								<Text style={styles.rollNumber}>Roll: {selectedStudent.rollNumber}</Text>
+							)}
+						</View>
+						<Ionicons name="chevron-down" size={rem(20)} color="#6b7280" />
+					</TouchableOpacity>
+				</View>
 
-				{/* Existing marks for selected student */}
-				<View style={{ marginTop: rem(18) }}>
-					<Text style={{ fontSize: rem(18), fontWeight: '700', marginBottom: rem(8) }}>Existing Marks</Text>
-					{marksLoading ? (
-						<View style={{ padding: rem(12) }}><ActivityIndicator /></View>
-					) : Object.keys(existingMarks || {}).length === 0 ? (
-						<Text style={{ color: '#6b7280' }}>No marks found for selected student.</Text>
-					) : (
-						Object.entries(existingMarks).map(([sessionKey, sessions]) => {
-							return (
-								<View key={sessionKey} style={{ marginBottom: 12, backgroundColor: '#fff', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#eef2ff' }}>
-									<Text style={{ fontWeight: '800' }}>Session: {sessionKey}</Text>
+				{selectedExam && selectedStudent && (
+					<View style={styles.card}>
+						<View style={styles.subjectsHeader}>
+							<View style={styles.headerLeft}>
+								<Ionicons name="book" size={rem(20)} color="#4f46e5" />
+								<Text style={styles.subjectsTitle}>Enter Marks</Text>
+							</View>
+							<View style={styles.badge}>
+								<Text style={styles.badgeText}>{subjects.length} subjects</Text>
+							</View>
+						</View>
+
+						<View style={styles.formNote}>
+							<Ionicons name="information-circle" size={rem(16)} color="#f59e0b" />
+							<Text style={styles.formNoteText}>All subjects are required</Text>
+						</View>
+
+						{subjects.map((s, index) => (
+							<View key={s.id} style={[styles.subjectRow, index === subjects.length - 1 && styles.subjectRowLast]}>
+								<View style={styles.subjectInfo}>
+									<Text style={styles.subjectName}>{s.name}</Text>
+									<Text style={styles.subjectCode}>{s.subjectCode}</Text>
+								</View>
+								<View style={styles.marksContainer}>
+									<View style={styles.marksBox}>
+										<Text style={styles.maxLabel}>Max</Text>
+										<Text style={styles.maxValue}>
+											{marksState[s.name]?.maxMarks ?? (examMaxMap[selectedExam] ?? '-')}
+										</Text>
+									</View>
+									<View style={styles.inputContainer}>
+										<TextInput
+											keyboardType="numeric"
+											placeholder="0"
+											placeholderTextColor="#9ca3af"
+											value={marksState[s.name]?.obtained?.toString() ?? ''}
+											onChangeText={(t) => updateObtained(s.name, t)}
+											style={[
+												styles.obtInput,
+												errors[s.name] && styles.obtInputError
+											]}
+											maxLength={3}
+										/>
+										{errors[s.name] && (
+											<Text style={styles.errorText}>{errors[s.name]}</Text>
+										)}
+									</View>
+								</View>
+							</View>
+						))}
+
+						<TouchableOpacity 
+							style={[styles.submitBtn, submitting && styles.submitBtnDisabled]} 
+							onPress={submitMarks} 
+							disabled={submitting}
+							activeOpacity={0.8}
+						>
+							{submitting ? (
+								<ActivityIndicator color="#fff" size="small" />
+							) : (
+								<>
+									<Ionicons name="cloud-upload" size={rem(20)} color="#fff" />
+									<Text style={styles.submitText}>Upload Marks</Text>
+								</>
+							)}
+						</TouchableOpacity>
+					</View>
+				)}
+
+				{selectedStudent && (
+					<View style={styles.card}>
+						<View style={styles.existingHeader}>
+							<Ionicons name="time" size={rem(20)} color="#6b7280" />
+							<Text style={styles.existingTitle}>Previous Records</Text>
+						</View>
+						{marksLoading ? (
+							<View style={styles.loadingContainer}>
+								<ActivityIndicator color="#4f46e5" />
+								<Text style={styles.loadingSmallText}>Loading records...</Text>
+							</View>
+						) : Object.keys(existingMarks || {}).length === 0 ? (
+							<View style={styles.emptyState}>
+								<Ionicons name="folder-open-outline" size={rem(48)} color="#d1d5db" />
+								<Text style={styles.emptyText}>No previous records found</Text>
+							</View>
+						) : (
+							Object.entries(existingMarks).map(([sessionKey, sessions]) => (
+								<View key={sessionKey} style={styles.sessionCard}>
+									<View style={styles.sessionHeader}>
+										<Ionicons name="calendar" size={rem(16)} color="#4f46e5" />
+										<Text style={styles.sessionText}>Session: {sessionKey}</Text>
+									</View>
 									{Array.isArray(sessions) ? sessions.map((sess) => (
-										<View key={sess.examResultId || Math.random()} style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' }}>
-											<Text style={{ fontWeight: '700' }}>{sess.examType} — {sess.academicYear}</Text>
+										<View key={sess.examResultId || Math.random()} style={styles.examCard}>
+											<Text style={styles.examTypeText}>{sess.examType}</Text>
+											<Text style={styles.academicYear}>{sess.academicYear}</Text>
 											{Array.isArray(sess.marks) && sess.marks.map((m) => (
-												<View key={m.id} style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-													<Text>{m.subject} ({m.component})</Text>
-													<Text>{m.obtained}/{m.maxMarks}</Text>
+												<View key={m.id} style={styles.markRow}>
+													<Text style={styles.markSubject}>
+														{m.subject} <Text style={styles.markComponent}>({m.component})</Text>
+													</Text>
+													<Text style={styles.markValue}>{m.obtained}/{m.maxMarks}</Text>
 												</View>
 											))}
 										</View>
 									)) : null}
 								</View>
-							);
-						})
-					)}
-				</View>
+							))
+						)}
+					</View>
+				)}
 
 				{/* Exam type modal */}
 				<Modal visible={showExamModal} animationType="slide" transparent>
 					<View style={styles.modalOverlay}>
 						<View style={styles.modalContent}>
-							<Text style={styles.modalTitle}>Choose Exam</Text>
-							<FlatList data={examTypes} keyExtractor={(i) => i} renderItem={({ item }) => (
-								<TouchableOpacity style={styles.modalRow} onPress={() => { setSelectedExam(item); setShowExamModal(false); }}>
-									<Text>{item}</Text>
+							<View style={styles.modalHeader}>
+								<Text style={styles.modalTitle}>Select Exam Type</Text>
+								<TouchableOpacity onPress={() => setShowExamModal(false)}>
+									<Ionicons name="close-circle" size={rem(28)} color="#6b7280" />
 								</TouchableOpacity>
-							)} />
-							<TouchableOpacity style={styles.modalClose} onPress={() => setShowExamModal(false)}>
-								<Text style={{ color: '#ef4444' }}>Close</Text>
-							</TouchableOpacity>
+							</View>
+							<FlatList 
+								data={examTypes} 
+								keyExtractor={(i) => i} 
+								renderItem={({ item }) => (
+									<TouchableOpacity 
+										style={[styles.modalRow, selectedExam === item && styles.modalRowSelected]} 
+										onPress={() => { 
+											setSelectedExam(item); 
+											setShowExamModal(false); 
+										}}
+										activeOpacity={0.7}
+									>
+										<Text style={[styles.modalRowText, selectedExam === item && styles.modalRowTextSelected]}>
+											{item}
+										</Text>
+										{selectedExam === item && (
+											<Ionicons name="checkmark-circle" size={rem(20)} color="#4f46e5" />
+										)}
+									</TouchableOpacity>
+								)}
+								showsVerticalScrollIndicator={false}
+							/>
 						</View>
 					</View>
 				</Modal>
@@ -345,15 +489,39 @@ const TeacherUploadResults = () => {
 				<Modal visible={showStudentModal} animationType="slide" transparent>
 					<View style={styles.modalOverlay}>
 						<View style={styles.modalContent}>
-							<Text style={styles.modalTitle}>Choose Student</Text>
-							<FlatList data={students} keyExtractor={(it) => it.id} renderItem={({ item }) => (
-								<TouchableOpacity style={styles.modalRow} onPress={() => { setSelectedStudent(item); setShowStudentModal(false); }}>
-									<Text>{item.studentName} ({item.rollNumber || item.id.slice(0,4)})</Text>
+							<View style={styles.modalHeader}>
+								<Text style={styles.modalTitle}>Select Student</Text>
+								<TouchableOpacity onPress={() => setShowStudentModal(false)}>
+									<Ionicons name="close-circle" size={rem(28)} color="#6b7280" />
 								</TouchableOpacity>
-							)} />
-							<TouchableOpacity style={styles.modalClose} onPress={() => setShowStudentModal(false)}>
-								<Text style={{ color: '#ef4444' }}>Close</Text>
-							</TouchableOpacity>
+							</View>
+							<FlatList 
+								data={students} 
+								keyExtractor={(it) => it.id} 
+								renderItem={({ item }) => (
+									<TouchableOpacity 
+										style={[styles.modalRow, selectedStudent?.id === item.id && styles.modalRowSelected]} 
+										onPress={() => { 
+											setSelectedStudent(item); 
+											setShowStudentModal(false); 
+										}}
+										activeOpacity={0.7}
+									>
+										<View style={styles.studentModalInfo}>
+											<Text style={[styles.modalRowText, selectedStudent?.id === item.id && styles.modalRowTextSelected]}>
+												{item.studentName}
+											</Text>
+											<Text style={styles.studentRollText}>
+												Roll: {item.rollNumber || item.id.slice(0,4)}
+											</Text>
+										</View>
+										{selectedStudent?.id === item.id && (
+											<Ionicons name="checkmark-circle" size={rem(20)} color="#4f46e5" />
+										)}
+									</TouchableOpacity>
+								)}
+								showsVerticalScrollIndicator={false}
+							/>
 						</View>
 					</View>
 				</Modal>
@@ -364,29 +532,381 @@ const TeacherUploadResults = () => {
 };
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: '#f8fafc' },
-	content: { padding: rem(16), paddingBottom: rem(40) },
-	center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-	title: { fontSize: rem(22), fontWeight: '800', color: '#403ae2', marginBottom: rem(12) },
-	label: { color: '#374151', marginTop: rem(8), marginBottom: rem(6), fontWeight: '600' },
-	selector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: rem(12), borderRadius: rem(10), borderWidth: 1, borderColor: '#e6e9f2' },
-	selectorText: { color: '#111827' },
-	subjectsHeader: { flexDirection: 'row', justifyContent: 'space-between', marginTop: rem(12), marginBottom: rem(8), alignItems: 'center' },
-	subjectRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: rem(12), borderRadius: rem(10), marginBottom: rem(8), borderWidth: 1, borderColor: '#eef2ff' },
-	subjectName: { fontWeight: '700' },
-	subjectCode: { color: '#6b7280', fontSize: rem(12) },
-	marksBox: { alignItems: 'center', marginHorizontal: rem(8) },
-	maxLabel: { fontSize: rem(12), color: '#6b7280' },
-	maxValue: { fontWeight: '700' },
-	obtInput: { width: rem(68), height: rem(36), borderRadius: rem(8), borderWidth: 1, borderColor: '#e5e7eb', paddingHorizontal: rem(8), textAlign: 'center', backgroundColor: '#fff' },
-	submitBtn: { marginTop: rem(16), backgroundColor: '#4f46e5', padding: rem(14), borderRadius: rem(12), alignItems: 'center' },
-	submitText: { color: '#fff', fontWeight: '700' },
-	modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-	modalContent: { width: '90%', maxHeight: '70%', backgroundColor: '#fff', borderRadius: rem(12), padding: rem(12) },
-	modalTitle: { fontWeight: '800', fontSize: rem(16), marginBottom: rem(8) },
-	modalRow: { paddingVertical: rem(12), borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-	modalClose: { marginTop: rem(8), alignItems: 'center' },
-});
-
-export default TeacherUploadResults;
-
+	container: { 
+		flex: 1, 
+		backgroundColor: '#f8fafc' 
+	},
+	content: { 
+		padding: rem(16), 
+		paddingBottom: rem(40) 
+	},
+	center: { 
+		flex: 1, 
+		justifyContent: 'center', 
+		alignItems: 'center',
+		backgroundColor: '#f8fafc' 
+	},
+	loadingText: { 
+		marginTop: rem(12), 
+		color: '#6b7280',
+		fontSize: rem(14) 
+	},
+	loadingSmallText: {
+		marginLeft: rem(8),
+		color: '#6b7280',
+		fontSize: rem(13)
+	},
+	header: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: rem(20),
+		gap: rem(12)
+	},
+	title: { 
+		fontSize: rem(24), 
+		fontWeight: '800', 
+		color: '#111827'
+	},
+	card: {
+		backgroundColor: '#fff',
+		borderRadius: rem(16),
+		padding: rem(16),
+		marginBottom: rem(16),
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 2,
+		borderWidth: 1,
+		borderColor: '#f3f4f6'
+	},
+	label: { 
+		color: '#374151', 
+		fontWeight: '600',
+		fontSize: rem(14)
+	},
+	labelRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: rem(6),
+		marginBottom: rem(10)
+	},
+	selector: { 
+		flexDirection: 'row', 
+		justifyContent: 'space-between', 
+		alignItems: 'center', 
+		backgroundColor: '#f9fafb', 
+		padding: rem(14), 
+		borderRadius: rem(12), 
+		borderWidth: 1.5, 
+		borderColor: '#e5e7eb'
+	},
+	selectorEmpty: {
+		borderColor: '#d1d5db',
+		borderStyle: 'dashed'
+	},
+	selectorContent: {
+		flex: 1
+	},
+	selectorText: { 
+		color: '#111827',
+		fontSize: rem(15),
+		fontWeight: '500'
+	},
+	placeholderText: {
+		color: '#9ca3af',
+		fontWeight: '400'
+	},
+	rollNumber: {
+		fontSize: rem(12),
+		color: '#6b7280',
+		marginTop: rem(2)
+	},
+	subjectsHeader: { 
+		flexDirection: 'row', 
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: rem(12),
+		paddingBottom: rem(12),
+		borderBottomWidth: 1,
+		borderBottomColor: '#f3f4f6'
+	},
+	headerLeft: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: rem(8)
+	},
+	subjectsTitle: {
+		fontWeight: '700',
+		fontSize: rem(16),
+		color: '#111827'
+	},
+	badge: {
+		backgroundColor: '#eef2ff',
+		paddingHorizontal: rem(10),
+		paddingVertical: rem(4),
+		borderRadius: rem(12)
+	},
+	badgeText: {
+		color: '#4f46e5',
+		fontSize: rem(12),
+		fontWeight: '600'
+	},
+	formNote: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#fffbeb',
+		padding: rem(10),
+		borderRadius: rem(8),
+		marginBottom: rem(12),
+		gap: rem(6)
+	},
+	formNoteText: {
+		color: '#92400e',
+		fontSize: rem(12),
+		fontWeight: '500'
+	},
+	subjectRow: { 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		justifyContent: 'space-between',
+		paddingVertical: rem(14),
+		borderBottomWidth: 1,
+		borderBottomColor: '#f3f4f6'
+	},
+	subjectRowLast: {
+		borderBottomWidth: 0
+	},
+	subjectInfo: {
+		flex: 1,
+		marginRight: rem(12)
+	},
+	subjectName: { 
+		fontWeight: '600',
+		fontSize: rem(14),
+		color: '#111827',
+		marginBottom: rem(2)
+	},
+	subjectCode: { 
+		color: '#6b7280', 
+		fontSize: rem(12) 
+	},
+	marksContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: rem(12)
+	},
+	marksBox: { 
+		alignItems: 'center',
+		minWidth: rem(48)
+	},
+	maxLabel: { 
+		fontSize: rem(11), 
+		color: '#9ca3af',
+		fontWeight: '500',
+		textTransform: 'uppercase'
+	},
+	maxValue: { 
+		fontWeight: '700',
+		fontSize: rem(16),
+		color: '#4f46e5'
+	},
+	inputContainer: {
+		position: 'relative'
+	},
+	obtInput: { 
+		width: rem(72), 
+		height: rem(44), 
+		borderRadius: rem(10), 
+		borderWidth: 1.5, 
+		borderColor: '#d1d5db', 
+		paddingHorizontal: rem(8), 
+		textAlign: 'center', 
+		backgroundColor: '#fff',
+		fontSize: rem(16),
+		fontWeight: '600',
+		color: '#111827'
+	},
+	obtInputError: {
+		borderColor: '#ef4444',
+		backgroundColor: '#fef2f2'
+	},
+	errorText: {
+		position: 'absolute',
+		bottom: rem(-16),
+		fontSize: rem(10),
+		color: '#ef4444',
+		fontWeight: '500',
+		textAlign: 'center',
+		width: '100%'
+	},
+	submitBtn: { 
+		marginTop: rem(20), 
+		backgroundColor: '#4f46e5', 
+		padding: rem(16), 
+		borderRadius: rem(12), 
+		alignItems: 'center',
+		flexDirection: 'row',
+		justifyContent: 'center',
+		gap: rem(8),
+		shadowColor: '#4f46e5',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.3,
+		shadowRadius: 8,
+		elevation: 4
+	},
+	submitBtnDisabled: {
+		opacity: 0.6
+	},
+	submitText: { 
+		color: '#fff', 
+		fontWeight: '700',
+		fontSize: rem(16)
+	},
+	existingHeader: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: rem(8),
+		marginBottom: rem(12),
+		paddingBottom: rem(12),
+		borderBottomWidth: 1,
+		borderBottomColor: '#f3f4f6'
+	},
+	existingTitle: {
+		fontSize: rem(16),
+		fontWeight: '700',
+		color: '#111827'
+	},
+	loadingContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		padding: rem(16),
+		justifyContent: 'center'
+	},
+	emptyState: {
+		alignItems: 'center',
+		padding: rem(32),
+		gap: rem(12)
+	},
+	emptyText: {
+		color: '#9ca3af',
+		fontSize: rem(14)
+	},
+	sessionCard: {
+		backgroundColor: '#f9fafb',
+		padding: rem(12),
+		borderRadius: rem(12),
+		marginBottom: rem(12),
+		borderWidth: 1,
+		borderColor: '#e5e7eb'
+	},
+	sessionHeader: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: rem(6),
+		marginBottom: rem(10)
+	},
+	sessionText: {
+		fontWeight: '700',
+		fontSize: rem(14),
+		color: '#374151'
+	},
+	examCard: {
+		backgroundColor: '#fff',
+		padding: rem(12),
+		borderRadius: rem(10),
+		marginTop: rem(8),
+		borderWidth: 1,
+		borderColor: '#f3f4f6'
+	},
+	examTypeText: {
+		fontWeight: '700',
+		fontSize: rem(14),
+		color: '#111827',
+		marginBottom: rem(2)
+	},
+	academicYear: {
+		fontSize: rem(12),
+		color: '#6b7280',
+		marginBottom: rem(10)
+	},
+	markRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		paddingVertical: rem(6),
+		borderTopWidth: 1,
+		borderTopColor: '#f3f4f6'
+	},
+	markSubject: {
+		fontSize: rem(13),
+		color: '#374151'
+	},
+	markComponent: {
+		color: '#9ca3af'
+	},
+	markValue: {
+		fontSize: rem(13),
+		fontWeight: '600',
+		color: '#4f46e5'
+	},
+	modalOverlay: { 
+		flex: 1, 
+		backgroundColor: 'rgba(0,0,0,0.5)', 
+		justifyContent: 'flex-end'
+	},
+	modalContent: { 
+		width: '100%',
+		maxHeight: '80%', 
+		backgroundColor: '#fff', 
+		borderTopLeftRadius: rem(24),
+		borderTopRightRadius: rem(24),
+		paddingTop: rem(8),
+		paddingBottom: rem(32),
+		paddingHorizontal: rem(16)
+	},
+	modalHeader: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		paddingVertical: rem(16),
+		paddingHorizontal: rem(4),
+		borderBottomWidth: 1,
+		borderBottomColor: '#f3f4f6'
+	},
+	modalTitle: { 
+		fontWeight: '800', 
+		fontSize: rem(18),
+		color: '#111827'
+	},
+	modalRow: { 
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		paddingVertical: rem(14),
+		paddingHorizontal: rem(4),
+		borderBottomWidth: 1,
+		borderBottomColor: '#f3f4f6'
+	},
+	modalRowSelected: {
+		backgroundColor: '#eef2ff',
+		borderRadius: rem(8),
+		paddingHorizontal: rem(12)
+	},
+	modalRowText: {
+		fontSize: rem(15),
+		color: '#374151',
+		fontWeight: '500'
+	},
+	modalRowTextSelected: {
+		color: '#4f46e5',
+		fontWeight: '600'
+	},
+	studentModalInfo: {
+		flex: 1
+	},
+	studentRollText: {
+		fontSize: rem(12),
+		color: '#9ca3af',
+		marginTop: rem(2)
+	}
+});export default TeacherUploadResults;

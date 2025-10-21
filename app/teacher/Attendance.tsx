@@ -66,7 +66,7 @@ const Attendance = () => {
   const [token, setToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
+  const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
   // Dynamic class list from API
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
@@ -90,7 +90,7 @@ const Attendance = () => {
       if (!schoolId || !token) return;
       try {
         const res = await axios.get(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`,
+          `https://api.pbmpublicschool.in/api/classes/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

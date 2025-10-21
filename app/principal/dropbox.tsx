@@ -28,7 +28,7 @@ const DropBox = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await axios.get(
-        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
+        `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -58,7 +58,7 @@ const DropBox = () => {
             try {
               const token = await AsyncStorage.getItem("principal_token");
               await axios.patch(
-                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/sessions/students/${studentId}/revoke`,
+                `https://api.pbmpublicschool.in/api/sessions/students/${studentId}/revoke`,
                 {},
                 {
                   headers: {
@@ -90,7 +90,7 @@ const DropBox = () => {
             try {
               const token = await AsyncStorage.getItem("principal_token");
               await axios.delete(
-                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${studentId}`,
+                `https://api.pbmpublicschool.in/api/admission/students/${studentId}`,
                 {
                   headers: {
                     Authorization: `Bearer ${token}`,

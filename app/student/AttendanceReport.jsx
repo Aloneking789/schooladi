@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const AttendanceCalendar = () => {
   const [attendanceData, setAttendanceData] = useState([]);
@@ -32,7 +32,7 @@ const AttendanceCalendar = () => {
       const studentId = studentData.StudentId;
 
       const response = await fetch(
-        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/attendance/student/${studentId}`,
+        `https://api.pbmpublicschool.in/api/attendance/student/${studentId}`,
         {
           headers: {
             'Authorization': `Bearer ${tokenRaw}`,

@@ -72,7 +72,7 @@ const StudentDashboard = () => {
     const fetchStudentData = async () => {
       if (!studentId || !schoolId || !token) return;
       try {
-        const response = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${studentId}?schoolId=${schoolId}`, {
+        const response = await fetch(`https://api.pbmpublicschool.in/api/admission/students/${studentId}?schoolId=${schoolId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -87,7 +87,7 @@ const StudentDashboard = () => {
       setLoadingComplaints(true);
       setComplaintsError(null);
       try {
-        const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/complaints/complaints/my/${studentId}`;
+        const url = `https://api.pbmpublicschool.in/api/complaints/complaints/my/${studentId}`;
         const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
         if (res.data && res.data.success) {
           // most recent first
@@ -175,7 +175,7 @@ const StudentDashboard = () => {
 
       {showPayments && studentId ? (
         <View style={{ marginTop: rem(12) }}>
-          <PaymentCalendar studentId={studentId} apiBaseUrl={'https://1rzlgxk8-5001.inc1.devtunnels.ms/api'} tokenKey={'student_token'} />
+          <PaymentCalendar studentId={studentId} apiBaseUrl={'https://api.pbmpublicschool.in/api'} tokenKey={'student_token'} />
         </View>
       ) : null}
     </View>

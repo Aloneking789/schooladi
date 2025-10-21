@@ -23,7 +23,7 @@ const DailyAttendanceSummary = ({ schoolId, teacherId }: DailyAttendanceSummaryP
       const token = await AsyncStorage.getItem("principal_token");
 
       const response = await axios.get(
-        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher-attendance/daily-summary`,
+        `https://api.pbmpublicschool.in/api/teacher-attendance/daily-summary`,
         {
           params: {
             schoolId,

@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Dimensions } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { rem } from '../utils/responsive';
 
 const { width } = Dimensions.get('window');
-const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
+const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
 const examTypes = [
 	'Periodic I',

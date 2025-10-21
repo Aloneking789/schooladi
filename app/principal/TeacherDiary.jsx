@@ -4,8 +4,8 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const API_GET = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacherdairy/teacher-diary';
-const API_REPLY = (id) => `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacherdairy/teacher-diary/${id}/reply`;
+const API_GET = 'https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary';
+const API_REPLY = (id) => `https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary/${id}/reply`;
 
 export default function TeacherDiary({ navigation }) {
   const [loading, setLoading] = useState(true);

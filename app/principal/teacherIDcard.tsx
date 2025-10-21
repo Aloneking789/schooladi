@@ -63,7 +63,7 @@ const TeacherIDCard = () => {
       try {
         const token = await AsyncStorage.getItem("principal_token");
         const res = await axios.get(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher/teachers/by-school/${schoolId}`,
+          `https://api.pbmpublicschool.in/api/teacher/teachers/by-school/${schoolId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setTeachers(res.data.teachers || []);
@@ -80,7 +80,7 @@ const TeacherIDCard = () => {
     (async () => {
       try {
         const res = await fetch(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/school-assets/by-school/${schoolId}`
+          `https://api.pbmpublicschool.in/api/newSchool/school-assets/by-school/${schoolId}`
         );
         const data = await res.json();
         setSchoolLogo(data.schoolLogo);

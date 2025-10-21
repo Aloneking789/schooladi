@@ -51,7 +51,7 @@ const TransferCertificate = () => {
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
         const response = await fetch(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
+          `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
           {
             headers: { Authorization: `Bearer ${principal_token}` },
           }

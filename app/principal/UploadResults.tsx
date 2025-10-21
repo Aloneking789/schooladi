@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
+const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
 const UploadResults = () => {
   const [selectedClass, setSelectedClass] = useState("");

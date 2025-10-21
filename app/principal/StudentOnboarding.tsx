@@ -90,7 +90,7 @@ const StudentOnboarding = () => {
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
         const res = await axios.get(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`,
+          `https://api.pbmpublicschool.in/api/classes/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${principal_token}`,
@@ -114,7 +114,7 @@ const StudentOnboarding = () => {
     const fetchSubjects = async () => {
       try {
         const res = await axios.get(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/schools/${schoolId}`,
+          `https://api.pbmpublicschool.in/api/newSchool/schools/${schoolId}`,
           {
             params: {
               schoolId: schoolId,
@@ -152,7 +152,7 @@ const StudentOnboarding = () => {
       const principal_token = await AsyncStorage.getItem("principal_token");
 
       const response = await axios.post(
-        "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/admission",
+        "https://api.pbmpublicschool.in/api/admission/admission",
         formattedData,
         {
           headers: {

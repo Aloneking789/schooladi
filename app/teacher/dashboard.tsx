@@ -19,7 +19,7 @@ type AttendanceRecord = {
   date: string;
 };
 
-const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
+const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
 import { useNavigation } from '@react-navigation/native';
 const TeacherDashboard = () => {

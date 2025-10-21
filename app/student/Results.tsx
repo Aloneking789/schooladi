@@ -1,13 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  Image, 
+import React, { useEffect, useState } from 'react';
+import {
   ActivityIndicator,
-  Dimensions 
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -41,7 +41,7 @@ const Results = () => {
         return;
       }
 
-      const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/resultpublish/public/results/by-idcard/${encodeURIComponent(
+      const url = `https://api.pbmpublicschool.in/api/resultpublish/public/results/by-idcard/${encodeURIComponent(
         idCardNumber
       )}`;
 
@@ -136,7 +136,7 @@ const Results = () => {
           </View>
           {student.photo && (
             <Image
-              source={{ uri: `https://1rzlgxk8-5001.inc1.devtunnels.ms/${student.photo}` }}
+              source={{ uri: `https://api.pbmpublicschool.in/${student.photo}` }}
               style={styles.studentPhoto}
             />
           )}

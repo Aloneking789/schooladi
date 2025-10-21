@@ -52,7 +52,7 @@ const AddNotice = () => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('principal_token');
-      const res = await fetch('https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices', {
+      const res = await fetch('https://api.pbmpublicschool.in/api/notices/notices', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -93,7 +93,7 @@ const AddNotice = () => {
 
     try {
       const token = await AsyncStorage.getItem('principal_token');
-      const res = await fetch('https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices/1', {
+      const res = await fetch('https://api.pbmpublicschool.in/api/notices/notices/1', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -129,7 +129,7 @@ const AddNotice = () => {
     try {
       setDeleting(true);
       const token = await AsyncStorage.getItem('principal_token');
-      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices/${id}`, {
+      const res = await fetch(`https://api.pbmpublicschool.in/api/notices/notices/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

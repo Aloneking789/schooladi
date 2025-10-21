@@ -77,7 +77,7 @@ const MyStudents = () => {
   const [complaintSubmitting, setComplaintSubmitting] = useState(false);
   const [expandedPaymentStudentId, setExpandedPaymentStudentId] = useState<string | null>(null);
 
-  const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
+  const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
   useEffect(() => {
     const getUserData = async () => {
@@ -138,7 +138,7 @@ const MyStudents = () => {
     if (!studentId || !token) return;
     try {
       const res = await axios.get(
-        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/StudentDocUpload/students/${studentId}/documents`,
+        `https://api.pbmpublicschool.in/api/StudentDocUpload/students/${studentId}/documents`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data && res.data.success) {
@@ -152,7 +152,7 @@ const MyStudents = () => {
   const openDocumentUrl = (relUrl: string) => {
     if (!relUrl) return;
     const clean = relUrl.replace(/\\/g, '/');
-    const full = `https://1rzlgxk8-5001.inc1.devtunnels.ms/${clean}`;
+    const full = `https://api.pbmpublicschool.in/${clean}`;
     Linking.openURL(full).catch((e) => console.warn('Unable to open url', e));
   };
 
@@ -528,7 +528,7 @@ const MyStudents = () => {
         return;
       }
 
-      const uploadUrl = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/StudentDocUpload/students/${student.id}/documents`;
+      const uploadUrl = `https://api.pbmpublicschool.in/api/StudentDocUpload/students/${student.id}/documents`;
 
       try {
         const response = await fetch(uploadUrl, {
@@ -607,7 +607,7 @@ const MyStudents = () => {
       return 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
     }
     if (/^https?:\/\//.test(photo)) return photo;
-    return `https://1rzlgxk8-5001.inc1.devtunnels.ms/${photo.replace(/\\/g, '/')}`;
+    return `https://api.pbmpublicschool.in/${photo.replace(/\\/g, '/')}`;
   };
 
   if (loading) {

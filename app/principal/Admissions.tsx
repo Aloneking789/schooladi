@@ -87,7 +87,7 @@ const Admissions = () => {
       try {
         const token = await AsyncStorage.getItem("principal_token");
         const response = await axios.get(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
+          `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -146,7 +146,7 @@ const Admissions = () => {
     try {
       const token = AsyncStorage.getItem("principal_token");
       const res = await axios.put(
-        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${selectedStudent?.id}`,
+        `https://api.pbmpublicschool.in/api/admission/students/${selectedStudent?.id}`,
         editData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -184,7 +184,7 @@ const Admissions = () => {
             try {
               const token = AsyncStorage.getItem("principal_token");
               const res = await axios.delete(
-                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${selectedStudent?.id}`,
+                `https://api.pbmpublicschool.in/api/admission/students/${selectedStudent?.id}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               if (res.data.success) {
@@ -288,7 +288,7 @@ const Admissions = () => {
     try {
       const token = await AsyncStorage.getItem("principal_token");
       const res = await axios.post(
-        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${student.Admission_Number}/photo`,
+        `https://api.pbmpublicschool.in/api/admission/students/${student.Admission_Number}/photo`,
         formData,
         {
           headers: {
@@ -338,7 +338,7 @@ const Admissions = () => {
             try {
               const token = await AsyncStorage.getItem("principal_token");
               const res = await axios.delete(
-                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/${student.Admission_Number}/photo`,
+                `https://api.pbmpublicschool.in/api/admission/students/${student.Admission_Number}/photo`,
                 {
                   headers: {
                     Authorization: `Bearer ${localStorage.getItem("principal_token")}`,
@@ -382,8 +382,8 @@ const Admissions = () => {
           <Image
             source={{
               uri: student.photo
-                ? `https://1rzlgxk8-5001.inc1.devtunnels.ms/${student.photo.replace(/\\/g, "/")}`
-                : 'https://1rzlgxk8-5001.inc1.devtunnels.ms/no-photo.png'
+                ? `https://api.pbmpublicschool.in/${student.photo.replace(/\\/g, "/")}`
+                : 'https://api.pbmpublicschool.in/no-photo.png'
             }}
             style={styles.cardStudentPhoto}
             onError={() => console.log("Image load error")}

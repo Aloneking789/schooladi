@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const BASE = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
+const BASE = 'https://api.pbmpublicschool.in/api';
 
 export default function HomeWork() {
   const [token, setToken] = useState(null);

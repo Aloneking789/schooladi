@@ -14,7 +14,7 @@ import {
     View,
 } from 'react-native';
 import { rem } from '../utils/responsive';
-const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks';
+const API_URL = 'https://api.pbmpublicschool.in/api/homeworks/homeworks';
 
 const TeacherHomework = () => {
   const [title, setTitle] = useState('');
@@ -43,7 +43,7 @@ const TeacherHomework = () => {
     const fetchHomeworks = async () => {
       setFetchingHomeworks(true);
       try {
-        let url = showAll ? 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks' : `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks/by-class/${classId}`;
+        let url = showAll ? 'https://api.pbmpublicschool.in/api/homeworks/homeworks' : `https://api.pbmpublicschool.in/api/homeworks/homeworks/by-class/${classId}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -67,7 +67,7 @@ const TeacherHomework = () => {
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
           try {
-            const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks/${id}`, {
+            const res = await fetch(`https://api.pbmpublicschool.in/api/homeworks/homeworks/${id}`, {
               method: 'DELETE',
               headers: { Authorization: `Bearer ${token}` },
             });
@@ -107,7 +107,7 @@ const TeacherHomework = () => {
     const fetchClasses = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`, {
+        const res = await fetch(`https://api.pbmpublicschool.in/api/classes/${schoolId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

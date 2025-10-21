@@ -39,7 +39,7 @@ const TeacherSelfAttendance: React.FC = () => {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [isSharing, setIsSharing] = useState(false); // Add isSharing state
 
-  const API_BASE_URL = "https://1rzlgxk8-5001.inc1.devtunnels.ms/api";
+  const API_BASE_URL = "https://api.pbmpublicschool.in/api";
 
   useEffect(() => {
     const fetchUserData = async () => {

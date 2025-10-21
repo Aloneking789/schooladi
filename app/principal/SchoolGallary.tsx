@@ -61,7 +61,7 @@ const SchoolGallery = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/landing-images/by-school/${schoolid}`
+        `https://api.pbmpublicschool.in/api/newSchool/landing-images/by-school/${schoolid}`
       );
       const data = await res.json();
       setGallery(data.images || []);
@@ -138,7 +138,7 @@ const SchoolGallery = () => {
 
     setLoading(true);
     try {
-      await fetch('https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/landing-images', {
+      await fetch('https://api.pbmpublicschool.in/api/newSchool/landing-images', {
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -173,7 +173,7 @@ const SchoolGallery = () => {
     setLoading(true);
     try {
       await fetch(
-        `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/landing-images/${deleteItemId}`,
+        `https://api.pbmpublicschool.in/api/newSchool/landing-images/${deleteItemId}`,
         { method: 'DELETE' }
       );
       Alert.alert('Success', 'Image deleted.');

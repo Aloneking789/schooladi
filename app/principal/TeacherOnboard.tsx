@@ -60,7 +60,7 @@ const TeacherOnboard = () => {
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
         const res = await axios.get(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`,
+          `https://api.pbmpublicschool.in/api/classes/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${principal_token}`,
@@ -113,7 +113,7 @@ const TeacherOnboard = () => {
         salaryPaid: data.salaryPaid || [],
       };
       const response = await axios.post(
-        "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher/register",
+        "https://api.pbmpublicschool.in/api/teacher/register",
         payload,
         {
           headers: {

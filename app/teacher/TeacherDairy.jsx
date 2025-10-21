@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { rem } from '../utils/responsive';
 
-const API_POST = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacherdairy/teacher-diary';
-const API_GET = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacherdairy/teacher-diary/my';
+const API_POST = 'https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary';
+const API_GET = 'https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary/my';
 
 const DiaryItem = ({ item }) => {
   const prettyDate = new Date(item.date).toLocaleString();

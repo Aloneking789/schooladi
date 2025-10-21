@@ -56,9 +56,9 @@ const Login = () => {
     };
 
     const apiEndpoints = {
-      student: "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/auth/student/login",
-      teacher: "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/auth/teacher/login",
-      principal: "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/auth/principal/login",
+      student: "https://api.pbmpublicschool.in/api/auth/student/login",
+      teacher: "https://api.pbmpublicschool.in/api/auth/teacher/login",
+      principal: "https://api.pbmpublicschool.in/api/auth/principal/login",
     };
 
     try {

@@ -53,7 +53,7 @@ const EnquiryManagement = () => {
 
   const [search, setSearch] = useState('');
 
-  const API_BASE_URL = "https://1rzlgxk8-5001.inc1.devtunnels.ms/api/enquiry";
+  const API_BASE_URL = "https://api.pbmpublicschool.in/api/enquiry";
 
   const fetchEnquiries = async () => {
     setLoading(true);

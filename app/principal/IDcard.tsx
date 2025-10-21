@@ -115,7 +115,7 @@ const IDCardBuilder: React.FC = () => {
       try {
         const token = await AsyncStorage.getItem("principal_token");
         const response = await fetch(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/admission/students/by-school/${schoolId}`,
+          `https://api.pbmpublicschool.in/api/admission/students/by-school/${schoolId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -139,7 +139,7 @@ const IDCardBuilder: React.FC = () => {
     const fetchAssets = async () => {
       try {
         const res = await fetch(
-          `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/newSchool/school-assets/by-school/${schoolId}`
+          `https://api.pbmpublicschool.in/api/newSchool/school-assets/by-school/${schoolId}`
         );
         const data = await res.json();
         setSchoolLogo(data.schoolLogo || null);

@@ -318,7 +318,28 @@ const OnlineTestexam = () => {
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
 												const data = await res.json();
-												Alert.alert('Start Test', data.message || (data.success ? 'Test started.' : 'Failed to start test'));
+												if (data.success) {
+													Alert.alert('Start Test', 'Test started successfully');
+													// Refresh the tests list
+													setLoadingTests(true);
+													try {
+														const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
+														const url = classId ? `${base}${encodeURIComponent(classId)}` : base;
+														const refreshRes = await fetch(url, {
+															headers: { 'Authorization': `Bearer ${token}` },
+														});
+														const refreshData = await refreshRes.json();
+														if (refreshData.success && Array.isArray(refreshData.tests)) {
+															setMyTests(refreshData.tests);
+														}
+													} catch (err) {
+														console.warn('Refresh tests error', err);
+													} finally {
+														setLoadingTests(false);
+													}
+												} else {
+													Alert.alert('Start Test', data.message || 'Failed to start test');
+												}
 											} catch {
 												Alert.alert('Start Test', 'Network error');
 											}
@@ -337,7 +358,28 @@ const OnlineTestexam = () => {
 													headers: { 'Authorization': `Bearer ${token}` },
 												});
 												const data = await res.json();
-												Alert.alert('Stop Test', data.message || (data.success ? 'Test stopped.' : 'Failed to stop test'));
+												if (data.success) {
+													Alert.alert('Stop Test', 'Test stopped successfully');
+													// Refresh the tests list
+													setLoadingTests(true);
+													try {
+														const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
+														const url = classId ? `${base}${encodeURIComponent(classId)}` : base;
+														const refreshRes = await fetch(url, {
+															headers: { 'Authorization': `Bearer ${token}` },
+														});
+														const refreshData = await refreshRes.json();
+														if (refreshData.success && Array.isArray(refreshData.tests)) {
+															setMyTests(refreshData.tests);
+														}
+													} catch (err) {
+														console.warn('Refresh tests error', err);
+													} finally {
+														setLoadingTests(false);
+													}
+												} else {
+													Alert.alert('Stop Test', data.message || 'Failed to stop test');
+												}
 											} catch {
 												Alert.alert('Stop Test', 'Network error');
 											}

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Linking, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const BASE = 'https://api.pbmpublicschool.in/api';
 
@@ -12,6 +12,7 @@ export default function HomeWork() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedHomework, setSelectedHomework] = useState(null);
 
   useEffect(() => {
     const loadAuth = async () => {
@@ -90,7 +91,9 @@ export default function HomeWork() {
   const renderItem = ({ item }) => {
     const due = item.dueDate ? new Date(item.dueDate) : null;
     return (
-      <View style={styles.card}>
+      <TouchableOpacity 
+        style={styles.card} 
+        onPress={() => setSelectedHomework(item)}>
         <View style={styles.cardHeader}>
           <Text style={styles.title}>{item.title}</Text>
           {due && (
@@ -109,7 +112,7 @@ export default function HomeWork() {
             <Text style={styles.attachmentText}>Open attachment</Text>
           </TouchableOpacity>
         ) : null}
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -139,10 +142,14 @@ export default function HomeWork() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Homeworks</Text>
-        <Text style={styles.headerSubtitle}>Assigned to your class</Text>
+        <Text style={styles.headerSubtitle}>
+          {homeworks.length > 0 
+            ? `${homeworks.length} Assignment${homeworks.length > 1 ? 's' : ''} for your class`
+            : 'Assigned to your class'}
+        </Text>
       </View>
 
       {loading && !refreshing ? (
@@ -160,12 +167,119 @@ export default function HomeWork() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       )}
-    </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={!!selectedHomework}
+        onRequestClose={() => setSelectedHomework(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView style={styles.modalScroll}>
+              {selectedHomework && (
+                <>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>{selectedHomework.title}</Text>
+                    {selectedHomework.dueDate && (
+                      <View style={styles.dueChip}>
+                        <Text style={styles.dueText}>
+                          {new Date(selectedHomework.dueDate).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.modalText}>{selectedHomework.content}</Text>
+                  <View style={styles.metaRow}>
+                    <Text style={styles.classText}>
+                      {selectedHomework.class?.name || selectedHomework.classId || ''}
+                    </Text>
+                    <Text style={styles.dateText}>
+                      {new Date(selectedHomework.createdAt).toLocaleString()}
+                    </Text>
+                  </View>
+                  {selectedHomework.attachmentUrl && (
+                    <TouchableOpacity
+                      style={[styles.attachmentBtn, styles.modalAttachBtn]}
+                      onPress={() => openAttachment(selectedHomework.attachmentUrl)}
+                    >
+                      <Text style={styles.attachmentText}>Open attachment</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setSelectedHomework(null)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#f9fafb' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalScroll: {
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0f172a',
+    flex: 1,
+    marginRight: 12,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  modalAttachBtn: {
+    marginTop: 20,
+  },
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: '#ef4444',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
   header: { marginBottom: 12 },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
   headerSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },

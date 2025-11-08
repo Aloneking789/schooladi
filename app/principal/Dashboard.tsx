@@ -10,12 +10,7 @@ import {
 } from "react-native";
 
 const quickActions = [
-  { label: "Add Student", icon: "👤", route: "StudentOnboarding" },
-  { label: "Add Teacher", icon: "🎓", route: "TeacherOnboard" },
   { label: "Admissions", icon: "📝", route: "Admissions" },
-  { label: "Fees Management", icon: "💰", route: "FeeManagementSystem" },
-  { label: "Salary Management", icon: "₹", route: "TeacherSalaryManagement" },
-  { label: "Generate TC", icon: "🆔", route: "transferCertificate" },
   { label: "Send Notice", icon: "✉️", route: "AddNotice" },
   { label: "Teacher Diary", icon: "📔", route: "TeacherDiary" },
   { label: "Complaints", icon: "🛠️", route: "ComplaintsDispossle" },

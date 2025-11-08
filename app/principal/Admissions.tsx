@@ -7,18 +7,18 @@ import axios from "axios";
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -61,8 +61,6 @@ const Admissions = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [classFilter, setClassFilter] = useState<string>("");
   const [sectionFilter, setSectionFilter] = useState<string>("");
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editData, setEditData] = useState<Partial<Student>>({});
   const [schoolId, setSchoolId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -130,83 +128,6 @@ const Admissions = () => {
   const handleCloseModal = () => {
     setSelectedStudent(null);
     setIsModalOpen(false);
-    setIsEditing(false);
-  };
-
-  const handleEdit = () => {
-    setEditData(selectedStudent || {});
-    setIsEditing(true);
-  };
-
-  const handleEditChange = (name: keyof Student, value: string) => {
-    setEditData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = async () => {
-    try {
-      const token = AsyncStorage.getItem("principal_token");
-      const res = await axios.put(
-        `https://api.pbmpublicschool.in/api/admission/students/${selectedStudent?.id}`,
-        editData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (res.data.success) {
-        setAdmissions(prev =>
-          prev.map(s => s.id === selectedStudent?.id ? res.data.student : s)
-        );
-        setSelectedStudent(res.data.student);
-        setIsEditing(false);
-        Toast.show({
-          type: 'success',
-          text1: 'Student updated successfully!'
-        });
-      }
-    } catch (err) {
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to update student'
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this student?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Delete",
-          onPress: async () => {
-            try {
-              const token = AsyncStorage.getItem("principal_token");
-              const res = await axios.delete(
-                `https://api.pbmpublicschool.in/api/admission/students/${selectedStudent?.id}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-              if (res.data.success) {
-                setAdmissions(prev =>
-                  prev.filter(s => s.id !== selectedStudent?.id)
-                );
-                setIsModalOpen(false);
-                Toast.show({
-                  type: 'success',
-                  text1: 'Student deleted successfully!'
-                });
-              }
-            } catch (err) {
-              Toast.show({
-                type: 'error',
-                text1: 'Failed to delete student'
-              });
-            }
-          }
-        }
-      ]
-    );
   };
 
   const filteredAdmissions = useMemo(() => {
@@ -609,191 +530,60 @@ const Admissions = () => {
               <View style={styles.modalBody}>
                 <View style={styles.modalSection}>
                   <Text style={styles.detailLabel}>Name:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.studentName || ""}
-                      onChangeText={(text) => handleEditChange('studentName', text)}
-                      style={styles.input}
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.studentName}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.studentName}</Text>
 
                   <Text style={styles.detailLabel}>Date of Birth:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.dateOfBirth?.slice(0, 10) || ""}
-                      onChangeText={(text) => handleEditChange('dateOfBirth', text)}
-                      style={styles.input}
-                      placeholder="YYYY-MM-DD"
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>
-                      {selectedStudent?.dateOfBirth ?
-                        new Date(selectedStudent.dateOfBirth).toLocaleDateString() : ''}
-                    </Text>
-                  )}
+                  <Text style={styles.detailText}>
+                    {selectedStudent?.dateOfBirth ?
+                      new Date(selectedStudent.dateOfBirth).toLocaleDateString() : ''}
+                  </Text>
 
                   <Text style={styles.detailLabel}>Gender:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.gender || ""}
-                      onChangeText={(text) => handleEditChange('gender', text)}
-                      style={styles.input}
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.gender}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.gender}</Text>
 
                   <Text style={styles.detailLabel}>Aadhar Number:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.aadharNumber || ""}
-                      onChangeText={(text) => handleEditChange('aadharNumber', text)}
-                      style={styles.input}
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.aadharNumber}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.aadharNumber}</Text>
 
                   <Text style={styles.detailLabel}>PEN Number:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.penNumber || ""}
-                      onChangeText={(text) => handleEditChange('penNumber', text)}
-                      style={styles.input}
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.penNumber}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.penNumber}</Text>
                 </View>
 
                 <View style={styles.modalSection}>
                   <Text style={styles.detailLabel}>Class:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.class_ || ""}
-                      onChangeText={(text) => handleEditChange('class_', text)}
-                      style={styles.input}
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>
-                      {selectedStudent?.class_ || ""}
-                    </Text>
-                  )}
+                  <Text style={styles.detailText}>
+                    {selectedStudent?.class_ || ""}
+                  </Text>
 
                   <Text style={styles.detailLabel}>Section:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.sectionclass || ""}
-                      onChangeText={(text) => handleEditChange('sectionclass', text)}
-                      style={styles.input}
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>
-                      {selectedStudent?.sectionclass || ""}
-                    </Text>
-                  )}
+                  <Text style={styles.detailText}>
+                    {selectedStudent?.sectionclass || ""}
+                  </Text>
 
                   <Text style={styles.detailLabel}>Father's Name:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.fatherName || ""}
-                      onChangeText={(text) => handleEditChange('fatherName', text)}
-                      style={styles.input}
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.fatherName}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.fatherName}</Text>
 
                   <Text style={styles.detailLabel}>Mother's Name:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.motherName || ""}
-                      onChangeText={(text) => handleEditChange('motherName', text)}
-                      style={styles.input}
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.motherName}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.motherName}</Text>
 
                   <Text style={styles.detailLabel}>Phone:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.phone || ""}
-                      onChangeText={(text) => handleEditChange('phone', text)}
-                      style={styles.input}
-                      keyboardType="phone-pad"
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.phone}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.phone}</Text>
 
                   <Text style={styles.detailLabel}>Email:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.email || ""}
-                      onChangeText={(text) => handleEditChange('email', text)}
-                      style={styles.input}
-                      keyboardType="email-address"
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.email}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.email}</Text>
 
                   <Text style={styles.detailLabel}>Address:</Text>
-                  {isEditing ? (
-                    <TextInput
-                      value={editData.address || ""}
-                      onChangeText={(text) => handleEditChange('address', text)}
-                      style={[styles.input, { height: 80 }]}
-                      multiline
-                    />
-                  ) : (
-                    <Text style={styles.detailText}>{selectedStudent?.address}</Text>
-                  )}
+                  <Text style={styles.detailText}>{selectedStudent?.address}</Text>
                 </View>
               </View>
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              {isEditing ? (
-                <>
-                  <Pressable
-                    onPress={handleSave}
-                    style={[styles.modalButton, styles.saveButton]}
-                  >
-                    <Text style={styles.modalButtonText}>Save</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setIsEditing(false)}
-                    style={[styles.modalButton, styles.cancelButton]}
-                  >
-                    <Text style={styles.modalButtonText}>Cancel</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <>
-                  <Pressable
-                    onPress={handleEdit}
-                    style={[styles.modalButton, styles.editButton]}
-                  >
-                    <Text style={styles.modalButtonText}>Edit</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={handleDelete}
-                    style={[styles.modalButton, styles.deleteButton]}
-                  >
-                    <Text style={styles.modalButtonText}>Delete</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={handleCloseModal}
-                    style={[styles.modalButton, styles.closeButton]}
-                  >
-                    <Text style={styles.modalButtonText}>Close</Text>
-                  </Pressable>
-                </>
-              )}
+              <Pressable
+                onPress={handleCloseModal}
+                style={[styles.modalButton, styles.closeButton]}
+              >
+                <Text style={styles.modalButtonText}>Close</Text>
+              </Pressable>
             </View>
           </View>
         </View>

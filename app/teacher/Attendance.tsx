@@ -44,6 +44,7 @@ type Student = {
   classId: string;
   fatherName?: string;
   rollNumber: string;
+ sectionclass : string;
   class_: string; // 'class' is a reserved keyword in JS/TS
 };
 
@@ -367,7 +368,7 @@ const Attendance = () => {
                       <Text style={styles.studentId}>ID: {student.idcardNumber}</Text>
                       <Text style={styles.studentId}>Father: {student.fatherName || 'N/A'}</Text>
                       <Text style={styles.studentId}>Roll Number: {student.rollNumber}</Text>
-                      <Text style={styles.studentId}>Class: {student.class_}</Text>
+                      <Text style={styles.studentId}>Class: {student.class_}-{student.sectionclass}</Text>
                     </View>
                     <View style={styles.attendanceButtons}>
                       <TouchableOpacity
@@ -403,21 +404,6 @@ const Attendance = () => {
               ListHeaderComponent={
                 <View>
                   {/* Class Dropdown */}
-                  <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '500', marginBottom: 6 }}>Select Class:</Text>
-                    <View style={{ backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db' }}>
-                      <Picker
-                        selectedValue={selectedClass}
-                        onValueChange={(itemValue) => setSelectedClass(itemValue)}
-                        style={{ height: 44, color: '#000' }}
-                      >
-                        <Picker.Item label="Select Class" value="" />
-                        {classOptions.map((option) => (
-                          <Picker.Item key={option.value} label={option.label} value={option.value} />
-                        ))}
-                      </Picker>
-                    </View>
-                  </View>
 
                   <View style={styles.searchContainer}>
                     <TextInput
@@ -458,21 +444,6 @@ const Attendance = () => {
         {viewMode === 'history' && (
           <ScrollView style={styles.section}>
             {/* Class Dropdown for History */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 16, fontWeight: '500', marginBottom: 6 }}>Select Class:</Text>
-              <View style={{ backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db' }}>
-                <Picker
-                  selectedValue={selectedClass}
-                  onValueChange={(itemValue) => setSelectedClass(itemValue)}
-                  style={{ height: 44, color: '#000' }}
-                >
-                  <Picker.Item label="Select Class" value="" />
-                  {classOptions.map((option) => (
-                    <Picker.Item key={option.value} label={option.label} value={option.value} />
-                  ))}
-                </Picker>
-              </View>
-            </View>
             <View style={styles.historyControls}>
               <View style={styles.dateInputContainer}>
                 <Text style={styles.inputLabel}>Start Date:</Text>

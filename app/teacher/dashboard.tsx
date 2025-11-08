@@ -244,6 +244,10 @@ const TeacherDashboard = () => {
                 <Ionicons name="book" size={rem(28)} color="#71d293ff" />
                 <Text style={styles.quickActionText}>Teacher Diary</Text>
               </TouchableOpacity>
+               <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('TeacherNotices')}>
+                <Ionicons name="notifications-outline" size={rem(28)} color="#71d293ff" />
+                <Text style={styles.quickActionText}>Notice</Text>
+              </TouchableOpacity>
               <View style={[styles.quickActionBtn, { opacity: 0 }]}/>
             </View>
           </View>

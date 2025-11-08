@@ -27,11 +27,10 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
     switch (userType) {
       case "principal":
         return [
-          
-          { name: "", path: "promotion", iconName: "school" },
+          { name: "", path: "AddNotice", iconName: "notifications" },
           { name: "", path: "PrincipalDashboard", iconName: "home" },
-          { name: "", path: "dropbox", iconName: "trash" },
-          { name: "", path: "SchoolGallary", iconName: "images" },
+          { name: "", path: "Admissions", iconName: "people" },
+          { name: "", path: "AttendanceAll", iconName: "book" },
         ];
       case "teacher":
         return [

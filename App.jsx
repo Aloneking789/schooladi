@@ -35,7 +35,7 @@ import EnquiryManagement from './app/principal/EnquiryManagement';
 import FeeManagementSystem from './app/principal/FeeManagementSystem';
 import IDCardBuilder from './app/principal/IDcard';
 import Promotion from './app/principal/promotion';
-import SchoolGallery from './app/principal/SchoolGallary';
+import AttendanceAll from './app/principal/StudentsAttendance';
 import Teachers from './app/principal/ShowTeacher';
 import StudentOnboarding from './app/principal/StudentOnboarding';
 import TeacherDiaryPrincipal from './app/principal/TeacherDiary';
@@ -56,6 +56,7 @@ import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 import { configureStatusBar } from './app/utils/statusBarConfig';
 import OnlineTestManage from './app/principal/OnlineTestManage';
 import AttendanceCalendar from './app/student/AttendanceReport';
+import TeacherNotices from './app/teacher/Notice';
 // import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 // import TeacherSelfAttendance from './app/teacher/TeacherAttendance';
 
@@ -217,6 +218,14 @@ export default function App() {
             </Layout>
           )}
         />
+          <Stack.Screen
+          name="TeacherNotices"
+          children={props => (
+            <Layout>
+              <TeacherNotices {...props} />
+            </Layout>
+          )}
+        />
         <Stack.Screen
           name="DiaryItem"
           children={props => (
@@ -332,10 +341,10 @@ export default function App() {
           )}
         />
         <Stack.Screen
-          name="SchoolGallary"
+          name="AttendanceAll"
           children={props => (
             <Layout>
-              <SchoolGallery {...props} />
+              <AttendanceAll {...props} />
             </Layout>
           )}
         />

@@ -2,15 +2,15 @@ import { Feather } from '@expo/vector-icons';
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 interface Notice {
@@ -29,7 +29,7 @@ interface Notice {
 
 const filterOptions = ["Announcements", "Events", "Scholarships", "Exams"];
 
-const ShowNotice: React.FC = () => {
+const TeacherNotices: React.FC = () => {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [filters, setFilters] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -43,11 +43,11 @@ const ShowNotice: React.FC = () => {
       try {
         const response = await axios.get("https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices?schoolId=1");
         if (response.data.success) {
-          // Filter notices for students (ALL or STUDENT)
-          const studentNotices = response.data.notices.filter(
-            (notice: Notice) => notice.recipient === 'ALL' || notice.recipient === 'STUDENT'
+          // Filter notices for teachers (ALL or STAFF)
+          const teacherNotices = response.data.notices.filter(
+            (notice: Notice) => notice.recipient === 'ALL' || notice.recipient === 'STAFF'
           );
-          setNotices(studentNotices);
+          setNotices(teacherNotices);
         }
       } catch (err) {
         setError("Failed to load notices.");
@@ -74,10 +74,33 @@ const ShowNotice: React.FC = () => {
     ? notices.filter((notice) => filters.includes(notice.tag))
     : notices;
 
+  const getRecipientBadgeStyle = (recipient: string) => {
+    switch (recipient) {
+      case 'STAFF':
+        return styles.staffBadge;
+      case 'ALL':
+        return styles.allBadge;
+      default:
+        return styles.defaultBadge;
+    }
+  };
+
+  const getRecipientTextStyle = (recipient: string) => {
+    switch (recipient) {
+      case 'STAFF':
+        return styles.staffText;
+      case 'ALL':
+        return styles.allText;
+      default:
+        return styles.defaultText;
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Important Updates</Text>
+      <Text style={styles.title}>Notices & Updates</Text>
 
+     
 
       {loading && <ActivityIndicator size="large" color="#000" />}
       {error && <Text style={styles.error}>{error}</Text>}
@@ -103,7 +126,7 @@ const ShowNotice: React.FC = () => {
               <Text style={styles.noticeTitle}>{notice.title}</Text>
               <View style={[
                 styles.recipientBadge,
-                notice.recipient === 'STUDENT' ? styles.studentBadge : styles.allBadge
+                notice.recipient === 'STAFF' ? styles.staffBadge : styles.allBadge
               ]}>
                 <Text style={styles.recipientText}>{notice.recipient}</Text>
               </View>
@@ -213,7 +236,7 @@ const ShowNotice: React.FC = () => {
                       <Text style={styles.modalLabel}>Intended For</Text>
                       <View style={[
                         styles.recipientBadge,
-                        selectedNotice.recipient === 'STUDENT' ? styles.studentBadge : styles.allBadge,
+                        selectedNotice.recipient === 'STAFF' ? styles.staffBadge : styles.allBadge,
                         styles.modalRecipientBadge
                       ]}>
                         <Text style={[styles.recipientText, styles.modalRecipientText]}>
@@ -317,15 +340,27 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 12,
   },
-  studentBadge: {
-    backgroundColor: "#fef3c7",
+  staffBadge: {
+    backgroundColor: "#dbeafe",
   },
   allBadge: {
     backgroundColor: "#d1fae5",
   },
+  defaultBadge: {
+    backgroundColor: "#e5e7eb",
+  },
   recipientText: {
     fontSize: 12,
     fontWeight: "500",
+  },
+  staffText: {
+    color: "#1e40af",
+  },
+  allText: {
+    color: "#047857",
+  },
+  defaultText: {
+    color: "#374151",
   },
   pdfIndicator: {
     position: 'absolute',
@@ -485,4 +520,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ShowNotice;
+export default TeacherNotices;

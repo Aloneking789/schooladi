@@ -30,23 +30,11 @@ import Layout from './app/components/Layout';
 import AddNotice from './app/principal/AddNotice';
 import Admissions from './app/principal/Admissions';
 import ComplaintsDispossle from './app/principal/ComplaintsDispossle';
-import DropBox from './app/principal/dropbox';
-import EnquiryManagement from './app/principal/EnquiryManagement';
-import FeeManagementSystem from './app/principal/FeeManagementSystem';
-import IDCardBuilder from './app/principal/IDcard';
-import Promotion from './app/principal/promotion';
 import AttendanceAll from './app/principal/StudentsAttendance';
-import Teachers from './app/principal/ShowTeacher';
-import StudentOnboarding from './app/principal/StudentOnboarding';
 import TeacherDiaryPrincipal from './app/principal/TeacherDiary';
-import TeacherIDCard from './app/principal/teacherIDcard';
-import TeacherOnboard from './app/principal/TeacherOnboard';
-import TeacherSalaryManagement from './app/principal/TeacherSalaryManagement';
-import TransferCertificate from './app/principal/transferCertificate';
 import Complaints from './app/student/Complaints';
 import HomeWork from './app/student/HomeWork';
 import Onlitest from './app/student/OnlineTest';
-import Results from './app/student/Results';
 import Attendance from './app/teacher/Attendance';
 import MyTeacherIDCard from './app/teacher/MyTeacherIDCard';
 import OnlineTestCreate from './app/teacher/OnlineTestexam';
@@ -325,50 +313,10 @@ export default function App() {
           )}
         />
         <Stack.Screen
-          name="promotion"
-          children={props => (
-            <Layout>
-              <Promotion {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="dropbox"
-          children={props => (
-            <Layout>
-              <DropBox {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
           name="AttendanceAll"
           children={props => (
             <Layout>
               <AttendanceAll {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="ShowTeacher"
-          children={props => (
-            <Layout>
-              <Teachers {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="TeacherOnboard"
-          children={props => (
-            <Layout>
-              <TeacherOnboard {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="teacherIDcard"
-          children={props => (
-            <Layout>
-              <TeacherIDCard {...props} />
             </Layout>
           )}
         />
@@ -381,38 +329,6 @@ export default function App() {
           )}
         />
         <Stack.Screen
-          name="StudentOnboarding"
-          children={props => (
-            <Layout>
-              <StudentOnboarding {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="FeeManagementSystem"
-          children={props => (
-            <Layout>
-              <FeeManagementSystem {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="TeacherSalaryManagement"
-          children={props => (
-            <Layout>
-              <TeacherSalaryManagement {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="EnquiryManagement"
-          children={props => (
-            <Layout>
-              <EnquiryManagement {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
           name="AddNotice"
           children={props => (
             <Layout>
@@ -420,15 +336,7 @@ export default function App() {
             </Layout>
           )}
         />
-        <Stack.Screen
-          name="UploadResult"
-          children={props => (
-            <Layout>
-              <Results {...props} />
-            </Layout>
-          )}
-        />
-
+    
         <Stack.Screen
           name="TeacherDiary"
           children={props => (
@@ -445,38 +353,7 @@ export default function App() {
             </Layout>
           )}
         />
-        <Stack.Screen
-          name="resultPublish"
-          children={props => (
-            <Layout>
-              <ResultPublish {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="transferCertificate"
-          children={props => (
-            <Layout>
-              <TransferCertificate {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="IDcard"
-          children={props => (
-            <Layout>
-              <IDCardBuilder {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="TeacherUploadResults'"
-          children={props => (
-            <Layout>
-              <TeacherUploadResults {...props} />
-            </Layout>
-          )}
-        />
+
 
 
 

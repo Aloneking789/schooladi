@@ -3,16 +3,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 const AttendanceAll = () => {
@@ -35,7 +34,8 @@ const AttendanceAll = () => {
   const [principalId, setPrincipalId] = useState('');
   const sections = ['A', 'B', 'C', 'D'];
 
-  const API_BASE_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
+  // Use the public API base by default — tunnels can expire and return 404s
+  const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
   // Get user data from storage
   useEffect(() => {
@@ -94,19 +94,26 @@ const AttendanceAll = () => {
   // Fetch classes
   useEffect(() => {
     const fetchClasses = async () => {
-      if (!schoolId || !token) return;
+      if (!schoolId || !token) {
+        console.log('Skipping fetchClasses: missing schoolId or token', { schoolId, token });
+        return;
+      }
+      const url = `${API_BASE_URL}/classes/${schoolId}`;
       try {
-        const res = await axios.get(
-          `${API_BASE_URL}/classes/${schoolId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        console.log('Fetching classes from', url);
+        const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
         setClasses(res.data.classes || []);
       } catch (error) {
-        Alert.alert("Error", "Failed to load classes");
+        console.error('Failed to fetch classes', {
+          url,
+          status: error.response?.status,
+          body: error.response?.data,
+        });
+        if (error.response?.status === 404) {
+          Alert.alert('Error', 'Classes not found (404). Please check the school configuration or API URL.');
+        } else {
+          Alert.alert('Error', 'Failed to load classes');
+        }
       }
     };
     fetchClasses();
@@ -129,18 +136,17 @@ const AttendanceAll = () => {
         return;
       }
       try {
-        const { data: attendanceData } = await axios.get(
-          `${API_BASE_URL}/attendance/by-date-class`,
-          {
-            params: {
-              date: new Date(date).toISOString(),
-              classId: selectedClass,
-              sectionclass: selectedSection,
-              schoolId,
-            },
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const url = `${API_BASE_URL}/attendance/by-date-class`;
+        console.log('Fetching attendance from', url, { date: new Date(date).toISOString(), classId: selectedClass, sectionclass: selectedSection, schoolId });
+        const { data: attendanceData } = await axios.get(url, {
+          params: {
+            date: new Date(date).toISOString(),
+            classId: selectedClass,
+            sectionclass: selectedSection,
+            schoolId,
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         let attendanceMap = {};
         if (attendanceData.success) {
@@ -166,8 +172,16 @@ const AttendanceAll = () => {
         setAttendance(attendanceMap);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching data:', error);
-        Alert.alert("Error", "Failed to fetch attendance data");
+        console.error('Error fetching attendance data', {
+          message: error.message,
+          status: error.response?.status,
+          body: error.response?.data,
+        });
+        if (error.response?.status === 404) {
+          Alert.alert('Error', 'Attendance endpoint not found (404). Please verify API URL.');
+        } else {
+          Alert.alert('Error', 'Failed to fetch attendance data');
+        }
         setLoading(false);
       }
     };
@@ -181,7 +195,9 @@ const AttendanceAll = () => {
       return;
     }
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/attendance/by-class`, {
+      const url = `${API_BASE_URL}/attendance/by-class`;
+      console.log('Fetching attendance history from', url, { classId: selectedClass, startDate: new Date(startDate).toISOString(), endDate: new Date(endDate).toISOString(), schoolId });
+      const { data } = await axios.get(url, {
         params: {
           classId: selectedClass,
           startDate: new Date(startDate).toISOString(),
@@ -194,7 +210,12 @@ const AttendanceAll = () => {
         setAttendanceHistory(data.data);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch attendance history');
+      console.error('Error fetching attendance history', { status: error.response?.status, body: error.response?.data, message: error.message });
+      if (error.response?.status === 404) {
+        Alert.alert('Error', 'Attendance history not found (404).');
+      } else {
+        Alert.alert('Error', 'Failed to fetch attendance history');
+      }
     }
   };
 

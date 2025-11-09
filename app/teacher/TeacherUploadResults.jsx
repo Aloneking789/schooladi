@@ -57,6 +57,8 @@ const examMaxMap = {
 const TeacherUploadResults = () => {
 	const [token, setToken] = useState('');
 	const [classId, setClassId] = useState('');
+	const [assignedClass, setAssignedClass] = useState('');
+	const [assignedSection, setAssignedSection] = useState('');
 	const [schoolId, setSchoolId] = useState('');
 
 	const [subjects, setSubjects] = useState([]);
@@ -87,6 +89,9 @@ const TeacherUploadResults = () => {
 					const u = JSON.parse(userRaw);
 					setClassId(u.classId || u.user?.classId || '');
 					setSchoolId(u.schoolId?.toString() || u.user?.schools?.[0]?.id || '');
+					// store assigned class/section if available
+					setAssignedClass((u.assignedClass || u.classId || u.class || '')?.toString() || '');
+					setAssignedSection(u.assignedSection || u.sectionclass || u.section || '');
 				}
 				if (tokenRaw) setToken(tokenRaw);
 			} catch (e) {
@@ -98,13 +103,15 @@ const TeacherUploadResults = () => {
 
 	useEffect(() => {
 		const fetchData = async () => {
-			if (!classId || !token) {
+			// prefer explicit classId, otherwise fall back to assignedClass
+			const classToUse = classId || assignedClass;
+			if (!classToUse || !token) {
 				setLoading(false);
 				return;
 			}
 			setLoading(true);
 			try {
-				const subjectsRes = await axios.get(`${API_BASE_URL}/classes/${classId}/subjects`, {
+				const subjectsRes = await axios.get(`${API_BASE_URL}/classes/${classToUse}/subjects`, {
 					params: { schoolId },
 					headers: { Authorization: `Bearer ${token}` },
 				});
@@ -113,12 +120,22 @@ const TeacherUploadResults = () => {
 				} else {
 					setSubjects([]);
 				}
-
-				const studentsRes = await axios.get(`${API_BASE_URL}/admission/students/by-class/${classId}`, {
+				const studentsRes = await axios.get(`${API_BASE_URL}/admission/students/by-class/${classToUse}`, {
 					headers: { Authorization: `Bearer ${token}` },
 				});
 				if (studentsRes.data && studentsRes.data.success) {
-					setStudents(studentsRes.data.students || []);
+					let fetched = studentsRes.data.students || [];
+					// sort students by numeric rollNumber
+					const sortByRoll = (arr) => arr.slice().sort((a, b) => {
+						const ra = Number(a.rollNumber) || Number.POSITIVE_INFINITY;
+						const rb = Number(b.rollNumber) || Number.POSITIVE_INFINITY;
+						return ra - rb;
+					});
+					// if assignedSection exists, filter by section field
+					if (assignedSection) {
+						fetched = fetched.filter((s) => (s.sectionclass || '').toString() === assignedSection.toString());
+					}
+					setStudents(sortByRoll(fetched));
 				} else {
 					setStudents([]);
 				}
@@ -514,6 +531,8 @@ const TeacherUploadResults = () => {
 											<Text style={styles.studentRollText}>
 												Roll: {item.rollNumber || item.id.slice(0,4)}
 											</Text>
+											<Text style={styles.studentRollText}>Class: {item.class_ || item.classId || '-'}</Text>
+											<Text style={styles.studentRollText}>Section: {item.sectionclass || '-'}</Text>
 										</View>
 										{selectedStudent?.id === item.id && (
 											<Ionicons name="checkmark-circle" size={rem(20)} color="#4f46e5" />

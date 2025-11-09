@@ -30,6 +30,8 @@ const TeacherDashboard = () => {
   const [teacherId, setTeacherId] = useState<string>('');
   const [schoolId, setSchoolId] = useState<string>('');
   const [classId, setClassId] = useState<string>('');
+  const [assignedClass, setAssignedClass] = useState<string>('');
+  const [assignedSection, setAssignedSection] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [presentTotal, setPresentTotal] = useState<number | null>(null);
@@ -45,6 +47,12 @@ const TeacherDashboard = () => {
           const teacherData = JSON.parse(userDataRaw);
           setTeacherId(teacherData.id || teacherData.user?.id || '');
           setSchoolId(teacherData.schoolId?.toString() || teacherData.user?.schools?.[0]?.id || '');
+          // prefer explicit assignedClass/assignedSection if present on teacher profile
+          const assignedCls = teacherData.assignedClass || teacherData.classId || teacherData.class || teacherData.user?.classId || '';
+          const assignedSec = teacherData.assignedSection || teacherData.sectionclass || teacherData.section || '';
+          if (assignedCls) setAssignedClass(String(assignedCls));
+          if (assignedSec) setAssignedSection(String(assignedSec));
+          // keep legacy classId field too
           setClassId(teacherData.classId || teacherData.user?.classId || '');
           setToken(tokenRaw);
         }
@@ -57,21 +65,29 @@ const TeacherDashboard = () => {
 
   useEffect(() => {
     const fetchStudentsAndAttendance = async () => {
-      if (!schoolId || !classId || !token) {
+      // prefer assignedClass if present, otherwise fall back to classId from profile
+      const classToUse = assignedClass || classId;
+      if (!schoolId || !classToUse || !token) {
         setLoading(false);
         return;
       }
       try {
-        // Fetch students for this school and filter by classId
+        // Fetch students for this school and filter by the resolved class/section
         const studentsRes = await axios.get(
           `${API_BASE_URL}/admission/students/by-school/${schoolId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         let classStudents: Student[] = [];
         if (studentsRes.data.success) {
-          classStudents = studentsRes.data.students.filter(
-            (student: Student) => student.classId === classId
-          );
+          classStudents = studentsRes.data.students.filter((student: Student) => {
+            const stuClass = (student as any).class_ || (student as any).classId || '';
+            if (String(stuClass) !== String(classToUse)) return false;
+            if (assignedSection) {
+              const stuSec = (student as any).sectionclass || (student as any).section || '';
+              return String(stuSec) === String(assignedSection);
+            }
+            return true;
+          });
           setStudents(classStudents);
         } else {
           setStudents([]);
@@ -83,7 +99,7 @@ const TeacherDashboard = () => {
         const endDate = new Date();
         const attendanceRes = await axios.get(`${API_BASE_URL}/attendance/by-class`, {
           params: {
-            classId,
+            classId: classToUse,
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString(),
             schoolId,
@@ -93,12 +109,15 @@ const TeacherDashboard = () => {
         let history: AttendanceRecord[] = [];
         if (attendanceRes.data.success) {
           history = attendanceRes.data.data;
+          // if assignedSection is present, filter history to only include students from that section
+          if (assignedSection && classStudents && classStudents.length > 0) {
+            const allowedIds = new Set(classStudents.map((s) => s.id));
+            history = history.filter((h: AttendanceRecord) => allowedIds.has(h.studentId));
+          }
           setAttendanceHistory(history);
         } else {
           setAttendanceHistory([]);
         }
-
-        // present/absent totals are fetched separately based on selectedDate
 
         // Calculate attendance percentage for each student
         const attendanceCount: { [studentId: string]: number } = {};
@@ -106,7 +125,7 @@ const TeacherDashboard = () => {
         history.forEach((record: AttendanceRecord) => {
           if (!attendanceCount[record.studentId]) attendanceCount[record.studentId] = 0;
           attendanceCount[record.studentId]++;
-          if (record.status === 'absent') {
+          if (String(record.status).toLowerCase() === 'present') {
             if (!presentCount[record.studentId]) presentCount[record.studentId] = 0;
             presentCount[record.studentId]++;
           }
@@ -128,23 +147,29 @@ const TeacherDashboard = () => {
       setLoading(false);
     };
     fetchStudentsAndAttendance();
-  }, [schoolId, classId, token]);
+  }, [schoolId, classId, token, assignedClass, assignedSection]);
 
   // Fetch present/absent totals for selected date
   useEffect(() => {
     const fetchCounts = async () => {
-      if (!classId || !schoolId || !token) return;
+      const classToUse = assignedClass || classId;
+      if (!classToUse || !schoolId || !token) return;
       try {
         const res = await axios.get(`${API_BASE_URL}/attendance/by-date-class`, {
           params: {
             date: new Date(selectedDate).toISOString(),
-            classId,
+            classId: classToUse,
             schoolId,
           },
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data && res.data.success) {
-          const todays: AttendanceRecord[] = res.data.data || [];
+          let todays: AttendanceRecord[] = res.data.data || [];
+          // If we have an assignedSection (or students are already filtered), only count records for students in our students list
+          if (assignedSection && students && students.length > 0) {
+            const allowed = new Set(students.map((s) => s.id));
+            todays = todays.filter((t: AttendanceRecord) => allowed.has(t.studentId));
+          }
           const presentCount = todays.filter((r) => String(r.status).toLowerCase() === 'present').length;
           const totalStudents = students.length;
           setPresentTotal(presentCount);
@@ -160,7 +185,7 @@ const TeacherDashboard = () => {
       }
     };
     fetchCounts();
-  }, [selectedDate, classId, schoolId, token, students]);
+  }, [selectedDate, classId, schoolId, token, students, assignedClass, assignedSection]);
 
   return (
     <SafeAreaView style={styles.container}>

@@ -1,18 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 // Define AttendanceRecord type
@@ -64,6 +63,8 @@ const Attendance = () => {
   const [teacherId, setTeacherId] = useState('');
   const [schoolId, setSchoolId] = useState('');
   const [classId, setClassId] = useState('');
+  const [assignedClass, setAssignedClass] = useState('');
+  const [assignedSection, setAssignedSection] = useState('');
   const [token, setToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -117,9 +118,14 @@ const Attendance = () => {
           setTeacherId(teacherData.id || teacherData.user?.id || '');
           setSchoolId(teacherData.schoolId?.toString() || teacherData.user?.schools?.[0]?.id || '');
           setClassId(teacherData.classId || teacherData.user?.classId || '');
+          // store assignedClass/assignedSection when available
+          const aClass = (teacherData.assignedClass || teacherData.classId || teacherData.class || '')?.toString() || '';
+          const aSection = teacherData.assignedSection || teacherData.sectionclass || teacherData.section || '';
+          setAssignedClass(aClass);
+          setAssignedSection(aSection);
           setToken(tokenRaw);
-          // Auto-select class in dropdown
-          setSelectedClass(teacherData.classId || teacherData.user?.classId || '');
+          // Auto-select class in dropdown: prefer selectedClass -> assignedClass -> teacher classId
+          setSelectedClass((prev) => prev || aClass || (teacherData.classId || teacherData.user?.classId || ''));
         }
       } catch (e) {
         console.error("Failed to load user data from storage", e);
@@ -136,8 +142,8 @@ const Attendance = () => {
         return;
       }
       try {
-        // Attendance fetch uses selectedClass (from dropdown) if set, else classId from storage
-        const classToUse = selectedClass || classId;
+        // Attendance fetch prefers selectedClass (from dropdown), then assignedClass (teacher assignment), then classId from storage
+        const classToUse = selectedClass || assignedClass || classId;
         if (!classToUse) {
           setLoading(false);
           return;
@@ -167,24 +173,31 @@ const Attendance = () => {
         );
         if (studentsData.success) {
           setAllStudents(studentsData.students);
-          // If no class is selected, auto-select the first available classId
-          if (!selectedClass && studentsData.students.length > 0) {
-            setSelectedClass(studentsData.students[0].classId);
-            const initial = studentsData.students.filter((student: Student) => student.classId === studentsData.students[0].classId);
-            setStudents(sortByRoll(initial));
-            // Reset attendance for new class
-            attendanceMap = {};
-          } else {
-            // Filter students by selected classId
-            const filtered: Student[] = studentsData.students.filter(
-              (student: Student) => student.classId === (selectedClass || classToUse)
-            );
-            setStudents(sortByRoll(filtered));
-            // Reset attendance for new class
-            attendanceMap = {};
+          // Determine which class to filter by. Prefer selectedClass -> classToUse
+          const filterClass = selectedClass || classToUse;
+
+          // If no explicit selectedClass, and assignedClass exists, ensure dropdown reflects it
+          if (!selectedClass && assignedClass) {
+            setSelectedClass(assignedClass);
           }
-        }
-        setAttendance(attendanceMap);
+
+          // Filter students by class (and section when assignedSection provided)
+          const filtered: Student[] = studentsData.students.filter((student: Student) => {
+            const studentClassMatch = (student.classId === filterClass) || (student.class_ === filterClass);
+            if (!studentClassMatch) return false;
+            if (assignedSection) {
+              // match section field on student
+              const sc = (student.sectionclass || '').toString();
+              return sc === assignedSection.toString();
+            }
+            return true;
+          });
+
+          setStudents(sortByRoll(filtered));
+          // Reset attendance for new class
+          attendanceMap = {};
+  }
+  setAttendance(attendanceMap);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching attendance data:', error);

@@ -62,6 +62,8 @@ const MyStudents = () => {
   const [teacherId, setTeacherId] = useState('');
   const [schoolId, setSchoolId] = useState('');
   const [classId, setClassId] = useState('');
+  const [assignedClass, setAssignedClass] = useState('');
+  const [assignedSection, setAssignedSection] = useState('');
   const [token, setToken] = useState('');
   const [teacherInfo, setTeacherInfo] = useState<any>(null);
   const [documentsMap, setDocumentsMap] = useState<Record<string, any>>({});
@@ -92,6 +94,11 @@ const MyStudents = () => {
           setTeacherId(teacherData.id || teacherData.user?.id || '');
           setSchoolId(teacherData.schoolId?.toString() || teacherData.user?.schools?.[0]?.id || '');
           setClassId(teacherData.classId || teacherData.user?.classId || '');
+          // store assigned class & section when available
+          const aClass = (teacherData.assignedClass || teacherData.classId || teacherData.class || '')?.toString() || '';
+          const aSection = teacherData.assignedSection || teacherData.sectionclass || teacherData.section || '';
+          setAssignedClass(aClass);
+          setAssignedSection(aSection);
           setToken(tokenRaw);
         }
       } catch (error) {
@@ -103,7 +110,7 @@ const MyStudents = () => {
   }, []);
 
   const fetchStudents = async () => {
-    if (!schoolId || !classId || !token) {
+    if (!schoolId || !token) {
       setLoading(false);
       return;
     }
@@ -115,11 +122,28 @@ const MyStudents = () => {
         }
       );
       if (response.data.success) {
-        const classStudents = response.data.students.filter(
-          (student: Student) => student.classId === classId
-        );
-        setStudents(classStudents);
-        setFilteredStudents(classStudents);
+  // determine which class to filter by: prefer classId -> assignedClass
+  const filterClass = classId || assignedClass;
+        // filter students by class and optionally by assignedSection
+        const classStudents = response.data.students.filter((student: Student) => {
+          const matchesClass = !filterClass || student.classId === filterClass || student.class_ === filterClass;
+          if (!matchesClass) return false;
+          if (assignedSection) {
+            return (student.sectionclass || '').toString() === assignedSection.toString();
+          }
+          return true;
+        });
+        // sort by roll number (numeric) before setting
+        const sortByRoll = (arr: Student[]) =>
+          arr.slice().sort((a, b) => {
+            const ra = Number(a.rollNumber) || Number.POSITIVE_INFINITY;
+            const rb = Number(b.rollNumber) || Number.POSITIVE_INFINITY;
+            return ra - rb;
+          });
+
+        const sorted = sortByRoll(classStudents);
+        setStudents(sorted);
+        setFilteredStudents(sorted);
         classStudents.forEach((st: Student) => {
           fetchDocumentsForStudent(st.id);
         });
@@ -700,6 +724,8 @@ const MyStudents = () => {
                     Admission: {student.Admission_Number}
                   </Text>
                   <Text style={styles.idNumber}>ID: {student.idcardNumber}</Text>
+                  <Text style={styles.idNumber}>Class: {student.class_ || student.classId}</Text>
+                  <Text style={styles.idNumber}>Section: {student.sectionclass || '-'}</Text>
                 </View>
               </View>
 

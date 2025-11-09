@@ -170,7 +170,7 @@ const AddNotice = () => {
       toast('Notice uploaded successfully!');
       reset({ title: '', text: '', tag: '', recipient: 'ALL' });
       setPdfFile(null);
-      setModalVisible(false);
+      setAddModalVisible(false);
       fetchNotices();
     } catch (err: any) {
       toast(err.message);

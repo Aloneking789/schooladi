@@ -446,8 +446,8 @@ const TeacherUploadResults = () => {
 										<Ionicons name="calendar" size={rem(16)} color="#4f46e5" />
 										<Text style={styles.sessionText}>Session: {sessionKey}</Text>
 									</View>
-									{Array.isArray(sessions) ? sessions.map((sess) => (
-										<View key={sess.examResultId || Math.random()} style={styles.examCard}>
+									{Array.isArray(sessions) ? sessions.map((sess, sidx) => (
+										<View key={`${sess.examResultId || sessionKey}-${sidx}`} style={styles.examCard}>
 											<Text style={styles.examTypeText}>{sess.examType}</Text>
 											<Text style={styles.academicYear}>{sess.academicYear}</Text>
 											{Array.isArray(sess.marks) && sess.marks.map((m) => (

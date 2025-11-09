@@ -1,6 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { rem } from '../utils/responsive';
@@ -36,6 +37,35 @@ const OnlineTestexam = () => {
 	const [submissions, setSubmissions] = useState([]);
 	const [loadingResults, setLoadingResults] = useState(false);
 	const [token, setToken] = useState('');
+
+	// Helper to extract roll/admission from submission object robustly
+	const extractRollFromSubmission = (s) => {
+		if (!s) return '';
+		// common candidate paths
+		const candidates = [
+			'student.rollNumber', 'student.rollNo', 'student.roll_no', 'student.admissionNo', 'student.admission_number', 'student.idcardNumber',
+			'rollNumber', 'rollNo', 'roll_no', 'admissionNo', 'admission_number', 'admissionNo', 'studentId'
+		];
+		for (const path of candidates) {
+			const parts = path.split('.');
+			let cur = s;
+			for (const p of parts) {
+				if (!cur) break;
+				cur = cur[p];
+			}
+			if (cur !== undefined && cur !== null && String(cur).trim() !== '') return String(cur).trim();
+		}
+		// scan object keys for roll/admission hints
+		for (const k of Object.keys(s || {})) {
+			if (/roll|admission/i.test(k) && s[k]) return String(s[k]);
+		}
+		if (s.student && typeof s.student === 'object') {
+			for (const k of Object.keys(s.student)) {
+				if (/roll|admission/i.test(k) && s.student[k]) return String(s.student[k]);
+			}
+		}
+		return '';
+	};
 
 	useEffect(() => {
 		// Get teacher classId, schoolId and token from AsyncStorage
@@ -182,15 +212,19 @@ const OnlineTestexam = () => {
 			}
 			const body = await res.json();
 			if (!body.success) throw new Error(body.message || 'API returned success:false');
-			const subs = (body.submissions || []).map((s) => {
+			let subs = (body.submissions || []).map((s) => {
 				let answers = {};
 				let times = [];
 				try { answers = JSON.parse(s.answers || '{}'); } catch (e) { answers = {}; }
 				try { times = JSON.parse(s.perQuestionTimes || '[]'); } catch (e) { times = []; }
+				const roll = extractRollFromSubmission(s) || 'N/A';
+				const rollNumeric = Number(String(roll).replace(/[^0-9]/g, ''));
 				return {
 					id: s.id,
 					testId: s.testId,
 					studentId: s.studentId,
+					roll,
+					rollNumeric,
 					studentName: s.student?.studentName || s.studentName || 'Unknown',
 					class: s.student?.class_ || 'N/A',
 					section: s.student?.sectionclass || 'N/A',
@@ -201,6 +235,14 @@ const OnlineTestexam = () => {
 					perQuestionTimes: times,
 					submittedAt: s.submittedAt,
 				};
+			});
+			// sort by numeric roll when possible, fallback to string compare then name
+			subs.sort((a, b) => {
+				const aNum = Number.isFinite(a.rollNumeric) && a.rollNumeric > 0 ? a.rollNumeric : NaN;
+				const bNum = Number.isFinite(b.rollNumeric) && b.rollNumeric > 0 ? b.rollNumeric : NaN;
+				if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) return aNum - bNum;
+				if (a.roll && b.roll) return String(a.roll).localeCompare(String(b.roll), undefined, { numeric: true });
+				return (a.studentName || '').localeCompare(b.studentName || '');
 			});
 			setSubmissions(subs);
 			setResultsModalVisible(true);
@@ -216,8 +258,13 @@ const OnlineTestexam = () => {
 	return (
 		<SafeAreaView style={styles.container}>
 			<ScrollView contentContainerStyle={styles.scrollContent}>
-				<Text style={styles.header}>Create Online Test</Text>
-				<View style={styles.form}>
+				<LinearGradient colors={['#3B82F6', '#8B5CF6']} style={styles.headerGradient}>
+					<View style={styles.headerRow}>
+						<Feather name="edit-3" size={20} color="#fff" />
+						<Text style={styles.headerTitle}>Create Online Test</Text>
+					</View>
+				</LinearGradient>
+				<View style={styles.formCard}>
 					<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: rem(8), justifyContent: 'space-between' }}>
 						<Text style={styles.label}>Class</Text>
 						<View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -294,10 +341,18 @@ const OnlineTestexam = () => {
 								</View>
 								{loadingResults ? <ActivityIndicator /> : submissions.length === 0 ? <Text>No submissions found.</Text> : (
 									<ScrollView>
-										{submissions.map((s) => (
-											<View key={s.id} style={{ backgroundColor: '#fff', padding: rem(12), borderRadius: rem(8), marginBottom: rem(12) }}>
-												<Text style={{ fontWeight: '700' }}>{s.studentName} ({s.class}-{s.section})</Text>
-												<Text>Score: {s.score}</Text>
+										{submissions.map((s, idx) => (
+											<View key={`${s.id || s.studentId || s.student?.id || idx}`} style={styles.submissionCard}>
+												<View style={styles.subHeader}>
+													<View>
+														<Text style={styles.subName}>{s.studentName}</Text>
+														<Text style={styles.subMeta}>{s.class}-{s.section}</Text>
+													</View>
+													<View style={styles.rollBadge}>
+														<Text style={styles.rollBadgeText}>{s.roll || 'N/A'}</Text>
+													</View>
+												</View>
+												<Text style={styles.subScore}>Score: <Text style={{ fontWeight: '700' }}>{s.score}</Text></Text>
 												<Text style={{ marginTop: rem(8), fontWeight: '700' }}>Answers</Text>
 												{Object.keys(s.answers || {}).map((qIndex) => (
 													<View key={qIndex} style={{ marginTop: rem(6) }}>
@@ -321,9 +376,11 @@ const OnlineTestexam = () => {
 						keyboardType="numeric"
 					/>
 
-					<TouchableOpacity style={styles.submitBtn} onPress={handleCreateTest} disabled={loading}>
-						{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Create Test</Text>}
-					</TouchableOpacity>
+					<LinearGradient colors={['#3B82F6', '#8B5CF6']} style={styles.createBtnGradient}>
+						<TouchableOpacity style={styles.createBtn} onPress={handleCreateTest} disabled={loading}>
+							{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.createBtnText}>Create Test</Text>}
+						</TouchableOpacity>
+					</LinearGradient>
 				</View>
 
 				{apiError ? <Text style={styles.errorText}>{apiError}</Text> : null}
@@ -510,10 +567,12 @@ const OnlineTestexam = () => {
 };
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: '#f3f4f6' },
-	scrollContent: { padding: rem(20), paddingBottom: rem(40) },
-	header: { fontSize: rem(28), fontWeight: '800', marginBottom: rem(22), color: '#1e293b', textAlign: 'center', letterSpacing: 1 },
-	form: { backgroundColor: '#fff', borderRadius: rem(16), padding: rem(22), marginBottom: rem(28), shadowColor: '#2563eb', shadowOpacity: 0.08, shadowRadius: rem(12), elevation: 4, borderWidth: 1, borderColor: '#e0e7ef' },
+	container: { flex: 1, backgroundColor: '#F9FAFB' },
+	scrollContent: { padding: rem(0), paddingBottom: rem(40) },
+	headerGradient: { paddingTop: 40, paddingBottom: 18, paddingHorizontal: rem(20), borderRadius: rem(12), marginBottom: rem(18) },
+	headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+	headerTitle: { color: '#fff', fontSize: rem(20), fontWeight: '700', marginLeft: rem(8) },
+	formCard: { backgroundColor: '#fff', borderRadius: rem(16), padding: rem(18), marginBottom: rem(20), shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: rem(8), elevation: 2, borderWidth: 1, borderColor: '#eef2ff' },
 	label: { fontSize: rem(16), fontWeight: '700', color: '#334155', marginTop: rem(12), marginBottom: rem(6), letterSpacing: 0.2 },
 	input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: rem(10), padding: rem(12), fontSize: rem(16), backgroundColor: '#f1f5f9', marginBottom: rem(8) },
 	inputDisabled: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: rem(10), padding: rem(12), backgroundColor: '#f1f5f9', marginBottom: rem(8) },
@@ -522,11 +581,19 @@ const styles = StyleSheet.create({
 	pickerBtnActive: { backgroundColor: '#2563eb', borderColor: '#2563eb', shadowColor: '#2563eb', shadowOpacity: 0.12, shadowRadius: rem(4), elevation: 2 },
 	pickerBtnText: { color: '#334155', fontWeight: '500', fontSize: rem(15) },
 	pickerBtnTextActive: { color: '#fff', fontWeight: '700', fontSize: rem(15) },
-	submitBtn: { backgroundColor: '#2563eb', borderRadius: rem(10), paddingVertical: rem(14), alignItems: 'center', marginTop: rem(18), shadowColor: '#2563eb', shadowOpacity: 0.10, shadowRadius: rem(4), elevation: 2 },
-	submitBtnText: { color: '#fff', fontWeight: '800', fontSize: rem(17), letterSpacing: 0.5 },
+	createBtnGradient: { borderRadius: rem(10), marginTop: rem(14), overflow: 'hidden' },
+	createBtn: { paddingVertical: rem(12), alignItems: 'center' },
+	createBtnText: { color: '#fff', fontWeight: '800', fontSize: rem(16), letterSpacing: 0.4 },
 	errorText: { color: '#dc2626', marginTop: rem(12), textAlign: 'center', fontWeight: '700', fontSize: rem(15) },
 	resultSection: { marginTop: rem(28) },
 	resultHeader: { fontSize: rem(22), fontWeight: '800', color: '#0f172a', marginBottom: rem(14), textAlign: 'center', letterSpacing: 0.2 },
+	submissionCard: { backgroundColor: '#fff', borderRadius: rem(12), padding: rem(14), marginBottom: rem(12), borderWidth: 1, borderColor: '#eef2ff' },
+	subHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+	subName: { fontSize: rem(16), fontWeight: '700', color: '#111827' },
+	subMeta: { color: '#6b7280', fontSize: rem(13) },
+	rollBadge: { backgroundColor: '#eef2ff', paddingHorizontal: rem(10), paddingVertical: rem(6), borderRadius: rem(8) },
+	rollBadgeText: { color: '#2563eb', fontWeight: '700' },
+	subScore: { marginTop: rem(8), color: '#374151' },
 	questionCard: { backgroundColor: '#f9fafb', borderRadius: rem(12), padding: rem(16), marginBottom: rem(16), borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#2563eb', shadowOpacity: 0.04, shadowRadius: rem(4), elevation: 1 },
 	qText: { fontSize: rem(16), fontWeight: '700', color: '#1e293b', marginBottom: rem(8) },
 	optionsList: { marginLeft: rem(10), marginBottom: rem(8) },

@@ -1,14 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Modal,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { rem } from '../utils/responsive';
 
@@ -42,7 +42,7 @@ const OnlineTestManage = ({ navigation }) => {
     setLoading(true);
     try {
       const { principal_token, schoolId } = await getAuthAndSchool();
-      const res = await fetch(`https://api.pbmpublicschool.in/api/classes/${schoolId}`, {
+      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`, {
         headers: { Authorization: `Bearer ${principal_token}` },
       });
       const body = await res.json();
@@ -64,7 +64,7 @@ const OnlineTestManage = ({ navigation }) => {
     setTestsLoading(true);
     try {
       const { principal_token } = await getAuthAndSchool();
-      const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test?classId=${encodeURIComponent(classId)}`;
+      const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test?classId=${encodeURIComponent(classId)}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${principal_token}` } });
       const body = await res.json();
       if (body?.success && Array.isArray(body.tests)) {
@@ -95,11 +95,51 @@ const OnlineTestManage = ({ navigation }) => {
     setSubLoading(true);
     try {
       const { principal_token } = await getAuthAndSchool();
-      const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test/${testId}/submissions`;
+      const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${testId}/submissions`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${principal_token}` } });
       const body = await res.json();
-      if (body?.success && Array.isArray(body.submissions)) setSubmissions(body.submissions);
-      else setSubmissions([]);
+      if (body?.success && Array.isArray(body.submissions)) {
+        // helper to extract roll from submission
+        const extractRollFromSubmission = (s) => {
+          if (!s) return '';
+          const candidates = [
+            'student.rollNumber', 'student.rollNo', 'student.roll_no', 'student.admissionNo', 'student.admission_number', 'student.idcardNumber',
+            'rollNumber', 'rollNo', 'roll_no', 'admissionNo', 'admission_number', 'admissionNo', 'studentId'
+          ];
+          for (const path of candidates) {
+            const parts = path.split('.');
+            let cur = s;
+            for (const p of parts) {
+              if (!cur) break;
+              cur = cur[p];
+            }
+            if (cur !== undefined && cur !== null && String(cur).trim() !== '') return String(cur).trim();
+          }
+          for (const k of Object.keys(s || {})) {
+            if (/roll|admission/i.test(k) && s[k]) return String(s[k]);
+          }
+          if (s.student && typeof s.student === 'object') {
+            for (const k of Object.keys(s.student)) {
+              if (/roll|admission/i.test(k) && s.student[k]) return String(s.student[k]);
+            }
+          }
+          return '';
+        };
+
+        let mapped = body.submissions.map((s) => {
+          const roll = extractRollFromSubmission(s) || 'N/A';
+          const rollNumeric = Number(String(roll).replace(/[^0-9]/g, ''));
+          return { ...s, roll, rollNumeric };
+        });
+        mapped.sort((a, b) => {
+          const aNum = Number.isFinite(a.rollNumeric) && a.rollNumeric > 0 ? a.rollNumeric : NaN;
+          const bNum = Number.isFinite(b.rollNumeric) && b.rollNumeric > 0 ? b.rollNumeric : NaN;
+          if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) return aNum - bNum;
+          if (a.roll && b.roll) return String(a.roll).localeCompare(String(b.roll), undefined, { numeric: true });
+          return (a.student?.studentName || '').localeCompare(b.student?.studentName || '');
+        });
+        setSubmissions(mapped);
+      } else setSubmissions([]);
       setSubModalVisible(true);
     } catch (e) {
       console.warn('fetchSubmissions error', e);
@@ -161,6 +201,7 @@ const OnlineTestManage = ({ navigation }) => {
                   <View style={{ flex: 1 }}>
                     <View style={styles.infoRow}>
                       <Text style={styles.testSubject}>{t.subject}</Text>
+                      <Text style={styles.testSubject}>{t.assignedSections}</Text>
                       <View style={styles.badge}>
                         <Text style={styles.badgeText}>{t.questionType || 'objective'}</Text>
                       </View>
@@ -192,9 +233,10 @@ const OnlineTestManage = ({ navigation }) => {
               <Text style={styles.empty}>No submissions yet.</Text>
             ) : (
               <ScrollView>
-                {submissions.map((s) => (
-                  <View key={s.id} style={styles.subCard}>
+                {submissions.map((s, idx) => (
+                  <View key={`${s.id || s.student?.id || s.studentId || idx}`} style={styles.subCard}>
                     <Text style={styles.subName}>{s.student?.studentName || 'Student'}</Text>
+                    <Text style={styles.subName}>Roll:{s.roll || s.student?.rollNumber || 'N/A'}</Text>
                     <Text style={styles.subDetail}>Score: {s.score}</Text>
                     <Text style={styles.subDetail}>Submitted: {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '-'}</Text>
                   </View>

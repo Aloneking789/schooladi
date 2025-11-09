@@ -34,7 +34,6 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
         ];
       case "teacher":
         return [
-          
           { name: "", path: "Attendance", iconName: "book" },
           { name: "", path: "MyStudents", iconName: "people" },
           { name: "", path: "TeacherDashboard", iconName: "home" },
@@ -45,9 +44,9 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
         return [
           { name: "", path: "StudentNotices", iconName: "notifications" },
           { name: "", path: "StudentResults", iconName: "document-text" },
-           { name: "", path: "StudentDashboard", iconName: "home" },
+          { name: "", path: "StudentDashboard", iconName: "home" },
           { name: "", path: "OnlineTest", iconName: "laptop" },
-          {name : "", path: "Complaints", iconName: "chatbubbles"},
+          { name: "", path: "Complaints", iconName: "chatbubbles" },
         ];
       default:
         return [
@@ -72,34 +71,47 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
 
   return (
     <View style={styles.bottomBarWrapper} pointerEvents="box-none">
-      <LinearGradient
-        colors={["#ab7aefcc", "#5b88e3cc", "#e9ecf3cc", "#7f90dd99", "#a758f799"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientBg}
-      >
-        <BlurView intensity={40} tint="light" style={styles.blurBg}>
-          <View style={styles.bottomBarContainer}>
-            {items.map((item) => {
-              const isActive = currentRoute === item.path;
-              return (
-                <Pressable
-                  key={item.name}
-                  onPress={() => handleTabPress(item)}
-                  style={({ pressed }) => [
-                    styles.tabItem,
-                    isActive && styles.tabItemActive,
-                    pressed ? { transform: [{ scale: 0.94 }], opacity: 0.9 } : {},
-                  ]}
-                >
-                  <Ionicons name={item.iconName as any} size={rem(20)} color={isActive ? '#403ae2ff' : '#64748b'} />
-                  <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{item.name.replace('OnlineTest', 'Test')}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </BlurView>
-      </LinearGradient>
+      <View style={styles.shadowContainer}>
+        <LinearGradient
+          colors={["#FFFFFF", "#F8FAFC", "#FFFFFF"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.gradientBg}
+        >
+          <BlurView intensity={80} tint="light" style={styles.blurBg}>
+            <View style={styles.topIndicator} />
+            <View style={styles.bottomBarContainer}>
+              {items.map((item) => {
+                const isActive = currentRoute === item.path;
+                return (
+                  <Pressable
+                    key={item.name || item.path}
+                    onPress={() => handleTabPress(item)}
+                    style={({ pressed }) => [
+                      styles.tabItem,
+                      pressed && styles.tabItemPressed,
+                    ]}
+                  >
+                    <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
+                      <Ionicons 
+                        name={item.iconName as any} 
+                        size={rem(24)} 
+                        color={isActive ? '#FFFFFF' : '#64748B'} 
+                      />
+                      {isActive && <View style={styles.activeDot} />}
+                    </View>
+                    {item.name && (
+                      <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                        {item.name.replace('OnlineTest', 'Test')}
+                      </Text>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </BlurView>
+        </LinearGradient>
+      </View>
     </View>
   );
 };
@@ -111,49 +123,94 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 100,
-    elevation: 12,
     pointerEvents: 'box-none',
   },
+  shadowContainer: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 20,
+  },
   gradientBg: {
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     overflow: 'hidden',
-    paddingBottom: 0,
   },
   blurBg: {
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     overflow: 'hidden',
+  },
+  topIndicator: {
+    width: 48,
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 4,
   },
   bottomBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 1,
-    paddingBottom: 30,
+    paddingVertical: 0,
+    paddingHorizontal: 12,
+    paddingBottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    backgroundColor: '#ffffffcc',
+    borderTopColor: 'rgba(226, 232, 240, 0.5)',
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 16,
+    position: 'relative',
   },
-  tabItemActive: {
-    backgroundColor: '#f1f5f9',
+  tabItemPressed: {
+    transform: [{ scale: 0.92 }],
+    opacity: 0.8,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    position: 'relative',
+  },
+  iconContainerActive: {
+    backgroundColor: '#4F46E5',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+    transform: [{ scale: 1.05 }],
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: -4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
   },
   tabLabel: {
-    fontSize: 13,
-    color: '#64748b',
+    fontSize: 11,
+    color: '#64748B',
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 6,
+    letterSpacing: 0.2,
   },
   tabLabelActive: {
-    color: '#02050cff',
-    fontWeight: '800',
+    color: '#1E293B',
+    fontWeight: '700',
   },
 });
 

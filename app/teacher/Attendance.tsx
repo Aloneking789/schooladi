@@ -31,7 +31,6 @@ type AttendanceRecord = {
     fullName: string;
     id: string;
     rollNumber: string;
-    
   };
 };
 
@@ -43,15 +42,15 @@ type Student = {
   classId: string;
   fatherName?: string;
   rollNumber: string;
- sectionclass : string;
-  class_: string; // 'class' is a reserved keyword in JS/TS
+  sectionclass: string;
+  class_: string;
 };
 
 const Attendance = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [searchTerm, setSearchTerm] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
-  const [allStudents, setAllStudents] = useState<Student[]>([]); // Store all students for filtering
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [loading, setLoading] = useState(true);
   const [attendance, setAttendance] = useState<{ [studentId: string]: string }>({});
@@ -70,10 +69,8 @@ const Attendance = () => {
 
   const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
-  // Dynamic class list from API
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
 
-  // Build class options from classes fetched from API
   const classOptions = React.useMemo(() => {
     return classes.map((cls) => ({ label: cls.name, value: cls.id }));
   }, [classes]);
@@ -86,7 +83,6 @@ const Attendance = () => {
     });
   };
 
-  // Fetch classes from API
   useEffect(() => {
     const fetchClasses = async () => {
       if (!schoolId || !token) return;
@@ -107,7 +103,6 @@ const Attendance = () => {
     fetchClasses();
   }, [schoolId, token]);
 
-  // Fetch user, school, class, and token from AsyncStorage
   useEffect(() => {
     const getUserData = async () => {
       try {
@@ -118,13 +113,11 @@ const Attendance = () => {
           setTeacherId(teacherData.id || teacherData.user?.id || '');
           setSchoolId(teacherData.schoolId?.toString() || teacherData.user?.schools?.[0]?.id || '');
           setClassId(teacherData.classId || teacherData.user?.classId || '');
-          // store assignedClass/assignedSection when available
           const aClass = (teacherData.assignedClass || teacherData.classId || teacherData.class || '')?.toString() || '';
           const aSection = teacherData.assignedSection || teacherData.sectionclass || teacherData.section || '';
           setAssignedClass(aClass);
           setAssignedSection(aSection);
           setToken(tokenRaw);
-          // Auto-select class in dropdown: prefer selectedClass -> assignedClass -> teacher classId
           setSelectedClass((prev) => prev || aClass || (teacherData.classId || teacherData.user?.classId || ''));
         }
       } catch (e) {
@@ -134,7 +127,6 @@ const Attendance = () => {
     getUserData();
   }, []);
 
-  // Fetch attendance and students
   useEffect(() => {
     const fetchAttendance = async () => {
       if (!schoolId || !token) {
@@ -142,7 +134,6 @@ const Attendance = () => {
         return;
       }
       try {
-        // Attendance fetch prefers selectedClass (from dropdown), then assignedClass (teacher assignment), then classId from storage
         const classToUse = selectedClass || assignedClass || classId;
         if (!classToUse) {
           setLoading(false);
@@ -153,8 +144,8 @@ const Attendance = () => {
           {
             params: {
               date: new Date(date).toISOString(),
-              classId: classToUse,
-              schoolId,
+              classId: classId,
+              schoolId: schoolId,
             },
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -173,20 +164,16 @@ const Attendance = () => {
         );
         if (studentsData.success) {
           setAllStudents(studentsData.students);
-          // Determine which class to filter by. Prefer selectedClass -> classToUse
           const filterClass = selectedClass || classToUse;
 
-          // If no explicit selectedClass, and assignedClass exists, ensure dropdown reflects it
           if (!selectedClass && assignedClass) {
             setSelectedClass(assignedClass);
           }
 
-          // Filter students by class (and section when assignedSection provided)
           const filtered: Student[] = studentsData.students.filter((student: Student) => {
             const studentClassMatch = (student.classId === filterClass) || (student.class_ === filterClass);
             if (!studentClassMatch) return false;
             if (assignedSection) {
-              // match section field on student
               const sc = (student.sectionclass || '').toString();
               return sc === assignedSection.toString();
             }
@@ -194,10 +181,9 @@ const Attendance = () => {
           });
 
           setStudents(sortByRoll(filtered));
-          // Reset attendance for new class
           attendanceMap = {};
-  }
-  setAttendance(attendanceMap);
+        }
+        setAttendance(attendanceMap);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching attendance data:', error);
@@ -208,17 +194,26 @@ const Attendance = () => {
     if (viewMode === 'daily') fetchAttendance();
   }, [date, classId, schoolId, token, viewMode, selectedClass]);
 
-  // Fetch attendance history
   const fetchAttendanceHistory = async () => {
-    const classToUse = selectedClass || classId;
+    const classToUse = selectedClass || assignedClass || classId;
+    // If a teacher has an assignedClass but no selectedClass, prefer assignedClass and keep UI in sync
+    if (!selectedClass && assignedClass) {
+      setSelectedClass(assignedClass);
+    }
+
     if (!classToUse || !schoolId || !token) {
       Alert.alert("Error", "Missing required parameters");
       return;
     }
     try {
+      // Prefer the explicit `classId` state (likely the numeric DB id). Fall back to classToUse
+      const requestClassId = classId || classToUse;
+
       const { data } = await axios.get(`${API_BASE_URL}/attendance/by-class`, {
         params: {
-          classId: classToUse,
+          // send both keys to support backends that expect either 'classId' or 'classID'
+          classId: requestClassId,
+          classID: requestClassId,
           startDate: new Date(startDate).toISOString(),
           endDate: new Date(endDate).toISOString(),
           schoolId,
@@ -230,6 +225,8 @@ const Attendance = () => {
       } else {
         Alert.alert("Error", data.message || "Failed to fetch history");
       }
+  console.log('history response', data);
+  console.log('reqClassId,start,end ->', requestClassId, startDate, endDate);
     } catch (error) {
       console.error('Error fetching history:', error);
       Alert.alert('Error', 'Failed to fetch attendance history');
@@ -237,10 +234,12 @@ const Attendance = () => {
   };
 
   useEffect(() => {
+    // Run history fetch when entering history view or when key params become available/changed
     if (viewMode === 'history') {
       fetchAttendanceHistory();
     }
-  }, [viewMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, selectedClass, assignedClass, classId, schoolId, token, startDate, endDate]);
 
   interface HandleAttendanceChange {
     (studentId: string, status: string): void;
@@ -257,8 +256,6 @@ const Attendance = () => {
     const classToUse = selectedClass || classId;
     try {
       setSubmitting(true);
-      // Build attendance list for ALL students in the selected class,
-      // defaulting to 'present' if not explicitly set.
       const studentsForClass = sortByRoll(students);
       const attendanceList = studentsForClass.map((s) => ({
         studentId: s.id,
@@ -267,7 +264,7 @@ const Attendance = () => {
 
       const payload = {
         date: new Date(date).toISOString(),
-        classId: classToUse,
+        classId: classId,
         teacherId,
         attendance: attendanceList,
       };
@@ -276,7 +273,6 @@ const Attendance = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
-        // Re-order students state by roll number after successful submit
         setStudents(sortByRoll(studentsForClass));
         Alert.alert('Success', 'Attendance submitted successfully!');
       } else {
@@ -299,8 +295,9 @@ const Attendance = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Missing school or class information</Text>
-          <Text style={styles.errorSubText}>Please contact administrator</Text>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorText}>Missing School Information</Text>
+          <Text style={styles.errorSubText}>Please contact your administrator to set up your account properly</Text>
         </View>
       </SafeAreaView>
     );
@@ -310,8 +307,9 @@ const Attendance = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
+          <ActivityIndicator size="large" color="#4F46E5" />
           <Text style={styles.loadingText}>Loading attendance data...</Text>
+          <Text style={styles.loadingSubText}>Please wait</Text>
         </View>
       </SafeAreaView>
     );
@@ -325,17 +323,16 @@ const Attendance = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Emoji icon for attendance */}
-          <Text style={{ fontSize: 28, marginRight: 8 }}>📝</Text>
-          <Text style={styles.headerTitle}>Attendance Management</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerEmoji}>📋</Text>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>Attendance Management</Text>
+            <Text style={styles.headerSubtitle}>Track and manage student attendance</Text>
+          </View>
         </View>
-        <Text style={{ textAlign: 'center', color: '#6b7280', fontSize: 14, marginTop: 2 }}>
-          Mark and review student attendance by class
-        </Text>
       </View>
 
-  <View style={styles.content}>
+      <View style={styles.content}>
         {/* View Mode Toggle */}
         <View style={styles.toggleContainer}>
           <TouchableOpacity
@@ -346,10 +343,11 @@ const Attendance = () => {
               viewMode === 'daily' && styles.toggleButtonActive
             ]}
           >
+            <Text style={styles.toggleEmoji}>📅</Text>
             <Text style={[
               styles.toggleButtonText,
               viewMode === 'daily' && styles.toggleButtonTextActive
-            ]}>Daily</Text>
+            ]}>Daily View</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setViewMode('history')}
@@ -359,6 +357,7 @@ const Attendance = () => {
               viewMode === 'history' && styles.toggleButtonActive
             ]}
           >
+            <Text style={styles.toggleEmoji}>📊</Text>
             <Text style={[
               styles.toggleButtonText,
               viewMode === 'history' && styles.toggleButtonTextActive
@@ -366,7 +365,7 @@ const Attendance = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Daily View: use FlatList so list scrolls and Submit button can be fixed */}
+        {/* Daily View */}
         {viewMode === 'daily' && (
           <View style={styles.section}>
             <FlatList
@@ -376,12 +375,20 @@ const Attendance = () => {
                 const status = attendance[student.id] || 'present';
                 return (
                   <View key={student.id} style={styles.studentCard}>
-                    <View style={styles.studentInfo}>
-                      <Text style={styles.studentName}>{student.studentName}</Text>
-                      <Text style={styles.studentId}>ID: {student.idcardNumber}</Text>
-                      <Text style={styles.studentId}>Father: {student.fatherName || 'N/A'}</Text>
-                      <Text style={styles.studentId}>Roll Number: {student.rollNumber}</Text>
-                      <Text style={styles.studentId}>Class: {student.class_}-{student.sectionclass}</Text>
+                    <View style={styles.studentHeader}>
+                      <View style={styles.avatarCircle}>
+                        <Text style={styles.avatarText}>
+                          {student.studentName.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.studentInfo}>
+                        <Text style={styles.studentName}>{student.studentName}</Text>
+                        <View style={styles.studentDetails}>
+                          <Text style={styles.studentDetailText}>🎓 Roll: {student.rollNumber}</Text>
+                          <Text style={styles.studentDetailText}>📚 {student.class_}-{student.sectionclass}</Text>
+                        </View>
+                        <Text style={styles.studentId}>👤 Father: {student.fatherName || 'N/A'}</Text>
+                      </View>
                     </View>
                     <View style={styles.attendanceButtons}>
                       <TouchableOpacity
@@ -392,6 +399,7 @@ const Attendance = () => {
                           status === 'present' && styles.presentButtonActive
                         ]}
                       >
+                        <Text style={styles.buttonIcon}>✓</Text>
                         <Text style={[
                           styles.attendanceButtonText,
                           status === 'present' && styles.attendanceButtonTextActive
@@ -405,6 +413,7 @@ const Attendance = () => {
                           status === 'absent' && styles.absentButtonActive
                         ]}
                       >
+                        <Text style={styles.buttonIcon}>✕</Text>
                         <Text style={[
                           styles.attendanceButtonText,
                           status === 'absent' && styles.attendanceButtonTextActive
@@ -416,20 +425,19 @@ const Attendance = () => {
               }}
               ListHeaderComponent={
                 <View>
-                  {/* Class Dropdown */}
-
                   <View style={styles.searchContainer}>
+                    <Text style={styles.searchIcon}>🔍</Text>
                     <TextInput
                       placeholder="Search by name or ID..."
                       value={searchTerm}
                       onChangeText={setSearchTerm}
                       style={styles.searchInput}
-                      placeholderTextColor="#999"
+                      placeholderTextColor="#9CA3AF"
                     />
                   </View>
 
                   {/* Attendance Summary */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <View style={styles.summaryContainer}>
                     {(() => {
                       let present = 0, absent = 0;
                       filteredStudents.forEach(student => {
@@ -439,8 +447,20 @@ const Attendance = () => {
                       });
                       return (
                         <>
-                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>Present: {present}</Text>
-                          <Text style={{ fontSize: 16, fontWeight: '600', color: '#dc2626' }}>Absent: {absent}</Text>
+                          <View style={styles.summaryCard}>
+                            <Text style={styles.summaryIcon}>✓</Text>
+                            <View>
+                              <Text style={styles.summaryLabel}>Present</Text>
+                              <Text style={styles.summaryValue}>{present}</Text>
+                            </View>
+                          </View>
+                          <View style={[styles.summaryCard, styles.summaryCardAbsent]}>
+                            <Text style={styles.summaryIcon}>✕</Text>
+                            <View>
+                              <Text style={styles.summaryLabel}>Absent</Text>
+                              <Text style={styles.summaryValue}>{absent}</Text>
+                            </View>
+                          </View>
                         </>
                       );
                     })()}
@@ -456,60 +476,77 @@ const Attendance = () => {
         {/* History View */}
         {viewMode === 'history' && (
           <ScrollView style={styles.section}>
-            {/* Class Dropdown for History */}
             <View style={styles.historyControls}>
+              <Text style={styles.historyControlsTitle}>📅 Select Date Range</Text>
               <View style={styles.dateInputContainer}>
-                <Text style={styles.inputLabel}>Start Date:</Text>
+                <Text style={styles.inputLabel}>Start Date</Text>
                 <TextInput
                   value={startDate}
                   onChangeText={setStartDate}
                   placeholder="YYYY-MM-DD"
                   style={styles.dateInput}
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
               <View style={styles.dateInputContainer}>
-                <Text style={styles.inputLabel}>End Date:</Text>
+                <Text style={styles.inputLabel}>End Date</Text>
                 <TextInput
                   value={endDate}
                   onChangeText={setEndDate}
                   placeholder="YYYY-MM-DD"
                   style={styles.dateInput}
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#9CA3AF"
                 />
               </View>
               <TouchableOpacity
                 onPress={fetchAttendanceHistory}
                 style={styles.fetchButton}
               >
-                <Text style={styles.fetchButtonText}>Fetch History</Text>
+                <Text style={styles.fetchButtonText}>🔍 Fetch History</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.historyContainer}>
               {attendanceHistory.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No attendance records found</Text>
+                  <Text style={styles.emptyIcon}>📭</Text>
+                  <Text style={styles.emptyText}>No Records Found</Text>
+                  <Text style={styles.emptySubText}>Try selecting a different date range</Text>
                 </View>
               ) : (
                 attendanceHistory.map((record) => (
                   <View key={record.id} style={styles.historyCard}>
-                    <View style={styles.historyHeader}>
-                      <Text style={styles.historyStudentName}>{record.student?.studentName || 'Unknown Student'}</Text>
-                      <Text style={styles.historyStudentId}>Roll Number: {record.student?.rollNumber || 'N/A'}</Text>
-                      <Text style={[
-                        styles.historyStatus,
+                    <View style={styles.historyCardHeader}>
+                      <View style={styles.historyAvatarCircle}>
+                        <Text style={styles.historyAvatarText}>
+                          {record.student?.studentName?.charAt(0).toUpperCase() || '?'}
+                        </Text>
+                      </View>
+                      <View style={styles.historyInfo}>
+                        <Text style={styles.historyStudentName}>{record.student?.studentName || 'Unknown Student'}</Text>
+                        <Text style={styles.historyStudentId}>Roll: {record.student?.rollNumber || 'N/A'}</Text>
+                      </View>
+                      <View style={[
+                        styles.historyStatusBadge,
                         record.status === 'present' ? styles.historyStatusPresent : styles.historyStatusAbsent
                       ]}>
-                        {record.status.toUpperCase()}
+                        <Text style={styles.historyStatusText}>
+                          {record.status === 'present' ? '✓' : '✕'} {record.status.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.historyFooter}>
+                      <Text style={styles.historyDate}>
+                        📅 {new Date(record.date).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </Text>
+                      <Text style={styles.historyMarkedBy}>
+                        👤 {record.markedBy?.fullName || 'Unknown'}
                       </Text>
                     </View>
-                    <Text style={styles.historyDate}>
-                      {new Date(record.date).toLocaleDateString()}
-                    </Text>
-                    <Text style={styles.historyMarkedBy}>
-                      Marked by: {record.markedBy?.fullName || 'Unknown'}
-                    </Text>
                   </View>
                 ))
               )}
@@ -518,15 +555,17 @@ const Attendance = () => {
         )}
       </View>
 
-      {/* Fixed footer submit button so it's never hidden by bottom nav */}
+      {/* Fixed footer submit button */}
       {viewMode === 'daily' && (
         <View style={styles.footer} pointerEvents="box-none">
           <TouchableOpacity
             onPress={handleSubmit}
-            style={[styles.submitButton, submitting ? { opacity: 0.6 } : null]}
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
             disabled={submitting}
           >
-            <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit Attendance'}</Text>
+            <Text style={styles.submitButtonText}>
+              {submitting ? '⏳ Submitting...' : '✓ Submit Attendance'}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -537,27 +576,43 @@ const Attendance = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F3F4F6',
   },
 
   // Header Styles
   header: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerEmoji: {
+    fontSize: 36,
+    marginRight: 12,
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000',
-    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '400',
   },
 
   // Content
@@ -574,61 +629,82 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6b7280',
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  loadingSubText: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#9CA3AF',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 32,
+  },
+  errorIcon: {
+    fontSize: 64,
+    marginBottom: 16,
   },
   errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#dc2626',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#DC2626',
     textAlign: 'center',
+    marginBottom: 8,
   },
   errorSubText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#6B7280',
     textAlign: 'center',
-    marginTop: 8,
+    lineHeight: 20,
   },
 
   // Toggle Buttons
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: '#e5e7eb',
-    borderRadius: 8,
-    padding: 2,
-    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    borderRadius: 8,
   },
-  toggleButtonLeft: {
-    borderTopLeftRadius: 6,
-    borderBottomLeftRadius: 6,
-  },
-  toggleButtonRight: {
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
-  },
+  toggleButtonLeft: {},
+  toggleButtonRight: {},
   toggleButtonActive: {
-    backgroundColor: '#000',
+    backgroundColor: '#4F46E5',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toggleEmoji: {
+    fontSize: 16,
+    marginRight: 6,
   },
   toggleButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6b7280',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   toggleButtonTextActive: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
 
   // Section
@@ -638,230 +714,362 @@ const styles = StyleSheet.create({
 
   // Search
   searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
     marginBottom: 16,
-  },
-  searchInput: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#000',
-  },
-
-  // Students
-  studentsContainer: {
-    marginBottom: 20,
-  },
-  studentCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 4,
     elevation: 2,
   },
-  studentInfo: {
-    marginBottom: 12,
+  searchIcon: {
+    fontSize: 18,
+    marginRight: 8,
   },
-  studentName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
-  },
-  studentId: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  attendanceButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  attendanceButton: {
+  searchInput: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  presentButton: {
-    backgroundColor: '#f9fafb',
-    borderColor: '#d1d5db',
-  },
-  presentButtonActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
-  },
-  absentButton: {
-    backgroundColor: '#f9fafb',
-    borderColor: '#d1d5db',
-  },
-  absentButtonActive: {
-    backgroundColor: '#dc2626',
-    borderColor: '#dc2626',
-  },
-  attendanceButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6b7280',
-  },
-  attendanceButtonTextActive: {
-    color: '#fff',
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#1F2937',
   },
 
-  // Submit Button
-  submitButton: {
-    backgroundColor: '#000',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+  // Summary Cards
+  summaryContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  summaryCard: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#000',
+    backgroundColor: '#ECFDF5',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 100, // Ensure margin is consistent
-    height: 48, // Ensure button height is consistent 
-
+    elevation: 2,
   },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    height: 20,
-
-
-
-    color: '#fff',
+  summaryCardAbsent: {
+    backgroundColor: '#FEF2F2',
+    shadowColor: '#EF4444',
   },
-
-  // History Controls
-  historyControls: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  summaryIcon: {
+    fontSize: 28,
+    marginRight: 12,
   },
-  dateInputContainer: {
-    marginBottom: 12,
-  },
-  inputLabel: {
-    fontSize: 14,
+  summaryLabel: {
+    fontSize: 13,
+    color: '#6B7280',
     fontWeight: '500',
-    color: '#374151',
+    marginBottom: 2,
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+
+  // Student Cards
+  studentCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  studentHeader: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  avatarCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  studentInfo: {
+    flex: 1,
+  },
+  studentName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1F2937',
     marginBottom: 6,
   },
-  dateInput: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#000',
-  },
-  fetchButton: {
-    backgroundColor: '#000',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  fetchButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-  },
-
-  // History
-  historyContainer: {
-    flex: 1,
-  },
-  historyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  historyHeader: {
+  studentDetails: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  historyStudentName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    flex: 1,
-  },
-  historyStudentId: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginLeft: 8,
-  },
-  historyStatus: {
-    fontSize: 12,
-    fontWeight: '600',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  historyStatusPresent: {
-    backgroundColor: '#dcfce7',
-    color: '#166534',
-  },
-  historyStatusAbsent: {
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
-  },
-  historyDate: {
-    fontSize: 14,
-    color: '#6b7280',
+    gap: 12,
     marginBottom: 4,
   },
-  historyMarkedBy: {
+  studentDetailText: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#6B7280',
+    fontWeight: '500',
   },
-
-  // Empty State
-  emptyContainer: {
-    padding: 40,
+  studentId: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  attendanceButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  attendanceButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    borderWidth: 2,
   },
-  emptyText: {
+  buttonIcon: {
     fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
+    marginRight: 6,
   },
+  presentButton: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#BBF7D0',
+  },
+  presentButtonActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  absentButton: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  absentButtonActive: {
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  attendanceButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  attendanceButtonTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // Submit Button
   footer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    padding: 12,
+    padding: 16,
     backgroundColor: 'transparent',
+  },
+  submitButton: {
+    backgroundColor: '#4F46E5',
+    paddingVertical: 16,
+    bottom: 70,
+    paddingHorizontal: 24,
+    borderRadius: 14,
     alignItems: 'center',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#ede0e0ff',
+  },
+
+  // History Controls
+  historyControls: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  historyControlsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 16,
+  },
+  dateInputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  dateInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#1F2937',
+  },
+  fetchButton: {
+    backgroundColor: '#4F46E5',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 8,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  fetchButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // History Cards
+  historyContainer: {
+    flex: 1,
+  },
+  historyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  historyAvatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  historyAvatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  historyInfo: {
+    flex: 1,
+  },
+  historyStudentName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  historyStudentId: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  historyStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  historyStatusPresent: {
+    backgroundColor: '#ECFDF5',
+  },
+  historyStatusAbsent: {
+    backgroundColor: '#FEF2F2',
+  },
+  historyStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  historyFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  historyDate: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  historyMarkedBy: {
+    fontSize: 13,
+    color: '#9CA3AF',
+  },
+
+  // Empty State
+  emptyContainer: {
+    padding: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIcon: {
+    fontSize: 72,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });
 

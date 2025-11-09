@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 5,
     marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',

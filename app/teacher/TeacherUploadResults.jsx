@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#f8fafc' 
 	},
 	content: { 
-		padding: rem(16), 
+		padding: rem(0), 
 		paddingBottom: rem(40) 
 	},
 	center: { 

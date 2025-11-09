@@ -3,18 +3,18 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { rem } from '../utils/responsive';
-const API_URL = 'https://api.pbmpublicschool.in/api/homeworks/homeworks';
+const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks';
 
 const TeacherHomework = () => {
   const [title, setTitle] = useState('');
@@ -27,6 +27,12 @@ const TeacherHomework = () => {
   const [token, setToken] = useState('');
   const [schoolId, setSchoolId] = useState('');
   const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [selectedSection, setSelectedSection] = useState('');
+  // view filters (for listing homeworks)
+  const [viewClassId, setViewClassId] = useState('');
+  const [viewSections, setViewSections] = useState([]);
+  const [viewSection, setViewSection] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [homeworks, setHomeworks] = useState([]);
@@ -34,7 +40,7 @@ const TeacherHomework = () => {
   const [showAll, setShowAll] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewType, setPreviewType] = useState(null); // 'pdf' or 'image'
-  // Fetch homeworks for selected class or all
+  // Fetch homeworks for viewing: either all or by selected viewClassId, then optionally filter by viewSection
   useEffect(() => {
     if (!token) {
       setHomeworks([]);
@@ -43,22 +49,36 @@ const TeacherHomework = () => {
     const fetchHomeworks = async () => {
       setFetchingHomeworks(true);
       try {
-        let url = showAll ? 'https://api.pbmpublicschool.in/api/homeworks/homeworks' : `https://api.pbmpublicschool.in/api/homeworks/homeworks/by-class/${classId}`;
+        const url = viewClassId && viewClassId !== ''
+          ? `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks/by-class/${viewClassId}`
+          : 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks';
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        if (data && data.success && Array.isArray(data.homeworks)) setHomeworks(data.homeworks);
-        else if (Array.isArray(data)) setHomeworks(data); // fallback for old API
-        else setHomeworks([]);
+        let items = [];
+        if (data && data.success && Array.isArray(data.homeworks)) items = data.homeworks;
+        else if (Array.isArray(data)) items = data;
+        else items = [];
+        // apply client-side section filter when viewSection is set
+        if (viewSection && viewSection !== '') {
+          items = items.filter(hw => {
+            const asg = hw.assignedSections || hw.assignedSection || hw.section || hw.sections;
+            if (!asg) return false; // if homework has no section info, don't include when filtering by section
+            if (Array.isArray(asg)) return asg.map(String).map(s => s.trim()).includes(String(viewSection).trim());
+            if (typeof asg === 'string') return asg.split(',').map(s => s.trim()).includes(String(viewSection).trim());
+            return String(asg) === String(viewSection);
+          });
+        }
+        setHomeworks(items);
       } catch (err) {
         setHomeworks([]);
       } finally {
         setFetchingHomeworks(false);
       }
     };
-    if (showAll || classId) fetchHomeworks();
-  }, [classId, token, submitting, showAll]);
+    fetchHomeworks();
+  }, [viewClassId, viewSection, token, submitting]);
   // Delete homework by id
   const handleDeleteHomework = async (id) => {
     if (!token) return;
@@ -67,7 +87,7 @@ const TeacherHomework = () => {
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
           try {
-            const res = await fetch(`https://api.pbmpublicschool.in/api/homeworks/homeworks/${id}`, {
+            const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks/${id}`, {
               method: 'DELETE',
               headers: { Authorization: `Bearer ${token}` },
             });
@@ -92,7 +112,10 @@ const TeacherHomework = () => {
           setSchoolId(user.schoolId?.toString() || user.user?.schools?.[0]?.id || '');
           // If user has assigned class, preselect it
           const assigned = user.classId || user.user?.classId;
-          if (assigned) setClassId(assigned);
+          if (assigned) {
+            setClassId(assigned);
+            setViewClassId(assigned);
+          }
         }
         if (tokenRaw) setToken(tokenRaw);
       } catch (err) {
@@ -107,7 +130,7 @@ const TeacherHomework = () => {
     const fetchClasses = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://api.pbmpublicschool.in/api/classes/${schoolId}`, {
+        const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -125,6 +148,30 @@ const TeacherHomework = () => {
     fetchClasses();
   }, [schoolId, token]);
 
+  // update sections list whenever classes or selected class changes
+  useEffect(() => {
+    const cls = classes.find(c => String(c.id) === String(classId));
+    let secs = [];
+    if (cls) {
+      secs = cls.sections || cls.section || cls.sectionList || [];
+    }
+    // normalize to array of strings (sectionName or value)
+    const normalized = Array.isArray(secs) ? secs.map(s => (s && (s.sectionName || s.section || s.name)) || String(s)) : [];
+    setSections(normalized.filter(Boolean));
+    // reset selected section when class changes
+    setSelectedSection('');
+  }, [classes, classId]);
+
+  // when viewClassId changes, update viewSections list
+  useEffect(() => {
+    const cls = classes.find(c => String(c.id) === String(viewClassId));
+    let secs = [];
+    if (cls) secs = cls.sections || cls.section || cls.sectionList || [];
+    const normalized = Array.isArray(secs) ? secs.map(s => (s && (s.sectionName || s.section || s.name)) || String(s)) : [];
+    setViewSections(normalized.filter(Boolean));
+    setViewSection('');
+  }, [viewClassId, classes]);
+
   const validate = () => {
     if (!title.trim()) {
       Alert.alert('Validation', 'Please enter a title');
@@ -138,7 +185,7 @@ const TeacherHomework = () => {
       Alert.alert('Validation', 'Please enter a due date (ISO)');
       return false;
     }
-    if (!classId) {
+    if (!showAll && !classId) {
       Alert.alert('Validation', 'Please select a class');
       return false;
     }
@@ -161,6 +208,8 @@ const TeacherHomework = () => {
         classId,
         studentVisible,
         parentVisible,
+        // assignedSections: empty array means 'all sections' for this class
+        assignedSections: selectedSection ? [selectedSection] : [],
   // attachmentUrl removed
       };
 
@@ -196,13 +245,14 @@ const TeacherHomework = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+    <View style={[styles.container, { padding: 16 }]}>
       <Text style={styles.title}>Create Homework</Text>
 
       {loading ? (
         <ActivityIndicator size="large" color="#000" />
       ) : (
-        <View>
+        <View style={styles.formCard}>
+          <ScrollView style={styles.formScroll} contentContainerStyle={{ padding: 12 }}>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
             <Text style={styles.label}>Show All Homeworks</Text>
@@ -219,6 +269,21 @@ const TeacherHomework = () => {
                   <Picker.Item label="Select class" value="" />
                   {classes.map((c) => (
                     <Picker.Item key={c.id} label={c.name} value={c.id} />
+                  ))}
+                </Picker>
+              </View>
+            </>
+          )}
+
+          {/* Section selector (optional) */}
+          {!showAll && (
+            <>
+              <Text style={styles.label}>Section (optional)</Text>
+              <View style={styles.pickerContainer}>
+                <Picker selectedValue={selectedSection} onValueChange={(v) => setSelectedSection(v)}>
+                  <Picker.Item label="All Sections" value="" />
+                  {sections.map((s, idx) => (
+                    <Picker.Item key={idx} label={String(s)} value={String(s)} />
                   ))}
                 </Picker>
               </View>
@@ -302,12 +367,16 @@ const TeacherHomework = () => {
             <Switch value={parentVisible} onValueChange={setParentVisible} />
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={submitting}>
-            <Text style={styles.buttonText}>{submitting ? 'Saving...' : 'Create Homework'}</Text>
-          </TouchableOpacity>
+          </ScrollView>
+          {/* Sticky footer so the submit button is always visible */}
+          <View style={styles.footer}>
+            <TouchableOpacity style={[styles.footerButton, submitting && { opacity: 0.7 }]} onPress={handleSubmit} disabled={submitting}>
+              <Text style={styles.footerButtonText}>{submitting ? 'Saving...' : 'Create Homework'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 };
 
@@ -332,6 +401,11 @@ const styles = StyleSheet.create({
     marginTop: rem(-16),
   },
   buttonText: { color: '#fff', fontWeight: '600' },
+  formCard: { backgroundColor: '#fff', borderRadius: rem(12), shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 4, overflow: 'hidden', flex: 1 },
+  formScroll: { maxHeight: 520 },
+  footer: { borderTopWidth: 1, borderColor: '#eee', padding: 12, backgroundColor: '#fff' },
+  footerButton: { backgroundColor: '#2563eb', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  footerButtonText: { color: '#fff', fontWeight: '700' },
   pickerContainer: { borderWidth: 1, borderColor: '#ddd', borderRadius: rem(8), marginBottom: rem(12), overflow: 'hidden' },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: rem(12) },
 });

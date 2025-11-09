@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { rem } from '../utils/responsive';
 
-const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/create';
+const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/create';
 
 const questionTypeOptions = [
 	{ label: 'Objective', value: 'objective' },
@@ -14,6 +15,13 @@ const questionTypeOptions = [
 
 const OnlineTestexam = () => {
 	const [classId, setClassId] = useState('');
+	const [schoolId, setSchoolId] = useState('');
+	const [classes, setClasses] = useState([]);
+	const [showAll, setShowAll] = useState(false);
+	const [assignedSection, setAssignedSection] = useState('');
+	const [selectedSection, setSelectedSection] = useState('A');
+	const [teacherName, setTeacherName] = useState('');
+	const [teacherId, setTeacherId] = useState('');
 	const [subject, setSubject] = useState('');
 	const [chapterPrompt, setChapterPrompt] = useState('');
 	const [questionType, setQuestionType] = useState('objective');
@@ -30,14 +38,24 @@ const OnlineTestexam = () => {
 	const [token, setToken] = useState('');
 
 	useEffect(() => {
-		// Get teacher classId and token from AsyncStorage (like MyStudents)
+		// Get teacher classId, schoolId and token from AsyncStorage
 		const getClassIdAndToken = async () => {
 			try {
-				const userDataRaw = await AsyncStorage.getItem('user');
-				const tkn = await AsyncStorage.getItem('teacher_token');
+				const userDataRaw = await AsyncStorage.getItem('teacher_user') || await AsyncStorage.getItem('user');
+				const tkn = await AsyncStorage.getItem('teacher_token') || await AsyncStorage.getItem('principal_token');
 				if (userDataRaw) {
 					const teacherData = JSON.parse(userDataRaw);
-					setClassId(teacherData.classId || teacherData.user?.classId || '');
+					setClassId(teacherData.assignedClass || teacherData.classId || teacherData.user?.classId || '');
+					setSchoolId(teacherData.schoolId?.toString() || teacherData.user?.schools?.[0]?.id || '');
+					const asgSec = teacherData.assignedSection || teacherData.sectionclass || teacherData.section || '';
+					if (asgSec) {
+						setAssignedSection(String(asgSec));
+						setSelectedSection(String(asgSec));
+					}
+					const name = teacherData.fullName || teacherData.name || teacherData.user?.fullName || teacherData.user?.name || '';
+					if (name) setTeacherName(name);
+					const tid = teacherData.id || teacherData.teacherId || teacherData.user?.id || '';
+					if (tid) setTeacherId(String(tid));
 				}
 				if (tkn) setToken(tkn);
 			} catch (e) {
@@ -47,6 +65,23 @@ const OnlineTestexam = () => {
 		};
 		getClassIdAndToken();
 	}, []);
+
+	// Fetch classes for this school so teacher can choose any class (like homework)
+	useEffect(() => {
+		const fetchClasses = async () => {
+			if (!schoolId || !token) return;
+			try {
+				const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`, {
+					headers: { Authorization: `Bearer ${token}` },
+				});
+				const body = await res.json();
+				setClasses(body.classes || []);
+			} catch (err) {
+				console.warn('Failed to fetch classes', err);
+			}
+		};
+		fetchClasses();
+	}, [schoolId, token]);
 	// Fetch my tests (use teacher's assigned classId when available)
 	useEffect(() => {
 
@@ -54,11 +89,12 @@ const OnlineTestexam = () => {
 			if (!token) return;
 			setLoadingTests(true);
 			try {
-				const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
-				const url = classId ? `${base}${encodeURIComponent(classId)}` : base;
+				const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests/';
+				// if showAll is true, don't append classId
+				const url = (!showAll && classId) ? `${base}${encodeURIComponent(classId)}` : base;
 				console.log('Fetching my tests from', url);
 				console.log('Using token:', token ? 'Yes' : 'No');
-				console.log('Using classId:', classId || 'No classId');
+				console.log('Using classId:', (!showAll && classId) ? classId : 'All');
 				const res = await fetch(url, {
 					headers: { 'Authorization': `Bearer ${token}` },
 				});
@@ -76,7 +112,7 @@ const OnlineTestexam = () => {
 			}
 		};
 		fetchMyTests();
-	}, [token, success, classId]);
+	}, [token, success, classId, showAll]);
 
 	const handleCreateTest = async () => {
 		setApiError('');
@@ -86,6 +122,8 @@ const OnlineTestexam = () => {
 			Alert.alert('Missing Fields', 'Please fill all fields.');
 			return;
 		}
+			// ensure section exists
+			const sectionToUse = selectedSection || assignedSection || 'A';
 		setLoading(true);
 		try {
 			const res = await fetch(API_URL, {
@@ -95,11 +133,14 @@ const OnlineTestexam = () => {
 					...(token ? { 'Authorization': `Bearer ${token}` } : {}),
 				},
 				body: JSON.stringify({
-					classId,
-					subject,
-					chapterPrompt,
-					questionType,
-					numQuestions: Number(numQuestions),
+						classId,
+						assignedSections: sectionToUse,
+						subject,
+						chapterPrompt,
+						questionType,
+						numQuestions: Number(numQuestions),
+						teacherId: teacherId || undefined,
+						teacherName: teacherName || undefined,
 				}),
 			});
 			const data = await res.json();
@@ -133,7 +174,7 @@ const OnlineTestexam = () => {
 				setLoadingResults(false);
 				return;
 			}
-			const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
+			const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
 			const res = await fetch(url, { headers: { Authorization: `Bearer ${tkn}` } });
 			if (!res.ok) {
 				const txt = await res.text();
@@ -177,8 +218,43 @@ const OnlineTestexam = () => {
 			<ScrollView contentContainerStyle={styles.scrollContent}>
 				<Text style={styles.header}>Create Online Test</Text>
 				<View style={styles.form}>
-					<Text style={styles.label}>Class ID</Text>
-					<View style={styles.inputDisabled}><Text>{classId || 'Not found'}</Text></View>
+					<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: rem(8), justifyContent: 'space-between' }}>
+						<Text style={styles.label}>Class</Text>
+						<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+							<Text style={{ marginRight: rem(8), color: '#6b7280' }}>Show All</Text>
+							<Switch value={showAll} onValueChange={setShowAll} />
+						</View>
+					</View>
+					{!showAll ? (
+						classes && classes.length > 0 ? (
+							<>
+								<View style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: rem(10), marginBottom: rem(8) }}>
+									<Picker selectedValue={classId} onValueChange={(v) => setClassId(v)}>
+										<Picker.Item label="Select class" value="" />
+										{classes.map((c) => (
+											<Picker.Item key={c.id} label={c.name} value={c.id} />
+										))}
+									</Picker>
+								</View>
+								{/* Section selector for test creation */}
+								<View style={{ marginBottom: rem(8) }}>
+									<Text style={{ marginBottom: rem(6), color: '#334155', fontWeight: '700' }}>Section</Text>
+									<View style={{ borderWidth: 1, borderColor: '#e2e8f0', borderRadius: rem(10), overflow: 'hidden', backgroundColor: '#fff' }}>
+										<Picker selectedValue={selectedSection} onValueChange={(v) => setSelectedSection(v)}>
+											<Picker.Item label="A" value="A" />
+											<Picker.Item label="B" value="B" />
+											<Picker.Item label="C" value="C" />
+											<Picker.Item label="D" value="D" />
+										</Picker>
+									</View>
+								</View>
+							</>
+						) : (
+							<View style={styles.inputDisabled}><Text>{classId || 'Not found'}</Text></View>
+						)
+					) : (
+						<View style={styles.inputDisabled}><Text>All classes</Text></View>
+					)}
 
 					<Text style={styles.label}>Subject</Text>
 					<TextInput
@@ -313,9 +389,10 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/start`, {
+												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/start`, {
 													method: 'POST',
-													headers: { 'Authorization': `Bearer ${token}` },
+													headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+													body: JSON.stringify({ teacherId: teacherId || undefined, teacherName: teacherName || undefined, section: assignedSection || selectedSection || undefined }),
 												});
 												const data = await res.json();
 												if (data.success) {
@@ -323,8 +400,8 @@ const OnlineTestexam = () => {
 													// Refresh the tests list
 													setLoadingTests(true);
 													try {
-														const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
-														const url = classId ? `${base}${encodeURIComponent(classId)}` : base;
+														const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests/';
+														const url = (!showAll && classId) ? `${base}${encodeURIComponent(classId)}` : base;
 														const refreshRes = await fetch(url, {
 															headers: { 'Authorization': `Bearer ${token}` },
 														});
@@ -353,9 +430,10 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/stop`, {
+												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/stop`, {
 													method: 'POST',
-													headers: { 'Authorization': `Bearer ${token}` },
+													headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+													body: JSON.stringify({ teacherId: teacherId || undefined, teacherName: teacherName || undefined, section: assignedSection || selectedSection || undefined }),
 												});
 												const data = await res.json();
 												if (data.success) {
@@ -363,8 +441,8 @@ const OnlineTestexam = () => {
 													// Refresh the tests list
 													setLoadingTests(true);
 													try {
-														const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
-														const url = classId ? `${base}${encodeURIComponent(classId)}` : base;
+														const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests/';
+														const url = (!showAll && classId) ? `${base}${encodeURIComponent(classId)}` : base;
 														const refreshRes = await fetch(url, {
 															headers: { 'Authorization': `Bearer ${token}` },
 														});
@@ -399,7 +477,7 @@ const OnlineTestexam = () => {
 													{
 														text: 'Delete', style: 'destructive', onPress: async () => {
 															try {
-																const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}`, {
+																const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}`, {
 																	method: 'DELETE',
 																	headers: { 'Authorization': `Bearer ${token}` },
 																});

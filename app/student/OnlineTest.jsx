@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import responsive, { rem } from '../utils/responsive';
 
-const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/class-tests';
+const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/class-tests';
 
 const OnlineTest = () => {
   const [classId, setClassId] = useState('');
@@ -23,6 +23,7 @@ const OnlineTest = () => {
   const [remainingTime, setRemainingTime] = useState(null); // in seconds
   const timerRef = useRef(null);
   const questionStartTime = useRef(null);
+  const advanceTimeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchClassIdAndTests = async () => {
@@ -31,10 +32,14 @@ const OnlineTest = () => {
       try {
         // Try to get classId from AsyncStorage (student_user)
         const userDataRaw = await AsyncStorage.getItem('user');
+        console.log (userDataRaw);
         let cid = '';
+        let studentSection = '';
         if (userDataRaw) {
           const userData = JSON.parse(userDataRaw);
           cid = userData.classId || userData.user?.classId || '';
+          // try common section keys used in the app: sectionclass, section, assignedSection
+          studentSection = userData.sectionclass || userData.section || userData.assignedSection || userData.user?.sectionclass || userData.user?.section || '';
           const studentId = userData.id || userData.user?.StudentId || '';
         }
         // fallback: use hardcoded classId if not found
@@ -54,7 +59,22 @@ const OnlineTest = () => {
         if (data.success && Array.isArray(data.tests)) {
           // Sort tests by createdAt descending so most recent tests show first
           const sorted = data.tests.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setTests(sorted);
+          // If we know the student's section, filter tests so the student only sees tests assigned to their section
+          const filtered = typeof studentSection === 'string' && studentSection !== ''
+            ? sorted.filter(test => {
+                const asg = test.assignedSections;
+                if (!asg) return false;
+                if (Array.isArray(asg)) return asg.map(String).map(s => s.trim()).includes(String(studentSection).trim());
+                if (typeof asg === 'string') {
+                  // could be comma-separated or single value
+                  return asg.split(',').map(s => s.trim()).includes(String(studentSection).trim());
+                }
+                // fallback: try direct equality
+                return String(asg) === String(studentSection);
+              })
+            : sorted; // if no student section available, show all tests
+
+          setTests(filtered);
         } else {
           setTests([]);
           setError('No tests found.');
@@ -120,6 +140,7 @@ const OnlineTest = () => {
         <Text style={[styles.status, test.isStartest ? styles.statusActive : styles.statusInactive]}>
           {test.isStartest ? 'Test is Active' : 'Test Not Started'}
         </Text>
+        <Text style={styles.status}>Class: {Array.isArray(test.assignedSections) ? test.assignedSections.join(', ') : (typeof test.assignedSections === 'string' ? test.assignedSections : (test.assignedSections ? String(test.assignedSections) : 'N/A'))}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -132,22 +153,41 @@ const OnlineTest = () => {
 
   // Handle answer selection and move to next question
   const handleSelectAnswer = (qIdx, opt) => {
+    // clear any pending advance
+    if (advanceTimeoutRef.current) {
+      clearTimeout(advanceTimeoutRef.current);
+      advanceTimeoutRef.current = null;
+    }
     const now = Date.now();
     const timeSpent = Math.round((now - questionStartTime.current) / 1e3); // seconds
+    // set answer immediately so the UI shows the checked state
     setAnswers(prev => ({ ...prev, [qIdx]: opt }));
     setPerQuestionTimes(prev => {
       const arr = [...prev];
       arr[qIdx] = timeSpent;
       return arr;
     });
+    // If not the last question, wait a short moment so the user sees the check,
+    // then advance to the next question. If it's the last question, mark end time.
     if (selectedTest.questions && qIdx < selectedTest.questions.length - 1) {
-      setCurrentQuestion(qIdx + 1);
-      questionStartTime.current = Date.now();
+      advanceTimeoutRef.current = setTimeout(() => {
+        setCurrentQuestion(qIdx + 1);
+        questionStartTime.current = Date.now();
+        advanceTimeoutRef.current = null;
+      }, 300); // 300ms gives immediate feedback before moving on
     } else {
       // Last question, finish
       setEndedAt(new Date().toISOString());
     }
   };
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current);
+    };
+  }, []);
 
   // Submit answers to API
   const handleSubmitTest = async () => {
@@ -164,7 +204,7 @@ const OnlineTest = () => {
 
       }
       setLoading(true);
-      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${selectedTest.id}/submit`, {
+      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${selectedTest.id}/submit`, {
 
         method: 'POST',
         headers: {
@@ -176,6 +216,7 @@ const OnlineTest = () => {
           answers,
           StudentId: User.StudentId,
           perQuestionTimes,
+          assignedSections: User.sectionclass || User.section || User.assignedSection || '',
           startedAt,
           endedAt: endedAt || new Date().toISOString(),
         }),
@@ -206,7 +247,7 @@ const OnlineTest = () => {
     console.log('Fetching result for StudentId:', StudentId);
     try {
       setLoading(true);
-      const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
+      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${testId}/my-result/${StudentId}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const data = await res.json();

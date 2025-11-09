@@ -3,11 +3,12 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const BASE = 'https://api.pbmpublicschool.in/api';
+const BASE = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
 
 export default function HomeWork() {
   const [token, setToken] = useState(null);
   const [classId, setClassId] = useState(null);
+  const [studentSection, setStudentSection] = useState('');
   const [homeworks, setHomeworks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,6 +28,9 @@ export default function HomeWork() {
             // user may store class as classI, classId or classId
             const c = u.classI || u.classId || u.class || (u.class && u.class.id);
             setClassId(c);
+            // resolve student section from common keys
+            const sec = u.sectionclass || u.section || u.assignedSection || (u.user && (u.user.sectionclass || u.user.section)) || '';
+            setStudentSection(String(sec || '').trim());
           } catch (e) {
             // ignore parse errors
           }
@@ -38,11 +42,12 @@ export default function HomeWork() {
     loadAuth();
   }, []);
 
+  // refetch when token, classId or studentSection change
   useEffect(() => {
     if (token && classId) {
       fetchHomeworks();
     }
-  }, [token, classId]);
+  }, [token, classId, studentSection]);
 
   const fetchHomeworks = async () => {
     setLoading(true);
@@ -55,7 +60,18 @@ export default function HomeWork() {
         },
       });
       if (res?.data?.success) {
-        setHomeworks(res.data.homeworks || []);
+        let hws = res.data.homeworks || [];
+        // If we have a student section, filter homeworks to those assigned to that section
+        if (studentSection) {
+          hws = hws.filter(hw => {
+            const asg = hw.assignedSections || hw.assignedSection || hw.section || hw.sections;
+            if (!asg) return true; // if homework has no section info, include it
+            if (Array.isArray(asg)) return asg.map(String).map(s => s.trim()).includes(studentSection);
+            if (typeof asg === 'string') return asg.split(',').map(s => s.trim()).includes(studentSection);
+            return String(asg) === studentSection;
+          });
+        }
+        setHomeworks(hws);
       } else {
         setError(res?.data?.message || 'Failed to load homeworks');
       }
@@ -146,9 +162,9 @@ export default function HomeWork() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Homeworks</Text>
         <Text style={styles.headerSubtitle}>
-          {homeworks.length > 0 
-            ? `${homeworks.length} Assignment${homeworks.length > 1 ? 's' : ''} for your class`
-            : 'Assigned to your class'}
+          {homeworks.length > 0
+            ? `${homeworks.length} Assignment${homeworks.length > 1 ? 's' : ''} for your class${studentSection ? ` (Section ${studentSection})` : ''}`
+            : `Assigned to your class${studentSection ? ` (Section ${studentSection})` : ''}`}
         </Text>
       </View>
 

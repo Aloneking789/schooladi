@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import PaymentCalendar from '../components/PaymentCalendar';
 import responsive, { rem } from "../utils/responsive";
 import Complaints from './Complaints';
@@ -55,14 +55,11 @@ const StudentDashboard = () => {
         if (userDataRaw && tokenRaw) {
           const studentData = JSON.parse(userDataRaw);
           setStudentId(studentData.StudentId);
-          console.log("Loaded student data:", studentData);
           setSchoolId(studentData.schoolId?.toString() || studentData.user?.schools?.[0]?.id || "");
           setToken(tokenRaw);
-          console.log("Loaded token:", tokenRaw);
         }
       } catch (e) {
         setError("Failed to load user data from storage");
-        console.error("Failed to load user data from storage", e);
       }
     };
     getUserData();
@@ -90,7 +87,6 @@ const StudentDashboard = () => {
         const url = `https://api.pbmpublicschool.in/api/complaints/complaints/my/${studentId}`;
         const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
         if (res.data && res.data.success) {
-          // most recent first
           const sorted = Array.isArray(res.data.complaints) ? res.data.complaints.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : [];
           setComplaints(sorted);
         } else {
@@ -98,7 +94,6 @@ const StudentDashboard = () => {
           setComplaintsError(res.data?.message || 'Failed to load complaints');
         }
       } catch (err: any) {
-        console.error('Failed to fetch complaints', err?.response || err);
         if (err?.response?.status === 404) setComplaintsError('Student not found');
         else setComplaintsError('Failed to load complaints');
       } finally {
@@ -116,79 +111,323 @@ const StudentDashboard = () => {
     { subject: "English", time: "12:00 PM", teacher: "Ms. Davis" },
   ];
 
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Student Dashboard</Text>
-      {studentDetails && (
-        <View style={[styles.card, { backgroundColor: '#f3f4f6', marginBottom: rem(14), alignItems: 'flex-start' }]}>
-          {Object.entries(studentDetails).map(([key, value]) => (
-              <Text key={key} style={{ fontSize: rem(12), color: '#374151', marginBottom: rem(2) }}>
-              {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}: {value === null || value === undefined ? '-' : typeof value === 'object' ? JSON.stringify(value) : String(value)}
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>
+              {studentDetails?.studentName?.charAt(0).toUpperCase() || '👤'}
             </Text>
-          ))}
+          </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.welcomeText}>Welcome Back! 👋</Text>
+            <Text style={styles.studentName}>
+              {studentDetails?.studentName || 'Student'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Student Details Card */}
+      {studentDetails && (
+        <View style={styles.detailsCard}>
+          <View style={styles.detailsHeader}>
+            <Text style={styles.detailsTitle}>📋 Student Information</Text>
+          </View>
+          <View style={styles.detailsGrid}>
+            {Object.entries(studentDetails)
+              .filter(([key]) => !['id', 'createdAt', 'updatedAt'].includes(key))
+              .slice(0, 8)
+              .map(([key, value]) => (
+                <View key={key} style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>
+                    {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Text>
+                  <Text style={styles.detailValue}>
+                    {value === null || value === undefined ? '-' : typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                  </Text>
+                </View>
+              ))}
+          </View>
         </View>
       )}
+
       {/* Quick Actions */}
-      <View style={[styles.section, styles.quickActionsSectionContainer]}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsRow}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
+        <View style={styles.quickActionsGrid}>
           {[
-            { route: 'StudentNotices', icon: 'notifications-outline', color: '#667eea' },
-            { route: 'StudentResults', icon: 'document-text-outline', color: '#f78316' },
-            { route: 'OnlineTest', icon: 'laptop-outline', color: '#059669' },
-            { route: 'HomeWork', icon: 'book', color: '#446ff1ff' },
-            { route: 'StudentAttendanceCalendar', icon: 'calendar-outline', color: '#10b981' },
-          ].map((it) => (
+            { route: 'StudentNotices', icon: 'notifications-outline', label: 'Notices', color: '#8B5CF6', bg: '#F5F3FF' },
+            { route: 'StudentResults', icon: 'document-text-outline', label: 'Results', color: '#F59E0B', bg: '#FEF3C7' },
+            { route: 'OnlineTest', icon: 'laptop-outline', label: 'Tests', color: '#10B981', bg: '#D1FAE5' },
+            { route: 'HomeWork', icon: 'book', label: 'Homework', color: '#3B82F6', bg: '#DBEAFE' },
+            { route: 'StudentAttendanceCalendar', icon: 'calendar-outline', label: 'Attendance', color: '#EF4444', bg: '#FEE2E2' },
+          ].map((item) => (
             <Pressable
-              key={it.route}
-              onPress={() => navigation.navigate(it.route as never)}
+              key={item.route}
+              onPress={() => navigation.navigate(item.route as never)}
               style={({ pressed }) => [
-                styles.quickActionBtn,
-                pressed ? { transform: [{ scale: 0.96 }], opacity: 0.9 } : {},
+                styles.quickActionCard,
+                { backgroundColor: item.bg },
+                pressed && styles.quickActionPressed,
               ]}
             >
-              <Ionicons name={it.icon as any} size={rem(30)} color={it.color} />
-              <Text style={styles.quickActionText}></Text>
+              <View style={[styles.iconCircle, { backgroundColor: item.color }]}>
+                <Ionicons name={item.icon as any} size={rem(24)} color="#FFFFFF" />
+              </View>
+              <Text style={styles.quickActionLabel}>{item.label}</Text>
             </Pressable>
           ))}
         </View>
       </View>
 
-    
-
-
-      <Complaints token={token} studentId={studentId} />
-
-      {/* Payments toggle for student */}
-      <View style={{ marginTop: rem(-30) }}>
-        <TouchableOpacity
-          style={[styles.quickActionBtn, { backgroundColor: '#ecfdf5' }]}
-          onPress={() => {
-            setShowPayments(s => !s);
-            console.log('Toggled payments, now showPayments =', !showPayments);
-          }}
-        >
-          <Text style={[styles.quickActionText, { color: '#065f46' }]}>{showPayments ? 'Hide Payments' : 'Show Payments'}</Text>
-        </TouchableOpacity>
+      {/* Complaints Section */}
+      <View style={styles.section}>
+        <Complaints token={token} studentId={studentId} />
       </View>
 
-      {showPayments && studentId ? (
-        <View style={{ marginTop: rem(12) }}>
-          <PaymentCalendar studentId={studentId} apiBaseUrl={'https://api.pbmpublicschool.in/api'} tokenKey={'student_token'} />
+      {/* Payment Section */}
+      <View style={styles.section}>
+        <View style={styles.paymentHeader}>
+          <Text style={styles.sectionTitle}>💳 Payment Calendar</Text>
+          <TouchableOpacity
+            style={[styles.toggleButton, showPayments && styles.toggleButtonActive]}
+            onPress={() => setShowPayments(s => !s)}
+          >
+            <Ionicons 
+              name={showPayments ? 'eye-off-outline' : 'eye-outline'} 
+              size={rem(18)} 
+              color={showPayments ? '#FFFFFF' : '#6B7280'} 
+            />
+            <Text style={[styles.toggleButtonText, showPayments && styles.toggleButtonTextActive]}>
+              {showPayments ? 'Hide' : 'Show'}
+            </Text>
+          </TouchableOpacity>
         </View>
-      ) : null}
-    </View>
+
+        {showPayments && studentId && (
+          <View style={styles.paymentContainer}>
+            <PaymentCalendar 
+              studentId={studentId} 
+              apiBaseUrl={'https://api.pbmpublicschool.in/api'} 
+              tokenKey={'student_token'} 
+            />
+          </View>
+        )}
+      </View>
+
+      {/* Bottom Spacing for Navigation */}
+      <View style={{ height: rem(100) }} />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: rem(1),
-    backgroundColor: '#fff',
+    flex: 1,
+    backgroundColor: '#F9FAFB',
   },
+  
+  // Header Styles
+  header: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: rem(20),
+    paddingVertical: rem(24),
+    borderBottomLeftRadius: rem(24),
+    borderBottomRightRadius: rem(24),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: rem(20),
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarCircle: {
+    width: rem(60),
+    height: rem(60),
+    borderRadius: rem(30),
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: rem(16),
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  avatarText: {
+    fontSize: rem(28),
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  welcomeText: {
+    fontSize: rem(14),
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: rem(4),
+  },
+  studentName: {
+    fontSize: rem(22),
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+
+  // Details Card
+  detailsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: rem(16),
+    marginHorizontal: rem(16),
+    marginBottom: rem(20),
+    padding: rem(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  detailsHeader: {
+    marginBottom: rem(16),
+    paddingBottom: rem(12),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  detailsTitle: {
+    fontSize: rem(16),
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  detailsGrid: {
+    gap: rem(12),
+  },
+  detailItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: rem(8),
+  },
+  detailLabel: {
+    fontSize: rem(13),
+    color: '#6B7280',
+    fontWeight: '600',
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: rem(13),
+    color: '#1F2937',
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
+  },
+
+  // Section
+  section: {
+    marginBottom: rem(24),
+    paddingHorizontal: rem(0),
+  },
+  sectionTitle: {
+    fontSize: rem(18),
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: rem(16),
+  },
+
+  // Quick Actions
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: rem(10),
+  },
+  quickActionCard: {
+    width: (responsive.width - rem(52)) / 3,
+    aspectRatio: 1,
+    borderRadius: rem(16),
+    padding: rem(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  quickActionPressed: {
+    transform: [{ scale: 0.96 }],
+    opacity: 0.9,
+  },
+  iconCircle: {
+    width: rem(48),
+    height: rem(48),
+    borderRadius: rem(24),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: rem(8),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quickActionLabel: {
+    fontSize: rem(11),
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+
+  // Payment Section
+  paymentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: rem(16),
+  },
+  toggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rem(6),
+    paddingHorizontal: rem(16),
+    paddingVertical: rem(10),
+    borderRadius: rem(12),
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+  },
+  toggleButtonText: {
+    fontSize: rem(14),
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  toggleButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  paymentContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: rem(16),
+    padding: rem(16),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  // Legacy styles (kept for compatibility)
   title: {
-    fontSize: rem(1),
+    fontSize: rem(24),
     fontWeight: 'bold',
     marginBottom: rem(12),
     color: '#1f2937',
@@ -213,15 +452,6 @@ const styles = StyleSheet.create({
   cardValue: {
     fontSize: rem(22),
     fontWeight: 'bold',
-    color: '#1f2937',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: rem(16),
-    fontWeight: '600',
-    marginBottom: rem(10),
     color: '#1f2937',
   },
   quickActionsSectionContainer: {

@@ -42,7 +42,7 @@ const OnlineTestManage = ({ navigation }) => {
     setLoading(true);
     try {
       const { principal_token, schoolId } = await getAuthAndSchool();
-      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`, {
+      const res = await fetch(`https://api.pbmpublicschool.in/api/classes/${schoolId}`, {
         headers: { Authorization: `Bearer ${principal_token}` },
       });
       const body = await res.json();
@@ -64,7 +64,7 @@ const OnlineTestManage = ({ navigation }) => {
     setTestsLoading(true);
     try {
       const { principal_token } = await getAuthAndSchool();
-      const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test?classId=${encodeURIComponent(classId)}`;
+      const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test?classId=${encodeURIComponent(classId)}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${principal_token}` } });
       const body = await res.json();
       if (body?.success && Array.isArray(body.tests)) {
@@ -95,7 +95,7 @@ const OnlineTestManage = ({ navigation }) => {
     setSubLoading(true);
     try {
       const { principal_token } = await getAuthAndSchool();
-      const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${testId}/submissions`;
+      const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test/${testId}/submissions`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${principal_token}` } });
       const body = await res.json();
       if (body?.success && Array.isArray(body.submissions)) {

@@ -4,14 +4,14 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 const TeacherSelfAttendance = () => {
@@ -27,7 +27,7 @@ const TeacherSelfAttendance = () => {
   const [locationVerification, setLocationVerification] = useState(null);
   const [error, setError] = useState('');
 
-  const API_BASE = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacher-attendance';
+  const API_BASE = 'https://api.pbmpublicschool.in/api/teacher-attendance';
 
   useEffect(() => {
     loadUserData();

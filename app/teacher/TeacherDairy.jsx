@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { rem } from '../utils/responsive';
 
-const API_BASE_DIARY = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/teacherdairy/teacher-diary';
+const API_BASE_DIARY = 'https://api.pbmpublicschool.in/api/teacherdairy/teacher-diary';
 const API_POST = API_BASE_DIARY;
 const API_GET = `${API_BASE_DIARY}/my`;
 

@@ -52,7 +52,6 @@ const Complaints = ({ token: initialToken, studentId: initialStudentId }) => {
           setComplaintsError(res.data?.message || 'Failed to load complaints');
         }
       } catch (err) {
-        console.error('Failed to fetch complaints', err?.response || err);
         if (err?.response?.status === 404) setComplaintsError('Student not found');
         else setComplaintsError('Failed to load complaints');
       } finally {
@@ -89,7 +88,6 @@ const Complaints = ({ token: initialToken, studentId: initialStudentId }) => {
         }
       }
       if (!res) {
-        console.error('All reply POST attempts failed', lastErr);
         const status = lastErr?.response?.status;
         const data = lastErr?.response?.data;
         return Alert.alert('Failed to send reply', data?.message || `Server responded with status ${status || 'unknown'}`);
@@ -103,7 +101,6 @@ const Complaints = ({ token: initialToken, studentId: initialStudentId }) => {
         Alert.alert('Error', res.data?.message || 'Failed to send reply');
       }
     } catch (err) {
-      console.error('Reply error', err);
       const message = err?.response?.data?.message || err?.message || 'Failed to send reply';
       Alert.alert('Error', message);
     } finally {

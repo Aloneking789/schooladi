@@ -86,7 +86,6 @@ const MyStudents = () => {
       try {
         const userDataRaw = await AsyncStorage.getItem('teacher_user');
         const tokenRaw = await AsyncStorage.getItem('teacher_token');
-        console.log('Retrieved user data from storage:', { userDataRaw, tokenRaw });
 
         if (userDataRaw && tokenRaw) {
           const teacherData = JSON.parse(userDataRaw);
@@ -102,7 +101,6 @@ const MyStudents = () => {
           setToken(tokenRaw);
         }
       } catch (error) {
-        console.error('Failed to load user data from storage', error);
         Alert.alert('Error', 'Failed to load teacher information');
       }
     };

@@ -2,15 +2,15 @@ import { Feather } from '@expo/vector-icons';
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 interface Notice {
@@ -41,7 +41,7 @@ const ShowNotice: React.FC = () => {
   useEffect(() => {
     const fetchNotices = async () => {
       try {
-        const response = await axios.get("https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices?schoolId=1");
+        const response = await axios.get("https://api.pbmpublicschool.in/api/notices/notices?schoolId=1");
         if (response.data.success) {
           // Filter notices for students (ALL or STUDENT)
           const studentNotices = response.data.notices.filter(

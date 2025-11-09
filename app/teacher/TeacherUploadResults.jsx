@@ -95,7 +95,6 @@ const TeacherUploadResults = () => {
 				}
 				if (tokenRaw) setToken(tokenRaw);
 			} catch (e) {
-				console.warn('Failed to load user/token', e);
 			}
 		};
 		loadUser();

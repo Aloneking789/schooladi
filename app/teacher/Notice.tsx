@@ -41,7 +41,7 @@ const TeacherNotices: React.FC = () => {
   useEffect(() => {
     const fetchNotices = async () => {
       try {
-        const response = await axios.get("https://1rzlgxk8-5001.inc1.devtunnels.ms/api/notices/notices?schoolId=1");
+        const response = await axios.get("https://api.pbmpublicschool.in/api/notices/notices?schoolId=1");
         if (response.data.success) {
           // Filter notices for teachers (ALL or STAFF)
           const teacherNotices = response.data.notices.filter(

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { rem } from '../utils/responsive';
 
-const API_URL = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/create';
+const API_URL = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/create';
 
 const questionTypeOptions = [
 	{ label: 'Objective', value: 'objective' },
@@ -101,7 +101,7 @@ const OnlineTestexam = () => {
 		const fetchClasses = async () => {
 			if (!schoolId || !token) return;
 			try {
-				const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`, {
+				const res = await fetch(`https://api.pbmpublicschool.in/api/classes/${schoolId}`, {
 					headers: { Authorization: `Bearer ${token}` },
 				});
 				const body = await res.json();
@@ -119,7 +119,7 @@ const OnlineTestexam = () => {
 			if (!token) return;
 			setLoadingTests(true);
 			try {
-				const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests/';
+				const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
 				// if showAll is true, don't append classId
 				const url = (!showAll && classId) ? `${base}${encodeURIComponent(classId)}` : base;
 				console.log('Fetching my tests from', url);
@@ -204,7 +204,7 @@ const OnlineTestexam = () => {
 				setLoadingResults(false);
 				return;
 			}
-			const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
+			const url = `https://api.pbmpublicschool.in/api/onlineTest/online-test/${encodeURIComponent(testId)}/results`;
 			const res = await fetch(url, { headers: { Authorization: `Bearer ${tkn}` } });
 			if (!res.ok) {
 				const txt = await res.text();
@@ -446,7 +446,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/start`, {
+												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/start`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
 													body: JSON.stringify({ teacherId: teacherId || undefined, teacherName: teacherName || undefined, section: assignedSection || selectedSection || undefined }),
@@ -457,7 +457,7 @@ const OnlineTestexam = () => {
 													// Refresh the tests list
 													setLoadingTests(true);
 													try {
-														const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests/';
+														const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
 														const url = (!showAll && classId) ? `${base}${encodeURIComponent(classId)}` : base;
 														const refreshRes = await fetch(url, {
 															headers: { 'Authorization': `Bearer ${token}` },
@@ -487,7 +487,7 @@ const OnlineTestexam = () => {
 										onPress={async () => {
 											if (!token) return;
 											try {
-												const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}/stop`, {
+												const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}/stop`, {
 													method: 'POST',
 													headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
 													body: JSON.stringify({ teacherId: teacherId || undefined, teacherName: teacherName || undefined, section: assignedSection || selectedSection || undefined }),
@@ -498,7 +498,7 @@ const OnlineTestexam = () => {
 													// Refresh the tests list
 													setLoadingTests(true);
 													try {
-														const base = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/my-tests/';
+														const base = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/my-tests/';
 														const url = (!showAll && classId) ? `${base}${encodeURIComponent(classId)}` : base;
 														const refreshRes = await fetch(url, {
 															headers: { 'Authorization': `Bearer ${token}` },
@@ -534,7 +534,7 @@ const OnlineTestexam = () => {
 													{
 														text: 'Delete', style: 'destructive', onPress: async () => {
 															try {
-																const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/onlineTest/online-test/${test.id}`, {
+																const res = await fetch(`https://api.pbmpublicschool.in/api/onlineTest/online-test/${test.id}`, {
 																	method: 'DELETE',
 																	headers: { 'Authorization': `Bearer ${token}` },
 																});

@@ -225,8 +225,6 @@ const Attendance = () => {
       } else {
         Alert.alert("Error", data.message || "Failed to fetch history");
       }
-  console.log('history response', data);
-  console.log('reqClassId,start,end ->', requestClassId, startDate, endDate);
     } catch (error) {
       console.error('Error fetching history:', error);
       Alert.alert('Error', 'Failed to fetch attendance history');

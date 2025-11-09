@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const BASE = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api';
+const BASE = 'https://api.pbmpublicschool.in/api';
 
 export default function HomeWork() {
   const [token, setToken] = useState(null);
@@ -36,7 +36,6 @@ export default function HomeWork() {
           }
         }
       } catch (e) {
-        console.warn('Failed to load auth from storage', e);
       }
     };
     loadAuth();
@@ -76,7 +75,6 @@ export default function HomeWork() {
         setError(res?.data?.message || 'Failed to load homeworks');
       }
     } catch (err) {
-      console.error('fetchHomeworks error', err?.response || err.message || err);
       setError(err?.response?.data?.message || 'Failed to load homeworks');
     } finally {
       setLoading(false);
@@ -99,7 +97,6 @@ export default function HomeWork() {
         Alert.alert('Cannot open attachment', 'The attachment URL is not valid.');
       }
     } catch (e) {
-      console.warn('openAttachment error', e);
       Alert.alert('Error', 'Failed to open attachment');
     }
   };

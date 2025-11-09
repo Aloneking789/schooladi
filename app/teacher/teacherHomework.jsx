@@ -92,7 +92,7 @@ const HomeworkManagement = () => {
 
   const fetchClasses = async () => {
     try {
-      const res = await fetch(`https://1rzlgxk8-5001.inc1.devtunnels.ms/api/classes/${schoolId}`, {
+      const res = await fetch(`https://api.pbmpublicschool.in/api/classes/${schoolId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -129,7 +129,7 @@ const HomeworkManagement = () => {
 
     setLoading(true);
     try {
-      const url = `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks/by-class/${selectedClass}`;
+      const url = `https://api.pbmpublicschool.in/api/homeworks/homeworks/by-class/${selectedClass}`;
       console.log('GET', url, 'with token present:', !!token);
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       console.log('Fetch homeworks response status:', res.status);
@@ -162,7 +162,7 @@ const HomeworkManagement = () => {
           Alert.alert('Access denied', msg);
           // Attempt fallback: fetch all homeworks and filter by class id (in case API rejects by-class but allows listing)
           try {
-            const allUrl = 'https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks';
+            const allUrl = 'https://api.pbmpublicschool.in/api/homeworks/homeworks';
             console.log('Attempting fallback GET', allUrl);
             const allRes = await fetch(allUrl, { headers: { Authorization: `Bearer ${token}` } });
             const allText = await allRes.text();
@@ -212,7 +212,7 @@ const HomeworkManagement = () => {
             setDeleteLoading(id);
             try {
               const res = await fetch(
-                `https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks/${id}`,
+                `https://api.pbmpublicschool.in/api/homeworks/homeworks/${id}`,
                 {
                   method: 'DELETE',
                   headers: { Authorization: `Bearer ${token}` },
@@ -260,7 +260,7 @@ const HomeworkManagement = () => {
         assignedSections: formData.assignedSections,
       };
 
-      const res = await fetch('https://1rzlgxk8-5001.inc1.devtunnels.ms/api/homeworks/homeworks', {
+      const res = await fetch('https://api.pbmpublicschool.in/api/homeworks/homeworks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

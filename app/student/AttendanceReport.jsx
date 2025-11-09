@@ -49,7 +49,6 @@ const AttendanceCalendar = () => {
       }
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching attendance:', err);
       setError('Failed to load attendance data');
       setLoading(false);
     }

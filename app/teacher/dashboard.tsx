@@ -57,7 +57,6 @@ const TeacherDashboard = () => {
           setToken(tokenRaw);
         }
       } catch (e) {
-        console.error("Failed to load user data from storage", e);
       }
     };
     getUserData();
@@ -139,7 +138,6 @@ const TeacherDashboard = () => {
           .sort((a, b) => b.present - a.present);
         setGoodStudents(good);
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
         setStudents([]);
         setAttendanceHistory([]);
         setGoodStudents([]);
@@ -179,7 +177,6 @@ const TeacherDashboard = () => {
           setAbsentTotal(null);
         }
       } catch (e) {
-        console.warn('Failed to fetch counts for selected date', e);
         setPresentTotal(null);
         setAbsentTotal(null);
       }

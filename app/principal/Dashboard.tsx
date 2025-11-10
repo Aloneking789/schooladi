@@ -6,30 +6,26 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator,
+  Dimensions
 } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 const quickActions = [
-  { label: "Admissions", icon: "📝", route: "Admissions" },
-  { label: "Send Notice", icon: "✉️", route: "AddNotice" },
-  { label: "Teacher Diary", icon: "📔", route: "TeacherDiary" },
-  { label: "Complaints", icon: "🛠️", route: "ComplaintsDispossle" },
-  { label: 'Online Tests', icon: '📝', route: 'OnlineTestManage' },
-];
-
-const extraSections = [
-  { label: "Teacher ID Card", icon: "🪪", route: "teacherIDcard" },
+  { label: "Admissions", icon: "person-add", route: "Admissions", color: "#818CF8", bgColor: "#EEF2FF" },
+  { label: "Send Notice", icon: "mail", route: "AddNotice", color: "#3B82F6", bgColor: "#DBEAFE" },
+  { label: "Teacher Diary", icon: "journal", route: "TeacherDiary", color: "#8B5CF6", bgColor: "#E0E7FF" },
+  { label: "Complaints", icon: "construct", route: "ComplaintsDispossle", color: "#EF4444", bgColor: "#FEE2E2" },
+  { label: 'Online Tests', icon: 'clipboard', route: 'OnlineTestManage', color: "#EC4899", bgColor: "#FCE7F3" },
 ];
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { rem } from '../utils/responsive';
-
-// Messages will be fetched from notices API
-
-// Remove dummy admissionEnquiries, fetch real admissions count for dashboard
-
 import { StackNavigationProp } from '@react-navigation/stack';
-// import { Sidebar } from "lucide-react-native";
 import { hideStatusBar } from "../utils/statusBarConfig";
 
 type RootStackParamList = {
@@ -42,12 +38,14 @@ type RootStackParamList = {
   AddNotice: undefined;
   UploadResult: undefined;
   teacherIDcard: undefined;
-  // Add other routes here as needed
+  TeacherDiary: undefined;
+  ComplaintsDispossle: undefined;
+  OnlineTestManage: undefined;
 };
-
 
 const Dashboard = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [loading, setLoading] = useState(true);
   const [studentStats, setStudentStats] = useState({
     title: "Students",
     value: "0",
@@ -60,7 +58,6 @@ const Dashboard = () => {
     change: "-0",
     trend: "down",
   });
-  // Removed presentTeacherStats state
   const [parentsStats, setParentsStats] = useState({
     title: "Parents",
     value: "0",
@@ -71,30 +68,22 @@ const Dashboard = () => {
   ]);
   const [admissionsCount, setAdmissionsCount] = useState(0);
   const [admissionsLoading, setAdmissionsLoading] = useState(true);
-  // (Student Attendance chart removed per request)
-
-  // Notices/messages state
   const [messages, setMessages] = useState<any[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(true);
 
-  // Force status bar to be hidden on component mount
   useEffect(() => {
     hideStatusBar();
   }, []);
 
-  // Also hide status bar when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       hideStatusBar();
     }, [])
   );
 
-  // Fetch stats from API if needed
   useEffect(() => {
-    // Hide status bar
     hideStatusBar();
 
-    // Fetch student, teacher, parents stats, and admissions count from API
     const fetchStats = async () => {
       try {
         const principal_token = await AsyncStorage.getItem("principal_token");
@@ -104,13 +93,11 @@ const Dashboard = () => {
         const schoolId = schools[0]?.id || null;
         if (schoolId) {
           setAdmissionsLoading(true);
-          // Fetch all dashboard stats in one call
           const dashboardRes = await fetch(
             `https://api.pbmpublicschool.in/api/dashboard/${schoolId}`,
             { headers: { Authorization: `Bearer ${principal_token}` } }
           );
           const dashboardData = await dashboardRes.json();
-          // Set student, teacher, parent stats if available
           if (dashboardData?.stats) {
             const [studentData, teacherData, parentData] = dashboardData.stats;
             if (studentData?.count !== undefined) {
@@ -132,24 +119,21 @@ const Dashboard = () => {
               }));
             }
           }
-          // Set gender data if available
           if (dashboardData?.genderData) {
             setGenderData(dashboardData.genderData);
           }
-          // Set admissions count if available
           if (dashboardData?.admissionsCount !== undefined) {
             setAdmissionsCount(dashboardData.admissionsCount);
           }
         }
       } catch (error) {
-        // Optionally handle error
       } finally {
         setAdmissionsLoading(false);
+        setLoading(false);
       }
     };
     fetchStats();
 
-    // Fetch enquiry data for messages
     const fetchEnquiries = async () => {
       setMessagesLoading(true);
       try {
@@ -161,7 +145,6 @@ const Dashboard = () => {
           },
         });
         const data = await res.json();
-        // Map enquiry data to messages format
         const mapped = (Array.isArray(data) ? data : []).slice(0, 5).map((enq: any) => ({
           sender: enq.name || "Unknown",
           message: `Class: ${enq.class || "N/A"}, Mobile: ${enq.mobile || "N/A"}`,
@@ -178,9 +161,6 @@ const Dashboard = () => {
     fetchEnquiries();
   }, []);
 
-
-
-  // Sidebar state for expand/collapse
   const [isSidebarVisible, setSidebarVisible] = useState(false);
   const toggleSidebar = () => setSidebarVisible((prev) => !prev);
 
@@ -191,38 +171,178 @@ const Dashboard = () => {
         translucent={false}
         showHideTransition="fade"
       />
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.headerBox}>
-          <View style={styles.headerGradient}>
-            <Text style={styles.headerTitle}>Principal</Text>
-            <Text style={styles.headerSubtitle}>Here's your school overview at a glance</Text>
+      <View style={styles.container}>
+        {/* Enhanced Gradient Header */}
+        <LinearGradient
+          colors={['#4c669f', '#3b5998', '#192f6a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientHeader}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.headerIconContainer}>
+              <Ionicons name="school" size={rem(32)} color="#fff" />
+            </View>
+            <Text style={styles.headerTitle}>Principal Dashboard</Text>
+            <Text style={styles.headerSubtitle}>Manage your school at a glance</Text>
           </View>
-        </View>
+        </LinearGradient>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActionsCard}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsRow}>
-            {quickActions.map((action, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={styles.quickActionBtn}
-                onPress={() => navigation.navigate(action.route as any)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.quickActionIconContainer}>
-                  <Text style={styles.quickActionIcon}>{action.icon}</Text>
-                </View>
-                <Text style={styles.quickActionLabel}>{action.label}</Text>
-              </TouchableOpacity>
-            ))}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4c669f" />
+            <Text style={styles.loadingText}>Loading dashboard...</Text>
           </View>
-        </View>
-        <View style={styles.chartsContainer}>
-         
-        </View>
-      </ScrollView>
+        ) : (
+          <ScrollView 
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Stats Overview */}
+            <View style={styles.statsSection}>
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <LinearGradient
+                    colors={['#818CF8', '#6366F1']}
+                    style={styles.statGradient}
+                  >
+                    <Ionicons name="people" size={rem(36)} color="#fff" />
+                    <Text style={styles.statLabel}>Students</Text>
+                    <Text style={styles.statValue}>{studentStats.value}</Text>
+                  </LinearGradient>
+                </View>
+
+                <View style={styles.statCard}>
+                  <LinearGradient
+                    colors={['#10B981', '#059669']}
+                    style={styles.statGradient}
+                  >
+                    <Ionicons name="person" size={rem(36)} color="#fff" />
+                    <Text style={styles.statLabel}>Teachers</Text>
+                    <Text style={styles.statValue}>{teacherStats.value}</Text>
+                  </LinearGradient>
+                </View>
+              </View>
+
+              <View style={styles.statsRowSingle}>
+                <View style={[styles.statCard, styles.statCardFull]}>
+                  <LinearGradient
+                    colors={['#8B5CF6', '#7C3AED']}
+                    style={styles.statGradient}
+                  >
+                    <Ionicons name="home" size={rem(36)} color="#fff" />
+                    <Text style={styles.statLabel}>Parents</Text>
+                    <Text style={styles.statValue}>{parentsStats.value}</Text>
+                  </LinearGradient>
+                </View>
+              </View>
+            </View>
+
+            {/* Gender Distribution */}
+            <View style={styles.genderCard}>
+              <View style={styles.genderHeader}>
+                <Ionicons name="stats-chart" size={rem(20)} color="#4c669f" />
+                <Text style={styles.genderTitle}>Gender Distribution</Text>
+              </View>
+              <View style={styles.genderStatsRow}>
+                <View style={styles.genderStat}>
+                  <View style={[styles.genderIconBox, { backgroundColor: '#DBEAFE' }]}>
+                    <Ionicons name="male" size={rem(32)} color="#3B82F6" />
+                  </View>
+                  <Text style={styles.genderLabel}>Boys</Text>
+                  <Text style={styles.genderValue}>{genderData[0]?.value || 0}</Text>
+                </View>
+
+                <View style={styles.genderDivider} />
+
+                <View style={styles.genderStat}>
+                  <View style={[styles.genderIconBox, { backgroundColor: '#FCE7F3' }]}>
+                    <Ionicons name="female" size={rem(32)} color="#EC4899" />
+                  </View>
+                  <Text style={styles.genderLabel}>Girls</Text>
+                  <Text style={styles.genderValue}>{genderData[1]?.value || 0}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Quick Actions */}
+            <View style={styles.quickActionsSection}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="flash" size={rem(20)} color="#4c669f" />
+                <Text style={styles.sectionTitle}>Quick Actions</Text>
+              </View>
+
+              <View style={styles.quickActionsGrid}>
+                {quickActions.map((action, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.actionCard, { backgroundColor: action.bgColor }]}
+                    onPress={() => navigation.navigate(action.route as any)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.actionIconContainer, { backgroundColor: action.color }]}>
+                      <Ionicons name={action.icon as any} size={rem(26)} color="#fff" />
+                    </View>
+                    <Text style={styles.actionText}>{action.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Recent Enquiries */}
+            {messages.length > 0 && (
+              <View style={styles.enquiriesSection}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="chatbubbles" size={rem(20)} color="#4c669f" />
+                  <Text style={styles.sectionTitle}>Recent Enquiries</Text>
+                </View>
+
+                {messagesLoading ? (
+                  <ActivityIndicator size="small" color="#4c669f" />
+                ) : (
+                  messages.map((msg, idx) => (
+                    <View key={idx} style={styles.enquiryCard}>
+                      <View style={styles.enquiryIconBox}>
+                        <Ionicons name="person-circle" size={rem(40)} color="#4c669f" />
+                      </View>
+                      <View style={styles.enquiryContent}>
+                        <Text style={styles.enquirySender}>{msg.sender}</Text>
+                        <Text style={styles.enquiryMessage} numberOfLines={2}>
+                          {msg.message}
+                        </Text>
+                        <Text style={styles.enquiryTime}>{msg.time}</Text>
+                      </View>
+                      {msg.unread && <View style={styles.unreadBadge} />}
+                    </View>
+                  ))
+                )}
+              </View>
+            )}
+
+            {/* Admissions Count */}
+            {admissionsCount > 0 && (
+              <TouchableOpacity
+                style={styles.admissionsCard}
+                onPress={() => navigation.navigate('Admissions')}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  style={styles.admissionsGradient}
+                >
+                  <Ionicons name="school" size={rem(40)} color="#fff" />
+                  <Text style={styles.admissionsValue}>{admissionsCount}</Text>
+                  <Text style={styles.admissionsLabel}>New Admissions</Text>
+                  <View style={styles.admissionsArrow}>
+                    <Ionicons name="arrow-forward" size={rem(20)} color="#fff" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        )}
+      </View>
     </>
   );
 };
@@ -230,445 +350,286 @@ const Dashboard = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
-    paddingHorizontal: rem(16),
-    paddingTop: 0,
+    backgroundColor: '#F3F4F6',
   },
-
-  // Header Styles
-  headerBox: {
-    marginVertical: rem(16),
-    marginTop: rem(20),
-    borderRadius: rem(20),
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#5cc766ff',
-    shadowOffset: { width: 0, height: rem(2) },
-    shadowOpacity: 0.1,
+  gradientHeader: {
+    paddingTop: rem(20),
+    paddingBottom: rem(30),
+    paddingHorizontal: rem(20),
+    borderBottomLeftRadius: rem(30),
+    borderBottomRightRadius: rem(30),
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rem(4) },
+    shadowOpacity: 0.3,
     shadowRadius: rem(8),
   },
-  headerGradient: {
-    backgroundColor: '#4fa834ff',
-    padding: rem(24),
+  headerContent: {
     alignItems: 'center',
+  },
+  headerIconContainer: {
+    width: rem(64),
+    height: rem(64),
+    borderRadius: rem(32),
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: rem(12),
   },
   headerTitle: {
     fontSize: rem(26),
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#fff',
-    marginBottom: rem(8),
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   headerSubtitle: {
-    fontSize: rem(16),
-    color: '#e5e5e5',
-    textAlign: 'center',
-  },
-
-  // Section Title
-  sectionTitle: {
-    fontSize: rem(22),
-    fontWeight: "bold",
-    marginBottom: rem(16),
-    color: '#1e9031ff',
-  },
-
-  // Quick Actions
-  quickActionsCard: {
-    backgroundColor: '#fff',
-    borderRadius: rem(20),
-    padding: rem(20),
-    marginBottom: rem(24),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(2) },
-    shadowOpacity: 0.08,
-    shadowRadius: rem(8),
-  },
-  quickActionsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  quickActionBtn: {
-    width: "47%",
-    backgroundColor: "#fff",
-    borderRadius: rem(16),
-    alignItems: "center",
-    paddingVertical: rem(16),
-    paddingHorizontal: rem(8),
-    marginBottom: rem(16),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(1) },
-    shadowOpacity: 0.1,
-    shadowRadius: rem(4),
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
-  },
-  quickActionIconContainer: {
-    width: rem(56),
-    height: rem(56),
-    borderRadius: rem(28),
-    backgroundColor: '#f8f9fa',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: rem(12),
-  },
-  quickActionIcon: {
-    fontSize: rem(26),
-  },
-  quickActionLabel: {
     fontSize: rem(14),
-    textAlign: "center",
-    fontWeight: '600',
-    color: '#333',
-    lineHeight: rem(18),
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: rem(4),
   },
-
-  // Extra Sections
-  extraSectionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingHorizontal: 8,
-  },
-  extraSectionBtn: {
+  loadingContainer: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: rem(16),
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: rem(16),
-    marginHorizontal: rem(8),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(1) },
-    shadowOpacity: 0.1,
-    shadowRadius: rem(4),
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
   },
-  extraSectionIcon: {
-    fontSize: rem(32),
-    marginBottom: rem(12),
-  },
-  extraSectionLabel: {
+  loadingText: {
+    marginTop: rem(16),
+    color: '#6B7280',
     fontSize: rem(14),
-    textAlign: 'center',
-    fontWeight: '600',
-    color: '#333',
   },
-
-  // Stats Cards
-  statsContainer: {
-    marginBottom: 24,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: rem(20),
+    paddingBottom: rem(30),
+    paddingHorizontal: rem(16),
+  },
+  statsSection: {
+    marginBottom: rem(20),
   },
   statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
+    flexDirection: 'row',
+    gap: rem(12),
+    marginBottom: rem(12),
   },
   statsRowSingle: {
     alignItems: 'center',
   },
-  statsCard: {
+  statCard: {
     flex: 1,
-    borderRadius: rem(20),
-    padding: rem(20),
-    marginHorizontal: rem(6),
-    alignItems: "center",
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: rem(8),
-    minHeight: rem(160),
-  },
-  studentCard: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#000',
-  },
-  teacherCard: {
-    backgroundColor: '#000',
-  },
-  parentsCard: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#000',
-    maxWidth: '60%',
-    width: rem(180),
-  },
-  statsIconContainer: {
-    width: rem(64),
-    height: rem(64),
-    borderRadius: rem(32),
-    backgroundColor: '#f8f9fa',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: rem(12),
-  },
-  statsIcon: {
-    fontSize: rem(28),
-  },
-  statsTitle: {
-    fontSize: rem(16),
-    fontWeight: "600",
-    marginBottom: rem(8),
-    color: '#666',
-  },
-  statsValue: {
-    fontSize: rem(36),
-    fontWeight: "bold",
-    marginBottom: rem(4),
-    color: '#000',
-  },
-  statsChange: {
-    fontSize: rem(14),
-    fontWeight: "600",
-    color: '#000',
-  },
-
-  // Charts
-  chartsContainer: {
-    marginBottom: 24,
-  },
-  chartRow: {
-    marginBottom: 16,
-  },
-  chartsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-  chartCard: {
-    backgroundColor: "#fff",
-    borderRadius: rem(20),
-    padding: rem(20),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: rem(8),
-    alignItems: 'center',
-  },
-  chartTitle: {
-    fontSize: rem(18),
-    fontWeight: "bold",
-    marginBottom: rem(16),
-    color: '#000',
-    textAlign: 'center',
-  },
-  chartSubtitle: {
-    textAlign: "center",
-    color: "#666",
-    marginTop: 8,
-    fontSize: 14,
-  },
-  chartCircleBox: {
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  chartCircle: {
-    width: rem(100),
-    height: rem(100),
-    borderRadius: rem(50),
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: rem(16),
+    overflow: 'hidden',
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: rem(8),
+    shadowOffset: { width: 0, height: rem(2) },
+    shadowOpacity: 0.15,
+    shadowRadius: rem(6),
   },
-  chartCircleText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: rem(28),
+  statCardFull: {
+    width: '65%',
   },
-
-  // Gender Distribution
-  genderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: rem(20),
-    paddingHorizontal: rem(20),
-  },
-  genderItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  genderIconBox: {
-    width: rem(60),
-    height: rem(60),
-    borderRadius: rem(30),
-    backgroundColor: '#f8f9fa',
+  statGradient: {
+    padding: rem(20),
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: rem(12),
-    borderWidth: 2,
-    borderColor: '#e5e5e5',
+    minHeight: rem(140),
   },
-  genderIcon: {
-    fontSize: rem(28),
+  statLabel: {
+    fontSize: rem(13),
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: rem(10),
+  },
+  statValue: {
+    fontSize: rem(32),
+    fontWeight: '800',
+    color: '#fff',
+    marginTop: rem(6),
+  },
+  genderCard: {
+    backgroundColor: '#fff',
+    borderRadius: rem(20),
+    padding: rem(20),
+    marginBottom: rem(20),
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rem(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: rem(8),
+  },
+  genderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: rem(20),
+    gap: rem(8),
+  },
+  genderTitle: {
+    fontSize: rem(18),
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  genderStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  genderStat: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  genderIconBox: {
+    width: rem(70),
+    height: rem(70),
+    borderRadius: rem(35),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: rem(12),
   },
   genderDivider: {
     width: rem(2),
-    height: rem(60),
-    backgroundColor: '#e5e5e5',
+    height: rem(70),
+    backgroundColor: '#E5E7EB',
     marginHorizontal: rem(20),
   },
-  genderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: rem(20),
-    width: '100%',
-  },
-  genderBox: {
-    flex: 1,
-    borderRadius: rem(16),
-    alignItems: 'center',
-    paddingVertical: rem(20),
-    marginHorizontal: rem(8),
-    elevation: 1,
-  },
   genderLabel: {
-    fontSize: rem(16),
-    color: '#666',
-    marginBottom: rem(8),
+    fontSize: rem(14),
     fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: rem(6),
   },
   genderValue: {
     fontSize: rem(28),
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: '800',
+    color: '#1F2937',
   },
-
-  // Bottom Row
-  bottomRow: {
-    flexDirection: "row",
-    marginBottom: rem(24),
+  quickActionsSection: {
+    marginBottom: rem(20),
   },
-  messagesCard: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: rem(20),
-    padding: rem(20),
-    marginRight: rem(12),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: rem(8),
-  },
-  enquiriesCard: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: rem(20),
-    padding: rem(20),
-    marginLeft: rem(12),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: rem(8),
-  },
-  cardTitle: {
-    fontSize: rem(18),
-    fontWeight: "bold",
-    marginBottom: rem(16),
-    color: '#000',
-  },
-
-  // Messages
-  messageItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: rem(16),
-    padding: rem(12),
-    backgroundColor: '#f8f9fa',
-    borderRadius: rem(12),
-  },
-  avatar: {
-    width: rem(40),
-    height: rem(40),
-    borderRadius: rem(20),
-    backgroundColor: "#000",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: rem(12),
-  },
-  messageSender: {
-    fontWeight: "bold",
-    fontSize: rem(14),
-    color: '#000',
-    marginBottom: rem(4),
-  },
-  messageText: {
-    color: "#666",
-    fontSize: rem(13),
-    lineHeight: rem(18),
-    marginBottom: rem(4),
-  },
-  messageTime: {
-    color: "#999",
-    fontSize: rem(12),
-  },
-  unreadDot: {
-    width: rem(8),
-    height: rem(8),
-    borderRadius: rem(4),
-    backgroundColor: "#000",
-    position: 'absolute',
-    top: rem(8),
-    right: rem(8),
-  },
-
-  // Admissions
-  admissionsBtn: {
-    backgroundColor: '#479f4dff',
-    borderRadius: rem(16),
-    paddingVertical: rem(16),
-    paddingHorizontal: rem(16),
+  sectionHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: rem(12),
+    marginBottom: rem(16),
+    gap: rem(8),
+  },
+  sectionTitle: {
+    fontSize: rem(18),
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  actionCard: {
+    width: '48%',
+    borderRadius: rem(16),
+    padding: rem(20),
+    alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: rem(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: rem(8),
+    shadowOffset: { width: 0, height: rem(2) },
+    shadowOpacity: 0.08,
+    shadowRadius: rem(4),
+    marginBottom: rem(12),
   },
-  admissionsBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: rem(18),
+  actionIconContainer: {
+    width: rem(56),
+    height: rem(56),
+    borderRadius: rem(28),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: rem(12),
+  },
+  actionText: {
+    fontSize: rem(13),
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+  enquiriesSection: {
+    marginBottom: rem(20),
+  },
+  enquiryCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: rem(16),
+    padding: rem(16),
+    marginBottom: rem(12),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rem(1) },
+    shadowOpacity: 0.08,
+    shadowRadius: rem(4),
+    alignItems: 'center',
+    position: 'relative',
+  },
+  enquiryIconBox: {
+    marginRight: rem(12),
+  },
+  enquiryContent: {
+    flex: 1,
+  },
+  enquirySender: {
+    fontSize: rem(15),
+    fontWeight: '700',
+    color: '#1F2937',
     marginBottom: rem(4),
   },
-  admissionsBtnSubText: {
-    color: '#e5e5e5',
-    fontSize: rem(14),
+  enquiryMessage: {
+    fontSize: rem(13),
+    color: '#6B7280',
+    marginBottom: rem(4),
+    lineHeight: rem(18),
   },
-
-  // Unused styles kept for compatibility
-  enquiryRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 12,
+  enquiryTime: {
+    fontSize: rem(11),
+    color: '#9CA3AF',
   },
-  enquiryIndex: {
-    fontWeight: "bold",
-    fontSize: 15,
-    marginRight: 8,
+  unreadBadge: {
+    width: rem(10),
+    height: rem(10),
+    borderRadius: rem(5),
+    backgroundColor: '#EF4444',
+    position: 'absolute',
+    top: rem(16),
+    right: rem(16),
   },
-  enquiryName: {
-    fontWeight: "bold",
-    fontSize: 14,
+  admissionsCard: {
+    borderRadius: rem(20),
+    overflow: 'hidden',
+    marginBottom: rem(20),
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rem(4) },
+    shadowOpacity: 0.2,
+    shadowRadius: rem(10),
   },
-  enquiryDetail: {
-    color: "#444",
-    fontSize: 13,
+  admissionsGradient: {
+    padding: rem(30),
+    alignItems: 'center',
+    position: 'relative',
+  },
+  admissionsValue: {
+    fontSize: rem(48),
+    fontWeight: '800',
+    color: '#fff',
+    marginTop: rem(12),
+  },
+  admissionsLabel: {
+    fontSize: rem(16),
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: rem(8),
+  },
+  admissionsArrow: {
+    position: 'absolute',
+    right: rem(20),
+    top: '50%',
+    transform: [{ translateY: -rem(10) }],
   },
 });
 

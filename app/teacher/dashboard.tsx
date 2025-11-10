@@ -2,8 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import responsive, { rem } from '../utils/responsive';
+
+const { width } = Dimensions.get('window');
+
 // Type definitions
 type Student = {
   id: string;
@@ -22,6 +26,7 @@ type AttendanceRecord = {
 const API_BASE_URL = 'https://api.pbmpublicschool.in/api';
 
 import { useNavigation } from '@react-navigation/native';
+
 const TeacherDashboard = () => {
   const navigation = useNavigation() as any;
   const [students, setStudents] = useState<Student[]>([]);
@@ -47,31 +52,26 @@ const TeacherDashboard = () => {
           const teacherData = JSON.parse(userDataRaw);
           setTeacherId(teacherData.id || teacherData.user?.id || '');
           setSchoolId(teacherData.schoolId?.toString() || teacherData.user?.schools?.[0]?.id || '');
-          // prefer explicit assignedClass/assignedSection if present on teacher profile
           const assignedCls = teacherData.assignedClass || teacherData.classId || teacherData.class || teacherData.user?.classId || '';
           const assignedSec = teacherData.assignedSection || teacherData.sectionclass || teacherData.section || '';
           if (assignedCls) setAssignedClass(String(assignedCls));
           if (assignedSec) setAssignedSection(String(assignedSec));
-          // keep legacy classId field too
           setClassId(teacherData.classId || teacherData.user?.classId || '');
           setToken(tokenRaw);
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     };
     getUserData();
   }, []);
 
   useEffect(() => {
     const fetchStudentsAndAttendance = async () => {
-      // prefer assignedClass if present, otherwise fall back to classId from profile
       const classToUse = assignedClass || classId;
       if (!schoolId || !classToUse || !token) {
         setLoading(false);
         return;
       }
       try {
-        // Fetch students for this school and filter by the resolved class/section
         const studentsRes = await axios.get(
           `${API_BASE_URL}/admission/students/by-school/${schoolId}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -92,7 +92,6 @@ const TeacherDashboard = () => {
           setStudents([]);
         }
 
-        // Fetch attendance history for this class (last 60 days)
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 60);
         const endDate = new Date();
@@ -108,7 +107,6 @@ const TeacherDashboard = () => {
         let history: AttendanceRecord[] = [];
         if (attendanceRes.data.success) {
           history = attendanceRes.data.data;
-          // if assignedSection is present, filter history to only include students from that section
           if (assignedSection && classStudents && classStudents.length > 0) {
             const allowedIds = new Set(classStudents.map((s) => s.id));
             history = history.filter((h: AttendanceRecord) => allowedIds.has(h.studentId));
@@ -118,7 +116,6 @@ const TeacherDashboard = () => {
           setAttendanceHistory([]);
         }
 
-        // Calculate attendance percentage for each student
         const attendanceCount: { [studentId: string]: number } = {};
         const presentCount: { [studentId: string]: number } = {};
         history.forEach((record: AttendanceRecord) => {
@@ -129,7 +126,6 @@ const TeacherDashboard = () => {
             presentCount[record.studentId]++;
           }
         });
-        // Good students: sorted by present count (descending)
         const good: (Student & { present: number })[] = [...classStudents]
           .map((student: Student) => ({
             ...student,
@@ -147,7 +143,6 @@ const TeacherDashboard = () => {
     fetchStudentsAndAttendance();
   }, [schoolId, classId, token, assignedClass, assignedSection]);
 
-  // Fetch present/absent totals for selected date
   useEffect(() => {
     const fetchCounts = async () => {
       const classToUse = assignedClass || classId;
@@ -163,7 +158,6 @@ const TeacherDashboard = () => {
         });
         if (res.data && res.data.success) {
           let todays: AttendanceRecord[] = res.data.data || [];
-          // If we have an assignedSection (or students are already filtered), only count records for students in our students list
           if (assignedSection && students && students.length > 0) {
             const allowed = new Set(students.map((s) => s.id));
             todays = todays.filter((t: AttendanceRecord) => allowed.has(t.studentId));
@@ -184,116 +178,203 @@ const TeacherDashboard = () => {
     fetchCounts();
   }, [selectedDate, classId, schoolId, token, students, assignedClass, assignedSection]);
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Watermark background */}
-      {/* Gradient Header */}
-      <View style={styles.gradientHeaderWrap}>
+      <Image
+        source={require('../../assets/images/pmblogo.jpg')}
+        style={styles.watermark}
+        resizeMode="contain"
+        accessible={false}
+      />
+      
+      {/* Enhanced Gradient Header */}
+      <LinearGradient
+        colors={['#4c669f', '#3b5998', '#192f6a']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <View style={styles.headerContent}>
+          <View style={styles.headerIconContainer}>
+            <Ionicons name="school" size={rem(28)} color="#fff" />
+          </View>
           <Text style={styles.heading}>Teacher Dashboard</Text>
-      </View>
+          <Text style={styles.subHeading}>
+            {assignedClass && assignedSection ? `Class ${assignedClass}-${assignedSection}` : 'Your Classroom'}
+          </Text>
+        </View>
+      </LinearGradient>
+
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#9daae4ff" />
-          <Text style={{ marginTop: rem(12), color: '#cedcf7ff' }}>Loading dashboard...</Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4c669f" />
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
         </View>
       ) : (
         <ScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
-        >    
-        {/* Date selector + Present / Absent Totals */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: rem(12), marginLeft: rem(4), flexWrap: 'wrap' }}>
-              <TouchableOpacity onPress={() => {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() - 1);
-                setSelectedDate(d.toISOString().split('T')[0]);
-              }} style={{ padding: rem(8), marginRight: rem(8), backgroundColor: '#eef2ff', borderRadius: rem(8) }}>
-                <Text style={{ color: '#4f46e5' }}>Prev</Text>
+        >
+          {/* Enhanced Attendance Summary Card */}
+          <View style={styles.attendanceCard}>
+            <View style={styles.dateSelector}>
+              <TouchableOpacity
+                onPress={() => {
+                  const d = new Date(selectedDate);
+                  d.setDate(d.getDate() - 1);
+                  setSelectedDate(d.toISOString().split('T')[0]);
+                }}
+                style={styles.dateNavButton}
+              >
+                <Ionicons name="chevron-back" size={rem(20)} color="#4c669f" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setSelectedDate(new Date().toISOString().split('T')[0])} style={{ padding: rem(8), marginRight: rem(8), backgroundColor: '#fff', borderRadius: rem(8), borderWidth: 1, borderColor: '#e5e7eb' }}>
-                <Text style={{ color: '#374151' }}>Today</Text>
+
+              <View style={styles.dateDisplay}>
+                <Ionicons name="calendar-outline" size={rem(18)} color="#4c669f" />
+                <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => {
+                  const d = new Date(selectedDate);
+                  d.setDate(d.getDate() + 1);
+                  setSelectedDate(d.toISOString().split('T')[0]);
+                }}
+                style={styles.dateNavButton}
+              >
+                <Ionicons name="chevron-forward" size={rem(20)} color="#4c669f" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() + 1);
-                setSelectedDate(d.toISOString().split('T')[0]);
-              }} style={{ padding: rem(8), marginRight: rem(8), backgroundColor: '#eef2ff', borderRadius: rem(8) }}>
-                <Text style={{ color: '#4f46e5' }}>Next</Text>
-              </TouchableOpacity>
-              <Text style={{ marginLeft: rem(8), color: '#6b7280' }}>{selectedDate}</Text>
             </View>
 
-            <View style={styles.totalsRow}>
-              <View style={styles.presentBadge}>
-                <Text style={styles.totalsLabel}>Present</Text>
-                <Text style={styles.totalsValue}>{presentTotal === null ? '-' : presentTotal}</Text>
-              </View>
-              <View style={styles.absentBadge}>
-                <Text style={styles.totalsLabel}>Absent</Text>
-                <Text style={styles.totalsValue}>{absentTotal === null ? '-' : absentTotal}</Text>
-              </View>
-            </View>
-          
+            <TouchableOpacity
+              onPress={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              style={styles.todayButton}
+            >
+              <Text style={styles.todayButtonText}>Today</Text>
+            </TouchableOpacity>
 
-          {/* Quick Actions Section */}
-          <View style={styles.quickActionsSection}>
-            <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-            <View style={styles.quickActionsRow}>
-              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Attendance')}>
-                <Ionicons name="checkbox-outline" size={rem(28)} color="#667eea" />
-                <Text style={styles.quickActionText}>Take Attendance</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('MyStudents')}>
-                <Ionicons name="school-outline" size={rem(28)} color="#f78316" />
-                <Text style={styles.quickActionText}>My Students</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('TeacherUploadResults')}>
-                <Ionicons name="cloud-upload-outline" size={rem(28)} color="#059669" />
-                <Text style={styles.quickActionText}>Upload Results</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.quickActionsRow}>
-              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('TeacherHomework')}>
-                <Ionicons name="book-outline" size={rem(28)} color="#9506d2" />
-                <Text style={styles.quickActionText}>Homework</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('OnlineTestCreate')}>
-                <Ionicons name="flask-outline" size={rem(28)} color="#f1d00f" />
-                <Text style={styles.quickActionText}>Online Test</Text>
-              </TouchableOpacity>
-                            <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('DiaryItem')}>
-                <Ionicons name="book" size={rem(28)} color="#71d293ff" />
-                <Text style={styles.quickActionText}>Teacher Diary</Text>
-              </TouchableOpacity>
-               <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('TeacherNotices')}>
-                <Ionicons name="notifications-outline" size={rem(28)} color="#71d293ff" />
-                <Text style={styles.quickActionText}>Notice</Text>
-              </TouchableOpacity>
-              <View style={[styles.quickActionBtn, { opacity: 0 }]}/>
+            <View style={styles.statsContainer}>
+              <View style={styles.statCard}>
+                <LinearGradient
+                  colors={['#10b981', '#059669']}
+                  style={styles.statGradient}
+                >
+                  <Ionicons name="checkmark-circle" size={rem(32)} color="#fff" />
+                  <Text style={styles.statLabel}>Present</Text>
+                  <Text style={styles.statValue}>{presentTotal ?? '-'}</Text>
+                </LinearGradient>
+              </View>
+
+              <View style={styles.statCard}>
+                <LinearGradient
+                  colors={['#ef4444', '#dc2626']}
+                  style={styles.statGradient}
+                >
+                  <Ionicons name="close-circle" size={rem(32)} color="#fff" />
+                  <Text style={styles.statLabel}>Absent</Text>
+                  <Text style={styles.statValue}>{absentTotal ?? '-'}</Text>
+                </LinearGradient>
+              </View>
+
+              <View style={styles.statCard}>
+                <LinearGradient
+                  colors={['#8b5cf6', '#7c3aed']}
+                  style={styles.statGradient}
+                >
+                  <Ionicons name="people" size={rem(32)} color="#fff" />
+                  <Text style={styles.statLabel}>Total</Text>
+                  <Text style={styles.statValue}>{students.length}</Text>
+                </LinearGradient>
+              </View>
             </View>
           </View>
 
-          {/* Large modern card for info */}
-          {/* <View style={styles.largeCardContainer}> */}
-            {/* <View style={styles.largeCard}> */}
-                <Image
-        source={require('../../assets/images/pmblogo.jpg')}
-        style={styles.watermark}
-        resizeMode="contain"
-        accessible={false}
-      />
-              {/* <Text style={styles.largeCardIconWrap}>
-                <Ionicons name="book" size={15} color="#2941a9ff" />
-              </Text>
-              <Text style={styles.largeCardTitle}>Welcome!</Text>
-              <Text style={styles.largeCardDesc}>
-                Access your most important features quickly: take attendance, view students, upload marks, and more. Use the bottom navigation for fast access.
-              </Text> */}
-            {/* </View>
-          </View> */}
-          {/* End content */}
-          {/* ...existing code... */}
+          {/* Quick Actions Section */}
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="flash" size={rem(20)} color="#4c669f" />
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+            </View>
+
+            <View style={styles.quickActionsGrid}>
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: '#EEF2FF' }]}
+                onPress={() => navigation.navigate('Attendance')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: '#818CF8' }]}>
+                  <Ionicons name="checkbox-outline" size={rem(26)} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>Attendance</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: '#FEF3C7' }]}
+                onPress={() => navigation.navigate('MyStudents')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: '#F59E0B' }]}>
+                  <Ionicons name="school-outline" size={rem(26)} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>My Students</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: '#D1FAE5' }]}
+                onPress={() => navigation.navigate('TeacherUploadResults')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: '#10B981' }]}>
+                  <Ionicons name="cloud-upload-outline" size={rem(26)} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>Upload Results</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: '#E0E7FF' }]}
+                onPress={() => navigation.navigate('TeacherHomework')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: '#6366F1' }]}>
+                  <Ionicons name="book-outline" size={rem(26)} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>Homework</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: '#FCE7F3' }]}
+                onPress={() => navigation.navigate('OnlineTestCreate')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: '#EC4899' }]}>
+                  <Ionicons name="flask-outline" size={rem(26)} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>Online Test</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: '#D1FAE5' }]}
+                onPress={() => navigation.navigate('DiaryItem')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: '#059669' }]}>
+                  <Ionicons name="journal" size={rem(26)} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>Diary</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionCard, { backgroundColor: '#DBEAFE' }]}
+                onPress={() => navigation.navigate('TeacherNotices')}
+              >
+                <View style={[styles.actionIconContainer, { backgroundColor: '#3B82F6' }]}>
+                  <Ionicons name="notifications-outline" size={rem(26)} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>Notices</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -303,227 +384,201 @@ const TeacherDashboard = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-    position: 'relative',
+    backgroundColor: '#F3F4F6',
   },
-  // Gradient Header
-  gradientHeaderWrap: {
-    borderBottomLeftRadius: 35,
-    borderBottomRightRadius: 35,
-    overflow: 'hidden',
-    marginBottom: 15,
-    elevation: 4,
+  watermark: {
+    position: 'absolute',
+    width: rem(180),
+    height: rem(240),
+    opacity: 0.08,
+    alignSelf: 'center',
+    top: '50%',
+    transform: [{ translateY: -rem(120) }],
+    zIndex: 0,
   },
   gradientHeader: {
-    paddingHorizontal: rem(16),
-    paddingTop: rem(28),
-    paddingBottom: rem(20),
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingTop: rem(20),
+    paddingBottom: rem(30),
+    paddingHorizontal: rem(20),
+    borderBottomLeftRadius: rem(30),
+    borderBottomRightRadius: rem(30),
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rem(4) },
+    shadowOpacity: 0.3,
+    shadowRadius: rem(8),
+  },
+  headerContent: {
     alignItems: 'center',
+  },
+  headerIconContainer: {
+    width: rem(56),
+    height: rem(56),
+    borderRadius: rem(28),
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: rem(12),
   },
   heading: {
-    fontSize: rem(15),
+    fontSize: rem(24),
     fontWeight: '800',
-    color: '#416b3aff',
+    color: '#fff',
     textAlign: 'center',
-    letterSpacing: 1,
-    textShadowColor: '#667eea99',
-    textShadowOffset: { width: 0, height: rem(2) },
-    textShadowRadius: rem(8),
+    letterSpacing: 0.5,
   },
-  // Content
+  subHeading: {
+    fontSize: rem(14),
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: rem(4),
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: rem(16),
+    color: '#6B7280',
+    fontSize: rem(14),
+  },
   content: {
     flex: 1,
     zIndex: 1,
   },
   scrollContent: {
-    paddingBottom: rem(20),
+    paddingTop: rem(20),
+    paddingBottom: rem(30),
+    paddingHorizontal: rem(16),
   },
-  // Stats Section
-  statsSection: {
-    padding: rem(16),
+  attendanceCard: {
+    backgroundColor: '#fff',
+    borderRadius: rem(20),
+    padding: rem(20),
+    marginBottom: rem(20),
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rem(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: rem(8),
   },
-  cardsRow: {
-    flexDirection: 'row',
-    gap: rem(12),
-    flexWrap: 'wrap',
-  },
-  card: {
-    flex: 1,
-    borderRadius: rem(12),
-    padding: rem(14),
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  dateSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: rem(2),
+    justifyContent: 'space-between',
+    marginBottom: rem(12),
   },
-  cardShadow: {
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: rem(4) },
-    shadowOpacity: 0.10,
-    shadowRadius: rem(8),
-    elevation: 4,
-  },
-  iconContainer: {
-    width: rem(36),
-    height: rem(36),
-    borderRadius: rem(8),
+  dateNavButton: {
+    width: rem(40),
+    height: rem(40),
+    borderRadius: rem(20),
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: rem(10),
   },
-  cardInfo: {
-    flex: 1,
+  dateDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: rem(16),
+    paddingVertical: rem(10),
+    borderRadius: rem(12),
+    gap: rem(8),
   },
-  cardTitle: {
+  dateText: {
+    fontSize: rem(15),
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  todayButton: {
+    alignSelf: 'center',
+    backgroundColor: '#4c669f',
+    paddingHorizontal: rem(20),
+    paddingVertical: rem(8),
+    borderRadius: rem(20),
+    marginBottom: rem(16),
+  },
+  todayButtonText: {
+    color: '#fff',
     fontSize: rem(13),
     fontWeight: '600',
-    color: '#6b7280',
-    marginBottom: rem(2),
   },
-  cardValue: {
-    fontSize: rem(20),
-    fontWeight: '800',
-    color: '#222',
+  statsContainer: {
+    flexDirection: 'row',
+    gap: rem(12),
   },
-  // Quick Actions
-  quickActionsSection: {
-    marginHorizontal: rem(1),
-    marginBottom: rem(15),
-    backgroundColor: '#fff',
+  statCard: {
+    flex: 1,
     borderRadius: rem(16),
-    padding: rem(16),
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: rem(4) },
-    shadowOpacity: 0.08,
-    shadowRadius: rem(8),
-    bottom: rem(-15),
+    overflow: 'hidden',
     elevation: 3,
-    borderWidth: 1,
-    borderColor: '#e9ecf3',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rem(2) },
+    shadowOpacity: 0.15,
+    shadowRadius: rem(4),
   },
-  quickActionsTitle: {
+  statGradient: {
+    padding: rem(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statLabel: {
+    fontSize: rem(12),
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: rem(8),
+  },
+  statValue: {
+    fontSize: rem(24),
+    fontWeight: '800',
+    color: '#fff',
+    marginTop: rem(4),
+  },
+  sectionContainer: {
+    marginBottom: rem(24),
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: rem(16),
+    gap: rem(8),
+  },
+  sectionTitle: {
     fontSize: rem(18),
     fontWeight: '700',
-    color: '#403ae2',
-    marginBottom: rem(10),
-    textAlign: 'center',
+    color: '#1F2937',
   },
-  quickActionsRow: {
+  quickActionsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: rem(10),
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
-  quickActionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#f8f9fb',
-    borderRadius: rem(12),
-    paddingVertical: rem(14),
-    marginHorizontal: rem(4),
-    borderWidth: 1,
-    borderColor: '#e9ecf3',
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: rem(2) },
-    shadowOpacity: 0.06,
-    shadowRadius: rem(4),
-    elevation: 2,
-  },
-  quickActionText: {
-    fontSize: rem(13),
-    color: '#222',
-    fontWeight: '600',
-    marginTop: rem(6),
-    textAlign: 'center',
-  },
-  // Large Card
-  largeCardContainer: {
-    marginHorizontal: rem(16),
-    marginBottom: rem(16),
-    alignItems: 'center',
-    zIndex: 1,
-    marginTop: rem(40),
-    height: rem(220),
-  },
-  largeCard: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: rem(18),
+  actionCard: {
+    width: '48%',
+    borderRadius: rem(16),
     padding: rem(20),
     alignItems: 'center',
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: rem(8) },
-    shadowOpacity: 0.12,
-    shadowRadius: rem(16),
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#e9ecf3',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: rem(2) },
+    shadowOpacity: 0.08,
+    shadowRadius: rem(4),
+    marginBottom: rem(12),
   },
-  largeCardIconWrap: {
-    backgroundColor: '#e9ecf3',
-    borderRadius: rem(32),
-    padding: rem(16),
-    marginBottom: rem(16),
-  },
-  largeCardTitle: {
-    fontSize: rem(20),
-    fontWeight: '700',
-    color: '#403ae2',
-    marginBottom: rem(10),
-    textAlign: 'center',
-  },
-  watermark: {
-    position: 'absolute',
-    width: rem(150),
-    bottom: rem(-1),
-    height: rem(200),
-    opacity: 0.5,
-    alignSelf: 'center',
-    top: Math.min(responsive.height * 0.6, rem(420)),
-    transform: [{ rotate: '-0deg' }],
-    zIndex: 0,
-  },
-  largeCardDesc: {
-    fontSize: rem(15),
-    color: '#374151',
-    textAlign: 'center',
-    lineHeight: rem(22),
-  },
-  totalsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    gap: rem(12),
-    marginTop: rem(12),
-    marginLeft: rem(4),
-  },
-  presentBadge: {
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: rem(10),
-    paddingVertical: rem(8),
-    borderRadius: rem(12),
-    alignItems: 'center',
+  actionIconContainer: {
+    width: rem(56),
+    height: rem(56),
+    borderRadius: rem(28),
     justifyContent: 'center',
-  },
-  absentBadge: {
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: rem(10),
-    paddingVertical: rem(8),
-    borderRadius: rem(12),
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: rem(12),
   },
-  totalsLabel: {
-    fontSize: rem(12),
-    color: '#4b5563',
-  },
-  totalsValue: {
-    fontSize: rem(16),
-    fontWeight: '700',
-    color: '#111827',
+  actionText: {
+    fontSize: rem(13),
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
   },
 });
 

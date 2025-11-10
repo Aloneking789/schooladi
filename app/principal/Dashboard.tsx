@@ -46,22 +46,6 @@ type RootStackParamList = {
 const Dashboard = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [loading, setLoading] = useState(true);
-  const [studentStats, setStudentStats] = useState({
-    title: "Students",
-    value: "0",
-    change: "+0",
-    trend: "up",
-  });
-  const [teacherStats, setTeacherStats] = useState({
-    title: "Teachers",
-    value: "0",
-    change: "-0",
-    trend: "down",
-  });
-  const [parentsStats, setParentsStats] = useState({
-    title: "Parents",
-    value: "0",
-  });
   const [genderData, setGenderData] = useState([
     { name: "Boys", value: 0 },
     { name: "Girls", value: 0 },
@@ -98,27 +82,7 @@ const Dashboard = () => {
             { headers: { Authorization: `Bearer ${principal_token}` } }
           );
           const dashboardData = await dashboardRes.json();
-          if (dashboardData?.stats) {
-            const [studentData, teacherData, parentData] = dashboardData.stats;
-            if (studentData?.count !== undefined) {
-              setStudentStats((prev) => ({
-                ...prev,
-                value: studentData.count.toString(),
-              }));
-            }
-            if (teacherData?.count !== undefined) {
-              setTeacherStats((prev) => ({
-                ...prev,
-                value: teacherData.count.toString(),
-              }));
-            }
-            if (parentData?.count !== undefined) {
-              setParentsStats((prev) => ({
-                ...prev,
-                value: parentData.count.toString(),
-              }));
-            }
-          }
+          
           if (dashboardData?.genderData) {
             setGenderData(dashboardData.genderData);
           }
@@ -199,45 +163,6 @@ const Dashboard = () => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {/* Stats Overview */}
-            <View style={styles.statsSection}>
-              <View style={styles.statsRow}>
-                <View style={styles.statCard}>
-                  <LinearGradient
-                    colors={['#818CF8', '#6366F1']}
-                    style={styles.statGradient}
-                  >
-                    <Ionicons name="people" size={rem(36)} color="#fff" />
-                    <Text style={styles.statLabel}>Students</Text>
-                    <Text style={styles.statValue}>{studentStats.value}</Text>
-                  </LinearGradient>
-                </View>
-
-                <View style={styles.statCard}>
-                  <LinearGradient
-                    colors={['#10B981', '#059669']}
-                    style={styles.statGradient}
-                  >
-                    <Ionicons name="person" size={rem(36)} color="#fff" />
-                    <Text style={styles.statLabel}>Teachers</Text>
-                    <Text style={styles.statValue}>{teacherStats.value}</Text>
-                  </LinearGradient>
-                </View>
-              </View>
-
-              <View style={styles.statsRowSingle}>
-                <View style={[styles.statCard, styles.statCardFull]}>
-                  <LinearGradient
-                    colors={['#8B5CF6', '#7C3AED']}
-                    style={styles.statGradient}
-                  >
-                    <Ionicons name="home" size={rem(36)} color="#fff" />
-                    <Text style={styles.statLabel}>Parents</Text>
-                    <Text style={styles.statValue}>{parentsStats.value}</Text>
-                  </LinearGradient>
-                </View>
-              </View>
-            </View>
 
             {/* Gender Distribution */}
             <View style={styles.genderCard}>

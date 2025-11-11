@@ -1,19 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Dimensions
+  useWindowDimensions,
+  View
 } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+// width will be read dynamically via useWindowDimensions inside the component
 
 const quickActions = [
   { label: "Admissions", icon: "person-add", route: "Admissions", color: "#818CF8", bgColor: "#EEF2FF" },
@@ -21,11 +21,12 @@ const quickActions = [
   { label: "Teacher Diary", icon: "journal", route: "TeacherDiary", color: "#8B5CF6", bgColor: "#E0E7FF" },
   { label: "Complaints", icon: "construct", route: "ComplaintsDispossle", color: "#EF4444", bgColor: "#FEE2E2" },
   { label: 'Online Tests', icon: 'clipboard', route: 'OnlineTestManage', color: "#EC4899", bgColor: "#FCE7F3" },
+   { label: "All Classes Attendance", icon: "person-add", route: "AttendanceAll", color: "#818CF8", bgColor: "#EEF2FF" },
 ];
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { rem } from '../utils/responsive';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { rem } from '../utils/responsive';
 import { hideStatusBar } from "../utils/statusBarConfig";
 
 type RootStackParamList = {
@@ -54,6 +55,10 @@ const Dashboard = () => {
   const [admissionsLoading, setAdmissionsLoading] = useState(true);
   const [messages, setMessages] = useState<any[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(true);
+  
+  // responsive width for layout decisions
+  const { width } = useWindowDimensions();
+  const actionCardWidth = width < 420 ? '100%' : width < 800 ? '48%' : '31%';
 
   useEffect(() => {
     hideStatusBar();
@@ -125,6 +130,42 @@ const Dashboard = () => {
     fetchEnquiries();
   }, []);
 
+  // Daily online-test dashboard (created tests & submissions)
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [dailyData, setDailyData] = useState<any>(null);
+
+  const fetchDailyDashboard = async () => {
+    setDailyLoading(true);
+    try {
+      const principal_token = await AsyncStorage.getItem('principal_token');
+      // Use the provided dev tunnel endpoint; in production change to proper API
+      const url = 'https://api.pbmpublicschool.in/api/onlineTest/online-test/dashboard/daily';
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${principal_token}` } });
+      const body = await res.json();
+      if (body?.success && body.days) {
+        // pick today's key if available, otherwise pick the last date in 'days'
+        const todayKey = new Date().toISOString().split('T')[0];
+        const daysObj = body.days || {};
+        const todays = daysObj[todayKey] || (() => {
+          const keys = Object.keys(daysObj).sort();
+          return keys.length ? daysObj[keys[keys.length - 1]] : { createdTests: [], submissions: [] };
+        })();
+        setDailyData({ from: body.from, to: body.to, todays });
+      } else {
+        setDailyData({ from: body.from, to: body.to, todays: { createdTests: [], submissions: [] } });
+      }
+    } catch (e) {
+      console.warn('fetchDailyDashboard error', e);
+      setDailyData({ todays: { createdTests: [], submissions: [] } });
+    } finally {
+      setDailyLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDailyDashboard();
+  }, []);
+
   const [isSidebarVisible, setSidebarVisible] = useState(false);
   const toggleSidebar = () => setSidebarVisible((prev) => !prev);
 
@@ -170,7 +211,7 @@ const Dashboard = () => {
                 <Ionicons name="stats-chart" size={rem(20)} color="#4c669f" />
                 <Text style={styles.genderTitle}>Gender Distribution</Text>
               </View>
-              <View style={styles.genderStatsRow}>
+              <View style={[styles.genderStatsRow, width < 420 ? styles.genderStatsColumn : null]}>
                 <View style={styles.genderStat}>
                   <View style={[styles.genderIconBox, { backgroundColor: '#DBEAFE' }]}>
                     <Ionicons name="male" size={rem(32)} color="#3B82F6" />
@@ -179,7 +220,7 @@ const Dashboard = () => {
                   <Text style={styles.genderValue}>{genderData[0]?.value || 0}</Text>
                 </View>
 
-                <View style={styles.genderDivider} />
+                {width >= 420 && <View style={styles.genderDivider} />}
 
                 <View style={styles.genderStat}>
                   <View style={[styles.genderIconBox, { backgroundColor: '#FCE7F3' }]}>
@@ -202,7 +243,7 @@ const Dashboard = () => {
                 {quickActions.map((action, idx) => (
                   <TouchableOpacity
                     key={idx}
-                    style={[styles.actionCard, { backgroundColor: action.bgColor }]}
+                    style={[styles.actionCard, { backgroundColor: action.bgColor, width: actionCardWidth }]}
                     onPress={() => navigation.navigate(action.route as any)}
                     activeOpacity={0.8}
                   >
@@ -213,6 +254,83 @@ const Dashboard = () => {
                   </TouchableOpacity>
                 ))}
               </View>
+            </View>
+
+            {/* Today's Online Test Summary */}
+            <View style={styles.dailyCard}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="clipboard" size={rem(18)} color="#4c669f" />
+                <Text style={styles.sectionTitle}>Today's Tests & Submissions</Text>
+              </View>
+              {dailyLoading ? (
+                <ActivityIndicator />
+              ) : (
+                <View>
+                  <View style={styles.dailyRow}>
+                    <View style={styles.dailyStat}>
+                      <Text style={styles.dailyStatLabel}>Created Tests</Text>
+                      <Text style={styles.dailyStatValue}>{dailyData?.todays?.createdTests?.length ?? 0}</Text>
+                    </View>
+                    <View style={styles.dailyStat}>
+                      <Text style={styles.dailyStatLabel}>Submissions</Text>
+                      <Text style={styles.dailyStatValue}>{dailyData?.todays?.submissions?.length ?? 0}</Text>
+                    </View>
+                    <View style={styles.dailyStat}>
+                      <Text style={styles.dailyStatLabel}>Homeworks</Text>
+                      <Text style={styles.dailyStatValue}>{dailyData?.todays?.homeworks?.length ?? 0}</Text>
+                    </View>
+                  </View>
+
+                  {/* List created tests */}
+                  <View style={{ marginTop: rem(10) }}>
+                    <Text style={styles.dailyListHeader}>Created Tests</Text>
+                    {((dailyData?.todays?.createdTests) || []).length === 0 ? (
+                      <Text style={styles.empty}>No tests created today.</Text>
+                    ) : (
+                      (dailyData.todays.createdTests || []).map((t: any) => (
+                        <View key={t.id} style={styles.dailyItem}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontWeight: '700' }}>{t.subject || 'Test'}</Text>
+                            <Text style={{ color: '#666' }}>{t.className || t.class || ''} {t.assignedSections ? `- ${t.assignedSections}` : ''}</Text>
+                            {t.createdBy && <Text style={styles.smallMuted}>Created by: {t.createdBy}</Text>}
+                          </View>
+                          <Text style={{ color: '#999' }}>{t.createdAt ? new Date(t.createdAt).toLocaleTimeString() : ''}</Text>
+                        </View>
+                      ))
+                    )}
+
+                    <Text style={[styles.dailyListHeader, { marginTop: rem(12) }]}>Submissions</Text>
+                    {((dailyData?.todays?.submissions) || []).length === 0 ? (
+                      <Text style={styles.empty}>No submissions today.</Text>
+                    ) : (
+                      (dailyData.todays.submissions || []).map((s: any) => (
+                        <View key={s.id} style={styles.dailySubmissionItem}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontWeight: '700' }}>{s.studentName || 'Student'}</Text>
+                            <Text style={styles.smallMuted}>Roll: {s.rollNumber || s.roll || 'N/A'}</Text>
+                          </View>
+                          <Text style={{ color: '#059669', fontWeight: '700' }}>{s.score ?? '-'}</Text>
+                        </View>
+                      ))
+                    )}
+
+                    <Text style={[styles.dailyListHeader, { marginTop: rem(12) }]}>Homeworks</Text>
+                    {((dailyData?.todays?.homeworks) || []).length === 0 ? (
+                      <Text style={styles.empty}>No homeworks today.</Text>
+                    ) : (
+                      (dailyData.todays.homeworks || []).map((h: any) => (
+                        <View key={h.id} style={styles.dailyHomeworkItem}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontWeight: '700' }}>{h.title || 'Homework'}</Text>
+                            <Text style={styles.smallMuted}>{h.className || h.class || ''} {h.assignedSections ? `- ${h.assignedSections}` : ''}</Text>
+                          </View>
+                          <Text style={{ color: '#999' }}>{h.createdAt ? new Date(h.createdAt).toLocaleTimeString() : ''}</Text>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Recent Enquiries */}
@@ -450,7 +568,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   actionCard: {
-    width: '48%',
+    // width set dynamically via inline style for responsiveness
     borderRadius: rem(16),
     padding: rem(20),
     alignItems: 'center',
@@ -460,6 +578,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: rem(4),
     marginBottom: rem(12),
+  },
+
+  genderStatsColumn: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
   },
   actionIconContainer: {
     width: rem(56),
@@ -555,6 +678,76 @@ const styles = StyleSheet.create({
     right: rem(20),
     top: '50%',
     transform: [{ translateY: -rem(10) }],
+  },
+  dailyCard: {
+    backgroundColor: '#fff',
+    borderRadius: rem(16),
+    padding: rem(14),
+    marginBottom: rem(20),
+    elevation: 3,
+  },
+  dailyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: rem(12),
+  },
+  dailyStat: {
+    flex: 1,
+    alignItems: 'center',
+    padding: rem(12),
+    borderRadius: rem(12),
+    backgroundColor: '#F8FAFC',
+  },
+  dailyStatLabel: {
+    fontSize: rem(13),
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  dailyStatValue: {
+    fontSize: rem(22),
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: rem(8),
+  },
+  dailyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: rem(10),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  empty: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: rem(8),
+  },
+  dailyListHeader: {
+    fontSize: rem(14),
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: rem(8),
+  },
+  smallMuted: {
+    fontSize: rem(12),
+    color: '#6B7280',
+    marginTop: rem(4),
+  },
+  dailySubmissionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: rem(8),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dailyHomeworkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: rem(8),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
 });
 

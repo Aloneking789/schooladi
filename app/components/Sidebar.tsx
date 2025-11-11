@@ -3,7 +3,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useUser } from '../UserContext';
 import { rem } from '../utils/responsive';
 
@@ -21,6 +21,15 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
   const navigation = useNavigation();
   const route = useRoute();
   const { logout } = useUser();
+  const { width } = useWindowDimensions();
+
+  // Responsive scaling factor relative to a base width of 375
+  const scale = Math.min(Math.max(width / 375, 0.85), 1.2);
+  const compact = width < 360;
+  const iconSize = Math.round(rem(24) * scale);
+  const iconContainerSize = Math.round(rem(30) * scale);
+  const iconContainerRadius = Math.round(18 * scale);
+  const bottomPadding = Platform.OS === 'ios' ? Math.round(12 * (scale)) : Math.round(8 * (scale));
 
   // Only top-level menu items for bottom bar
   const menuItems = (): MenuItem[] => {
@@ -70,7 +79,7 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
   const currentRoute = (route as any)?.name;
 
   return (
-    <View style={styles.bottomBarWrapper} pointerEvents="box-none">
+    <View style={[styles.bottomBarWrapper, { paddingBottom: bottomPadding }]} pointerEvents="box-none">
       <View style={styles.shadowContainer}>
         <LinearGradient
           colors={["#FFFFFF", "#F8FAFC", "#FFFFFF"]}
@@ -79,7 +88,6 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
           style={styles.gradientBg}
         >
           <BlurView intensity={80} tint="light" style={styles.blurBg}>
-            <View style={styles.topIndicator} />
             <View style={styles.bottomBarContainer}>
               {items.map((item) => {
                 const isActive = currentRoute === item.path;
@@ -92,16 +100,20 @@ const BottomBar: React.FC<BottomBarProps> = ({ userType }) => {
                       pressed && styles.tabItemPressed,
                     ]}
                   >
-                    <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
-                      <Ionicons 
-                        name={item.iconName as any} 
-                        size={rem(24)} 
-                        color={isActive ? '#FFFFFF' : '#64748B'} 
+                    <View style={[
+                      styles.iconContainer,
+                      { width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerRadius },
+                      isActive && styles.iconContainerActive
+                    ]}>
+                      <Ionicons
+                        name={item.iconName as any}
+                        size={iconSize}
+                        color={isActive ? '#FFFFFF' : '#64748B'}
                       />
-                      {isActive && <View style={styles.activeDot} />}
+                      {isActive && <View style={[styles.activeDot, { bottom: -Math.round(4 * scale) }]} />}
                     </View>
-                    {item.name && (
-                      <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                    {!compact && item.name && (
+                      <Text numberOfLines={1} style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                         {item.name.replace('OnlineTest', 'Test')}
                       </Text>
                     )}
@@ -138,26 +150,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   blurBg: {
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     overflow: 'hidden',
   },
-  topIndicator: {
-    width: 48,
-    height: 4,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 4,
-  },
+
   bottomBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingVertical: 0,
-    paddingHorizontal: 12,
-    paddingBottom: 0,
+    paddingHorizontal: 8,
+    paddingBottom: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(226, 232, 240, 0.5)',
@@ -185,11 +189,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   iconContainerActive: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#2219d4ff',
     shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
-    shadowRadius: 12,
+    shadowRadius: 8,
     elevation: 8,
     transform: [{ scale: 1.05 }],
   },

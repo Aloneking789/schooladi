@@ -145,7 +145,7 @@ const TeacherDashboard = () => {
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const classToUse = assignedClass || classId;
+      const classToUse = classId;
       if (!classToUse || !schoolId || !token) return;
       try {
         const res = await axios.get(`${API_BASE_URL}/attendance/by-date-class`, {

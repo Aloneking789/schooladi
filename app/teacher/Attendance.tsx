@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -58,6 +59,11 @@ const Attendance = () => {
   const [endDate, setEndDate] = useState(date);
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [viewMode, setViewMode] = useState('daily');
+
+  // Student history modal state
+  const [studentModalVisible, setStudentModalVisible] = useState(false);
+  const [modalStudent, setModalStudent] = useState<{ id: string; studentName?: string; rollNumber?: string } | null>(null);
+  const [modalMonth, setModalMonth] = useState<Date>(new Date(startDate));
 
   const [teacherId, setTeacherId] = useState('');
   const [schoolId, setSchoolId] = useState('');
@@ -238,6 +244,51 @@ const Attendance = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, selectedClass, assignedClass, classId, schoolId, token, startDate, endDate]);
+
+  const uniqueStudents = React.useMemo(() => {
+    const map: Record<string, { id: string; studentName?: string; rollNumber?: string }> = {};
+    attendanceHistory.forEach((r) => {
+      if (r.student && !map[r.studentId]) {
+        map[r.studentId] = { id: r.studentId, studentName: r.student.studentName, rollNumber: r.student.rollNumber };
+      }
+    });
+    const arr = Object.values(map);
+    arr.sort((a, b) => {
+      const ra = Number(a.rollNumber) || Number.POSITIVE_INFINITY;
+      const rb = Number(b.rollNumber) || Number.POSITIVE_INFINITY;
+      return ra - rb;
+    });
+    return arr;
+  }, [attendanceHistory]);
+
+  // Sort attendance history by student's roll number (then by date) for roll-wise listing
+  const sortedAttendanceHistory = React.useMemo(() => {
+    return attendanceHistory.slice().sort((a, b) => {
+      const ra = Number(a.student?.rollNumber) || Number.POSITIVE_INFINITY;
+      const rb = Number(b.student?.rollNumber) || Number.POSITIVE_INFINITY;
+      if (ra !== rb) return ra - rb;
+      const ta = new Date(a.date).getTime();
+      const tb = new Date(b.date).getTime();
+      return ta - tb;
+    });
+  }, [attendanceHistory]);
+
+  const openStudentModal = (studentId: string) => {
+    const s = uniqueStudents.find(u => u.id === studentId) || null;
+    setModalStudent(s);
+    setModalMonth(new Date(startDate));
+    setStudentModalVisible(true);
+  };
+
+  const getMonthDays = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    return { daysInMonth: lastDay.getDate(), startingDayOfWeek: firstDay.getDay() };
+  };
+
+  const formatShortDate = (d: Date) => d.toISOString().split('T')[0];
 
   interface HandleAttendanceChange {
     (studentId: string, status: string): void;
@@ -504,6 +555,15 @@ const Attendance = () => {
               </TouchableOpacity>
             </View>
 
+            {/* Student list for history - tap a student to view their monthly summary */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }} contentContainerStyle={{ paddingHorizontal: 8 }}>
+              {uniqueStudents.map((s) => (
+                <TouchableOpacity key={s.id} style={styles.historyStudentPill} onPress={() => openStudentModal(s.id)}>
+                  <Text style={styles.historyStudentPillText}>{s.studentName} {s.rollNumber ? `(${s.rollNumber})` : ''}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <View style={styles.historyContainer}>
               {attendanceHistory.length === 0 ? (
                 <View style={styles.emptyContainer}>
@@ -512,7 +572,7 @@ const Attendance = () => {
                   <Text style={styles.emptySubText}>Try selecting a different date range</Text>
                 </View>
               ) : (
-                attendanceHistory.map((record) => (
+                sortedAttendanceHistory.map((record) => (
                   <View key={record.id} style={styles.historyCard}>
                     <View style={styles.historyCardHeader}>
                       <View style={styles.historyAvatarCircle}>
@@ -552,6 +612,88 @@ const Attendance = () => {
           </ScrollView>
         )}
       </View>
+
+        {/* Student history modal */}
+        <Modal visible={studentModalVisible} animationType="slide" transparent={true} onRequestClose={() => setStudentModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700' }}>{modalStudent?.studentName || 'Student'}</Text>
+                <TouchableOpacity onPress={() => setStudentModalVisible(false)}>
+                  <Text style={{ color: '#6b7280' }}>Close</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Totals for range */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 12 }}>
+                {(() => {
+                  if (!modalStudent) return null;
+                  const records = attendanceHistory.filter(r => r.studentId === modalStudent.id && new Date(r.date) >= new Date(startDate) && new Date(r.date) <= new Date(endDate));
+                  const present = records.filter(r => String(r.status).toLowerCase() === 'present').length;
+                  const absent = records.filter(r => String(r.status).toLowerCase() === 'absent').length;
+                  const total = records.length;
+                  const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+                  return (
+                    <>
+                      <View style={styles.modalStatCard}>
+                        <Text style={styles.modalStatLabel}>Present</Text>
+                        <Text style={styles.modalStatValue}>{present}</Text>
+                      </View>
+                      <View style={styles.modalStatCard}> 
+                        <Text style={styles.modalStatLabel}>Absent</Text>
+                        <Text style={styles.modalStatValue}>{absent}</Text>
+                      </View>
+                      <View style={styles.modalStatCard}>
+                        <Text style={styles.modalStatLabel}>Percent</Text>
+                        <Text style={styles.modalStatValue}>{pct}%</Text>
+                      </View>
+                    </>
+                  );
+                })()}
+              </View>
+
+              {/* Month calendar for modalMonth */}
+              <View style={{ marginTop: 14 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <TouchableOpacity onPress={() => setModalMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}>
+                    <Text style={{ color: '#4F46E5' }}>Prev</Text>
+                  </TouchableOpacity>
+                  <Text style={{ fontWeight: '700' }}>{modalMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</Text>
+                  <TouchableOpacity onPress={() => setModalMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}>
+                    <Text style={{ color: '#4F46E5' }}>Next</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.modalCalendarWeekDays}>
+                  {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+                    <View key={d} style={styles.modalDayCellHeader}><Text style={styles.modalDayHeaderText}>{d}</Text></View>
+                  ))}
+                </View>
+
+                <View style={styles.modalCalendarGrid}>
+                  {(() => {
+                    const { daysInMonth, startingDayOfWeek } = getMonthDays(modalMonth);
+                    const cells: any[] = [];
+                    for (let i=0;i<startingDayOfWeek;i++) cells.push(<View key={`e-${i}`} style={styles.modalDayCell} />);
+                    for (let d=1; d<=daysInMonth; d++) {
+                      const dt = new Date(modalMonth.getFullYear(), modalMonth.getMonth(), d);
+                      const iso = formatShortDate(dt);
+                      const rec = attendanceHistory.find(r => r.studentId === modalStudent?.id && (new Date(r.date)).toISOString().split('T')[0] === iso);
+                      const color = rec ? (String(rec.status).toLowerCase() === 'present' ? '#10b981' : (String(rec.status).toLowerCase() === 'absent' ? '#ef4444' : '#f59e0b')) : '#d1d5db';
+                      cells.push(
+                        <View key={`d-${d}`} style={styles.modalDayCell}>
+                          <Text style={styles.modalDayNumber}>{d}</Text>
+                          <View style={[styles.modalStatusDot, { backgroundColor: color }]} />
+                        </View>
+                      );
+                    }
+                    return cells;
+                  })()}
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
       {/* Fixed footer submit button */}
       {viewMode === 'daily' && (
@@ -1068,6 +1210,93 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
+  },
+  historyStudentPill: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  historyStudentPillText: {
+    fontSize: 13,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalContainer: {
+    width: '100%',
+    maxHeight: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalStatCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    minWidth: 80,
+  },
+  modalStatLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  modalStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 6,
+  },
+  modalCalendarWeekDays: {
+    flexDirection: 'row',
+    marginTop: 10,
+  },
+  modalDayCellHeader: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  modalDayHeaderText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  modalCalendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  modalDayCell: {
+    width: `${100 / 7}%`,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalDayNumber: {
+    fontSize: 13,
+    color: '#374151',
+    marginBottom: 6,
+  },
+  modalStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });
 

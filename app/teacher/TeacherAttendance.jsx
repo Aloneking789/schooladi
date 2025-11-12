@@ -4,14 +4,16 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from 'react-native';
 
 const TeacherSelfAttendance = () => {
@@ -26,6 +28,16 @@ const TeacherSelfAttendance = () => {
   const [activeTab, setActiveTab] = useState('mark');
   const [locationVerification, setLocationVerification] = useState(null);
   const [error, setError] = useState('');
+  // Calendar / month view
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(''); // YYYY-MM-DD
+
+  // Responsive sizing
+  const { width } = useWindowDimensions();
+  // content padding: ScrollView uses padding 16 left+right (32)
+  // calendar container has padding ~12 left+right (24)
+  // extra spacing for gaps/paddings ~16
+  const dayCellWidth = Math.floor((width - 32 - 24 - 16) / 7);
 
   const API_BASE = 'https://api.pbmpublicschool.in/api/teacher-attendance';
 
@@ -149,7 +161,26 @@ const TeacherSelfAttendance = () => {
       });
       const data = await response.json();
       if (data.success) {
-        setAttendanceHistory(data.data);
+        // Ensure we show only this teacher's records. The API may return mixed records or include identifying fields.
+        const records = Array.isArray(data.data) ? data.data : [];
+        const matchesTeacher = (rec) => {
+          try {
+            const candidates = [rec.teacherId, rec.teacher?.id, rec.userId, rec.user?.id, rec.createdBy, rec.createdById, rec.teacher?.userId, rec.teacher?.teacherId];
+            return candidates.some(c => c !== undefined && c !== null && String(c) === String(teacherId));
+          } catch (e) {
+            return false;
+          }
+        };
+
+        const filtered = records.filter(rec => {
+          // If the record contains any teacher-identifying field, require it to match current teacher
+          const hasTeacherField = rec.teacherId || rec.teacher || rec.userId || rec.user || rec.createdBy || rec.createdById || (rec.teacher && (rec.teacher.userId || rec.teacher.teacherId));
+          if (hasTeacherField) return matchesTeacher(rec);
+          // If no identifying field, keep the record (likely already scoped to this teacher)
+          return true;
+        });
+
+        setAttendanceHistory(filtered);
       }
     } catch (error) {
       console.error('Error fetching attendance history:', error);
@@ -285,6 +316,37 @@ const TeacherSelfAttendance = () => {
     });
   };
 
+  const formatShortDate = (d) => d.toISOString().split('T')[0];
+
+  const getMonthDays = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    return { daysInMonth: lastDay.getDate(), startingDayOfWeek: firstDay.getDay() };
+  };
+
+  // derive month records and totals
+  const monthRecords = attendanceHistory.filter(r => {
+    try {
+      const d = new Date(r.date);
+      return d.getFullYear() === calendarMonth.getFullYear() && d.getMonth() === calendarMonth.getMonth();
+    } catch (e) { return false; }
+  });
+
+  const monthTotals = (() => {
+    const daysSet = new Set();
+    let checkIns = 0;
+    let checkOuts = 0;
+    monthRecords.forEach(r => {
+      const iso = new Date(r.date).toISOString().split('T')[0];
+      daysSet.add(iso);
+      if (String(r.type).toLowerCase() === 'start' || String(r.type).toLowerCase() === 'in') checkIns++;
+      else checkOuts++;
+    });
+    return { daysWithCheckin: daysSet.size, checkIns, checkOuts, totalRecords: monthRecords.length };
+  })();
+
   if (!teacherId) {
     return (
       <View style={styles.container}>
@@ -298,7 +360,7 @@ const TeacherSelfAttendance = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#4F46E5" />
 
       {/* Header */}
@@ -321,7 +383,12 @@ const TeacherSelfAttendance = () => {
         )}
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 48 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Error Message */}
         {error && (
           <View style={styles.errorContainer}>
@@ -514,8 +581,78 @@ const TeacherSelfAttendance = () => {
           <View style={styles.historyContainer}>
             <Text style={styles.cardTitle}>📅 Attendance History</Text>
 
-            {attendanceHistory.length > 0 ? (
-              attendanceHistory.map((record) => (
+            {/* Calendar filter + month summary */}
+            <View style={styles.calendarContainer}>
+              <View style={styles.calendarHeader}>
+                <TouchableOpacity onPress={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}>
+                  <Text style={styles.calendarNavText}>Prev</Text>
+                </TouchableOpacity>
+                <Text style={styles.calendarMonthText}>{calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</Text>
+                <TouchableOpacity onPress={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}>
+                  <Text style={styles.calendarNavText}>Next</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.calendarWeekDays}>
+                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+                  <View key={d} style={[styles.calendarDayHead, { width: dayCellWidth  }]}><Text style={styles.calendarDayHeadText}>{d}</Text></View>
+                ))}
+              </View>
+
+              <View style={styles.calendarGrid}>
+                {(() => {
+                  const { daysInMonth, startingDayOfWeek } = getMonthDays(calendarMonth);
+                  const cells = [];
+                  for (let i = 0; i < startingDayOfWeek; i++) cells.push(<View key={`empty-${i}`} style={[styles.calendarDayCell, { width: dayCellWidth }]} />);
+                  for (let d = 1; d <= daysInMonth; d++) {
+                    const dt = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), d);
+                    const iso = formatShortDate(dt);
+                    const hasRecord = attendanceHistory.some(r => (new Date(r.date)).toISOString().split('T')[0] === iso);
+                    const isSelected = selectedDate === iso;
+                    cells.push(
+                      <TouchableOpacity key={`d-${d}`} style={[styles.calendarDayCell, isSelected && styles.calendarDaySelected, { width: dayCellWidth }]} onPress={() => setSelectedDate(iso)}>
+                        <Text style={[styles.calendarDayNumber, isSelected && { color: '#fff' }]}>{d}</Text>
+                        {hasRecord && <View style={[styles.dayDot, isSelected ? { backgroundColor: '#fff' } : null, !isSelected && { backgroundColor: '#10B981' }]} />}
+                      </TouchableOpacity>
+                    );
+                  }
+                  return cells;
+                })()}
+              </View>
+
+              <View style={styles.monthSummaryRow}>
+                <View style={styles.monthStat}>
+                  <Text style={styles.monthStatLabel}>Days Present</Text>
+                  <Text style={styles.monthStatValue}>{monthTotals.daysWithCheckin}</Text>
+                </View>
+                <View style={styles.monthStat}>
+                  <Text style={styles.monthStatLabel}>Check-ins</Text>
+                  <Text style={styles.monthStatValue}>{monthTotals.checkIns}</Text>
+                </View>
+                <View style={styles.monthStat}>
+                  <Text style={styles.monthStatLabel}>Check-outs</Text>
+                  <Text style={styles.monthStatValue}>{monthTotals.checkOuts}</Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+                <TouchableOpacity onPress={() => setSelectedDate('')}><Text style={styles.clearFilterText}>Clear filter</Text></TouchableOpacity>
+              </View>
+            </View>
+
+            {/* History list filtered by selectedDate when set */}
+            {(() => {
+              const list = selectedDate ? attendanceHistory.filter(r => (new Date(r.date)).toISOString().split('T')[0] === selectedDate) : attendanceHistory || [];
+              if (!list || list.length === 0) {
+                return (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>📅</Text>
+                    <Text style={styles.emptySubtext}>No attendance records found</Text>
+                  </View>
+                );
+              }
+
+              return list.map((record) => (
                 <View key={record.id} style={styles.historyItem}>
                   <View
                     style={[
@@ -542,17 +679,12 @@ const TeacherSelfAttendance = () => {
                     </Text>
                   </View>
                 </View>
-              ))
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>📅</Text>
-                <Text style={styles.emptySubtext}>No attendance records found</Text>
-              </View>
-            )}
+              ));
+            })()}
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -971,6 +1103,88 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
     color: '#9CA3AF',
+  },
+  calendarContainer: {
+    marginBottom: 12,
+    backgroundColor: '#FAFAFB',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  calendarNavText: {
+    color: '#4F46E5',
+    fontWeight: '600',
+  },
+  calendarMonthText: {
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  calendarWeekDays: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  calendarDayHead: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  calendarDayHeadText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarDayCell: {
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  calendarDayNumber: {
+    fontSize: 14,
+    color: '#1F2937',
+  },
+  calendarDaySelected: {
+    backgroundColor: '#4F46E5',
+  },
+  dayDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  monthSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  monthStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  monthStatLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  monthStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginTop: 4,
+  },
+  clearFilterText: {
+    color: '#6B7280',
+    textDecorationLine: 'underline',
   },
 });
 

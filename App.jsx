@@ -21,6 +21,7 @@ import SplashScreen from './app/components/SplashScreen'; // <-- Add this import
 import PrincipalDashboard from './app/principal/Dashboard'; // <-- Add this import
 
 import { UserProvider } from './app/UserContext';
+import { NotificationProvider } from './app/context/NotificationContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -106,8 +107,8 @@ export default function App() {
 
   return (
     <UserProvider>
-
-      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+      <NotificationProvider>
+        <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
 
         <Stack.Screen name="Login" component={Login} />
 
@@ -360,6 +361,7 @@ export default function App() {
 
 
       </Stack.Navigator>
+      </NotificationProvider>
     </UserProvider>
   );
 }

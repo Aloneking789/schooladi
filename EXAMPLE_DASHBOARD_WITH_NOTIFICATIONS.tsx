@@ -1,13 +1,13 @@
 // Example: How to add notifications to Student Dashboard
 
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useNotification } from '../context/NotificationContext';
-import { 
-  NotificationBell, 
-  NotificationTestButton, 
-  NotificationStatus 
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  NotificationBell,
+  NotificationStatus,
+  NotificationTestButton
 } from '../components/NotificationComponents';
+import { useNotification } from '../context/NotificationContext';
 
 export default function StudentDashboard() {
   const { expoPushToken, badgeCount } = useNotification();

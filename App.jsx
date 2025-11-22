@@ -20,8 +20,8 @@ import SplashScreen from './app/components/SplashScreen'; // <-- Add this import
 // import TextEditor from './components/NotificationListing';
 import PrincipalDashboard from './app/principal/Dashboard'; // <-- Add this import
 
-import { UserProvider } from './app/UserContext';
 import { NotificationProvider } from './app/context/NotificationContext';
+import { UserProvider } from './app/UserContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,21 +31,21 @@ import Layout from './app/components/Layout';
 import AddNotice from './app/principal/AddNotice';
 import Admissions from './app/principal/Admissions';
 import ComplaintsDispossle from './app/principal/ComplaintsDispossle';
+import OnlineTestManage from './app/principal/OnlineTestManage';
 import AttendanceAll from './app/principal/StudentsAttendance';
 import TeacherDiaryPrincipal from './app/principal/TeacherDiary';
+import AttendanceCalendar from './app/student/AttendanceReport';
 import Complaints from './app/student/Complaints';
 import HomeWork from './app/student/HomeWork';
 import Onlitest from './app/student/OnlineTest';
 import Attendance from './app/teacher/Attendance';
 import MyTeacherIDCard from './app/teacher/MyTeacherIDCard';
+import TeacherNotices from './app/teacher/Notice';
 import OnlineTestCreate from './app/teacher/OnlineTestexam';
 import DiaryItem from './app/teacher/TeacherDairy';
 import TeacherHomework from './app/teacher/teacherHomework';
 import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 import { configureStatusBar } from './app/utils/statusBarConfig';
-import OnlineTestManage from './app/principal/OnlineTestManage';
-import AttendanceCalendar from './app/student/AttendanceReport';
-import TeacherNotices from './app/teacher/Notice';
 // import TeacherUploadResults from './app/teacher/TeacherUploadResults';
 // import TeacherSelfAttendance from './app/teacher/TeacherAttendance';
 
@@ -110,257 +110,257 @@ export default function App() {
       <NotificationProvider>
         <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
 
-        <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Login" component={Login} />
 
 
-        {/* Student pages */}
-        <Stack.Screen
-          name="StudentDashboard"
-          children={props => (
-            <Layout>
-              <StudentDashboard {...props} />
-            </Layout>
-          )}
-          
-        />
-        <Stack.Screen
-
-        // Complaints page for students
-          name="Complaints"
-          children={props => (
-            <Layout>
-              <Complaints {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="HomeWork"
-          children={props => (  
-            <Layout>
-                <HomeWork {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="StudentResults"
-          children={props => (
-            <Layout>
-              <StudentResults {...props} />
-            </Layout>
-          )}
-        />
-         <Stack.Screen
-          name="StudentAttendanceCalendar"
-          children={props => (
-            <Layout>
-              <AttendanceCalendar {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="StudentNotices"
-          children={props => (
-            <Layout>
-              <ShowNotice {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="OnlineTestManage" 
-          children={props => (
-            <Layout>
-              <OnlineTestManage {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="LandingPage"
-          children={props => (
-            <Layout>
-              <LandingPage {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="OnlineTest"
-          children={props => (
-            <Layout>
-              <Onlitest {...props} />
-            </Layout>
-          )}
-        />
-
-        {/* Teacher pages */}
-        <Stack.Screen
-          name="TeacherLandingPage"
-          children={props => (
-            <Layout>
-              <LandingPage {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="TeacherDashboard"
-          children={props => (
-            <Layout>
-              <TeacherDashboard {...props} />
-            </Layout>
-          )}
-        />
+          {/* Student pages */}
           <Stack.Screen
-          name="TeacherNotices"
-          children={props => (
-            <Layout>
-              <TeacherNotices {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="DiaryItem"
-          children={props => (
-            <Layout>
-              <DiaryItem {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="OnlineTestCreate"
-          children={props => (
-            <Layout>
-              <OnlineTestCreate {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="TeacherAttendance"
-          children={props => (
-            <Layout>
-              <TeacherSelfAttendance {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="MyTeacherIDCard"
-          children={props => (
-            <Layout>
-              <MyTeacherIDCard {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="Attendance"
-          children={props => (
-            <Layout>
-              <Attendance {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="TeacherUploadResults"
-          children={props => (
-            <Layout>
-              <TeacherUploadResults {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="TeacherHomework"
-          children={props => (
-            <Layout>
-              <TeacherHomework {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="TeacherSelfAttendance"
-          children={props => (
-            <Layout>
-              <TeacherSelfAttendance {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="MyProfile"
-          children={props => (
-            <Layout>
-              <MyProfile {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="MyStudents"
-          children={props => (
-            <Layout>
-              <MyStudents {...props} />
-            </Layout>
-          )}
-        />
+            name="StudentDashboard"
+            children={props => (
+              <Layout>
+                <StudentDashboard {...props} />
+              </Layout>
+            )}
 
-        {/* Principal sidebar screens */}
-        <Stack.Screen
-          name="PrincipalLandingPage"
-          children={props => (
-            <Layout>
-              <LandingPage {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="PrincipalDashboard"
-          children={props => (
-            <Layout>
-              <PrincipalDashboard {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="AttendanceAll"
-          children={props => (
-            <Layout>
-              <AttendanceAll {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="Admissions"
-          children={props => (
-            <Layout>
-              <Admissions {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="AddNotice"
-          children={props => (
-            <Layout>
-              <AddNotice {...props} />
-            </Layout>
-          )}
-        />
-    
-        <Stack.Screen
-          name="TeacherDiary"
-          children={props => (
-            <Layout>
-              <TeacherDiaryPrincipal {...props} />
-            </Layout>
-          )}
-        />
-        <Stack.Screen
-          name="ComplaintsDispossle"
-          children={props => (
-            <Layout>
-              <ComplaintsDispossle {...props} />
-            </Layout>
-          )}
-        />
+          />
+          <Stack.Screen
+
+            // Complaints page for students
+            name="Complaints"
+            children={props => (
+              <Layout>
+                <Complaints {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="HomeWork"
+            children={props => (
+              <Layout>
+                <HomeWork {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="StudentResults"
+            children={props => (
+              <Layout>
+                <StudentResults {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="StudentAttendanceCalendar"
+            children={props => (
+              <Layout>
+                <AttendanceCalendar {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="StudentNotices"
+            children={props => (
+              <Layout>
+                <ShowNotice {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="OnlineTestManage"
+            children={props => (
+              <Layout>
+                <OnlineTestManage {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="LandingPage"
+            children={props => (
+              <Layout>
+                <LandingPage {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="OnlineTest"
+            children={props => (
+              <Layout>
+                <Onlitest {...props} />
+              </Layout>
+            )}
+          />
+
+          {/* Teacher pages */}
+          <Stack.Screen
+            name="TeacherLandingPage"
+            children={props => (
+              <Layout>
+                <LandingPage {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="TeacherDashboard"
+            children={props => (
+              <Layout>
+                <TeacherDashboard {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="TeacherNotices"
+            children={props => (
+              <Layout>
+                <TeacherNotices {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="DiaryItem"
+            children={props => (
+              <Layout>
+                <DiaryItem {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="OnlineTestCreate"
+            children={props => (
+              <Layout>
+                <OnlineTestCreate {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="TeacherAttendance"
+            children={props => (
+              <Layout>
+                <TeacherSelfAttendance {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="MyTeacherIDCard"
+            children={props => (
+              <Layout>
+                <MyTeacherIDCard {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="Attendance"
+            children={props => (
+              <Layout>
+                <Attendance {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="TeacherUploadResults"
+            children={props => (
+              <Layout>
+                <TeacherUploadResults {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="TeacherHomework"
+            children={props => (
+              <Layout>
+                <TeacherHomework {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="TeacherSelfAttendance"
+            children={props => (
+              <Layout>
+                <TeacherSelfAttendance {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="MyProfile"
+            children={props => (
+              <Layout>
+                <MyProfile {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="MyStudents"
+            children={props => (
+              <Layout>
+                <MyStudents {...props} />
+              </Layout>
+            )}
+          />
+
+          {/* Principal sidebar screens */}
+          <Stack.Screen
+            name="PrincipalLandingPage"
+            children={props => (
+              <Layout>
+                <LandingPage {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="PrincipalDashboard"
+            children={props => (
+              <Layout>
+                <PrincipalDashboard {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="AttendanceAll"
+            children={props => (
+              <Layout>
+                <AttendanceAll {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="Admissions"
+            children={props => (
+              <Layout>
+                <Admissions {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="AddNotice"
+            children={props => (
+              <Layout>
+                <AddNotice {...props} />
+              </Layout>
+            )}
+          />
+
+          <Stack.Screen
+            name="TeacherDiary"
+            children={props => (
+              <Layout>
+                <TeacherDiaryPrincipal {...props} />
+              </Layout>
+            )}
+          />
+          <Stack.Screen
+            name="ComplaintsDispossle"
+            children={props => (
+              <Layout>
+                <ComplaintsDispossle {...props} />
+              </Layout>
+            )}
+          />
 
 
 
 
 
 
-      </Stack.Navigator>
+        </Stack.Navigator>
       </NotificationProvider>
     </UserProvider>
   );

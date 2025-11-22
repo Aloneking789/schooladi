@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNotification } from '../context/NotificationContext';
 
 interface NotificationBellProps {
@@ -36,8 +36,8 @@ interface NotificationTestButtonProps {
   title?: string;
 }
 
-export const NotificationTestButton: React.FC<NotificationTestButtonProps> = ({ 
-  title = 'Test Notification' 
+export const NotificationTestButton: React.FC<NotificationTestButtonProps> = ({
+  title = 'Test Notification'
 }) => {
   const { sendNotification, expoPushToken, isNotificationPermissionGranted } = useNotification();
   const [isLoading, setIsLoading] = useState(false);
@@ -80,7 +80,7 @@ export const NotificationTestButton: React.FC<NotificationTestButtonProps> = ({
           {isLoading ? 'Sending...' : title}
         </Text>
       </TouchableOpacity>
-      
+
       {expoPushToken && (
         <View style={styles.tokenContainer}>
           <Text style={styles.tokenLabel}>Push Token:</Text>
@@ -89,7 +89,7 @@ export const NotificationTestButton: React.FC<NotificationTestButtonProps> = ({
           </Text>
         </View>
       )}
-      
+
       {!isNotificationPermissionGranted && (
         <View style={styles.warningContainer}>
           <Ionicons name="warning" size={16} color="#ff9800" />
@@ -108,16 +108,16 @@ export const NotificationStatus: React.FC = () => {
   return (
     <View style={styles.statusContainer}>
       <View style={styles.statusRow}>
-        <Ionicons 
-          name={isNotificationPermissionGranted ? "checkmark-circle" : "close-circle"} 
-          size={20} 
-          color={isNotificationPermissionGranted ? "#4CAF50" : "#f44336"} 
+        <Ionicons
+          name={isNotificationPermissionGranted ? "checkmark-circle" : "close-circle"}
+          size={20}
+          color={isNotificationPermissionGranted ? "#4CAF50" : "#f44336"}
         />
         <Text style={styles.statusText}>
           Notifications: {isNotificationPermissionGranted ? 'Enabled' : 'Disabled'}
         </Text>
       </View>
-      
+
       {expoPushToken && (
         <View style={styles.statusRow}>
           <Ionicons name="key" size={20} color="#2196F3" />

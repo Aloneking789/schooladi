@@ -41,3 +41,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+pbm-public-firebase-adminsdk-fbsvc-a15e808aca.json
+google-services.json
